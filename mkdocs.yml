@@ -1,9 +1,15 @@
-site_name: Documentação
-
-nav:
-  - Instruções mkdocs: "index.md"
-  - Atas de Reunião:
-    - Ata 1: "atas-reuniao/ata-reuniao-1.md"
+site_name: SentIA - Análise de Sentimentos
+site_description: Documentação do projeto SentIA - Grupo Liskov T03 - MDS UnB/FGA
 
 theme:
   name: material
+  language: pt-BR
+
+nav:
+  - Início: index.md
+
+  - Atas de Reunião:
+      - Ata 1: atas-reuniao/ata-reuniao-1.md
+
+  - Instruções:
+      - MkDocs: instrucoes/instrucoes.md

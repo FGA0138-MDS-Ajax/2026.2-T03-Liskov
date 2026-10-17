@@ -1,17 +1,57 @@
-# Welcome to MkDocs
+# SentIA — Análise de Sentimentos
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+O **SentIA** é uma plataforma web de análise de sentimentos desenvolvida pelo grupo **Liskov — Turma 03**, da disciplina de **Métodos de Desenvolvimento de Software (MDS)** da Universidade de Brasília — Faculdade do Gama.
 
-## Commands
+O projeto tem como objetivo apoiar a análise de grandes volumes de textos em português, classificando os conteúdos de acordo com sua polaridade:
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
+- Positivo
+- Negativo
+- Neutro
 
-## Project layout
+Os resultados serão apresentados de forma consolidada por meio de um dashboard interativo.
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+## Objetivo do projeto
+
+O SentIA busca automatizar o fluxo de análise de sentimentos, desde a aquisição e preparação dos dados textuais até a classificação, persistência e visualização dos resultados.
+
+## Tecnologias
+
+O projeto utiliza principalmente:
+
+- Python
+- FastAPI
+- Uvicorn
+- Streamlit
+- MongoDB
+- scikit-learn
+- NLTK
+- GitHub Actions
+- MkDocs Material
+
+## Arquitetura
+
+O sistema será organizado em camadas, separando responsabilidades de:
+
+- Apresentação
+- Serviço
+- Processamento
+- Persistência de dados
+
+O fluxo principal do sistema segue a sequência:
+
+`Aquisição → Pré-processamento → Classificação → Persistência → API → Dashboard`
+
+## Documentação
+
+A documentação do projeto inclui:
+
+- Visão do Produto e Projeto
+- Documento de Arquitetura
+- Métricas e GQM
+- Estratégia de Testes
+- Atas de Reunião
+- Processo de Desenvolvimento
+
+## Equipe
+
+Projeto desenvolvido pelo grupo **Liskov — T03**, na disciplina de Métodos de Desenvolvimento de Software.
