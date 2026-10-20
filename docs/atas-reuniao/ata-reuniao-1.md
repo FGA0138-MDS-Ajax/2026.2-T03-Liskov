@@ -7,7 +7,7 @@
 | Projeto | SentIA — Análise de Sentimentos |
 | Equipe | Liskov — Turma 03 |
 | Disciplina | Métodos de Desenvolvimento de Software (MDS) — UnB/FGA, 2026.2 |
-| Data | **A confirmar** — a gravação menciona sexta-feira à noite, mas não registra a data exata |
+| Data | **25/09/2026** |
 | Horário | Noturno; início e término exatos não informados |
 | Duração da gravação | Aproximadamente 1 hora e 7 minutos |
 | Plataforma | Microsoft Teams |
