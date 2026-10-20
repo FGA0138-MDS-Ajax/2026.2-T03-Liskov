@@ -1,0 +1,1111 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentação do projeto SentIA - Grupo Liskov T03 - MDS UnB/FGA">
+      
+      
+      
+      
+        <link rel="prev" href="../..">
+      
+      
+        <link rel="next" href="../../instrucoes/instrucoes/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Ata 1 - SentIA - Análise de Sentimentos</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ata-de-reuniao-01-alinhamento-inicial-do-sentia" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href="../.." title="SentIA - Análise de Sentimentos" class="md-header__button md-logo" aria-label="SentIA - Análise de Sentimentos" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SentIA - Análise de Sentimentos
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Ata 1
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SentIA - Análise de Sentimentos" class="md-nav__button md-logo" aria-label="SentIA - Análise de Sentimentos" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SentIA - Análise de Sentimentos
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Atas de Reunião
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Atas de Reunião
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ata 1
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ata 1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#informacoes-gerais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Informações gerais
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-objetivo-da-reuniao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Objetivo da reunião
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-assuntos-discutidos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Assuntos discutidos
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Assuntos discutidos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-problema-e-proposta-de-solucao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1. Problema e proposta de solução
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-experimentos-de-classificacao-de-sentimentos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2. Experimentos de classificação de sentimentos
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-pipeline-de-aquisicao-e-processamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3. Pipeline de aquisição e processamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-tecnologias-e-formato-da-aplicacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4. Tecnologias e formato da aplicação
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-distribuicao-inicial-de-funcoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5. Distribuição inicial de funções
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26-divisao-do-documento-de-visao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6. Divisão do Documento de Visão
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#27-processo-de-trabalho-e-comunicacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.7. Processo de trabalho e comunicação
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-encaminhamentos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Encaminhamentos
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-pontos-pendentes-de-confirmacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Pontos pendentes de confirmação
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-proxima-reuniao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Próxima reunião
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Instruções
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Instruções
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../instrucoes/instrucoes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MkDocs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#informacoes-gerais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Informações gerais
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-objetivo-da-reuniao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Objetivo da reunião
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-assuntos-discutidos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Assuntos discutidos
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Assuntos discutidos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-problema-e-proposta-de-solucao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1. Problema e proposta de solução
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-experimentos-de-classificacao-de-sentimentos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2. Experimentos de classificação de sentimentos
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-pipeline-de-aquisicao-e-processamento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3. Pipeline de aquisição e processamento
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-tecnologias-e-formato-da-aplicacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4. Tecnologias e formato da aplicação
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-distribuicao-inicial-de-funcoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5. Distribuição inicial de funções
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26-divisao-do-documento-de-visao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6. Divisão do Documento de Visão
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#27-processo-de-trabalho-e-comunicacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.7. Processo de trabalho e comunicação
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-encaminhamentos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Encaminhamentos
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-pontos-pendentes-de-confirmacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Pontos pendentes de confirmação
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-proxima-reuniao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Próxima reunião
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="ata-de-reuniao-01-alinhamento-inicial-do-sentia">Ata de Reunião 01 — Alinhamento inicial do SentIA</h1>
+<h2 id="informacoes-gerais">Informações gerais</h2>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Informação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Projeto</td>
+<td>SentIA — Análise de Sentimentos</td>
+</tr>
+<tr>
+<td>Equipe</td>
+<td>Liskov — Turma 03</td>
+</tr>
+<tr>
+<td>Disciplina</td>
+<td>Métodos de Desenvolvimento de Software (MDS) — UnB/FGA, 2026.2</td>
+</tr>
+<tr>
+<td>Data</td>
+<td><strong>25/09/2026</strong></td>
+</tr>
+<tr>
+<td>Horário</td>
+<td>Noturno; início e término exatos não informados</td>
+</tr>
+<tr>
+<td>Duração da gravação</td>
+<td>Aproximadamente 1 hora e 7 minutos</td>
+</tr>
+<tr>
+<td>Plataforma</td>
+<td>Microsoft Teams</td>
+</tr>
+<tr>
+<td>Condução</td>
+<td>Renato Rodrigues Campos Filho</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Participação identificada na transcrição:</strong> Renato Rodrigues Campos Filho, Hellen Clicia Barros Rego, Juliana Silva Teixeira e Ricardo Eduardo da Silva Leal.</p>
+<p><strong>Observação sobre presença:</strong> os quatro participantes acima são identificados por suas falas. Ao final, foi mencionado que aproximadamente metade do grupo não estava presente. O arquivo não permite confirmar individualmente a presença ou a ausência dos demais integrantes.</p>
+<h2 id="1-objetivo-da-reuniao">1. Objetivo da reunião</h2>
+<p>Alinhar o problema a ser resolvido pelo SentIA, discutir funcionalidades e alternativas tecnológicas, organizar as responsabilidades iniciais da equipe e distribuir a elaboração do <strong>Documento de Visão do Produto e do Projeto</strong>.</p>
+<h2 id="2-assuntos-discutidos">2. Assuntos discutidos</h2>
+<h3 id="21-problema-e-proposta-de-solucao">2.1. Problema e proposta de solução</h3>
+<p>A equipe discutiu a dificuldade de identificar sistematicamente as percepções expressas em grandes volumes de publicações de redes sociais. O SentIA foi apresentado como uma solução para analisar textos relacionados a temas, pessoas, produtos ou acontecimentos e classificar os sentimentos como <strong>positivos, negativos ou neutros</strong>.</p>
+<p>As funcionalidades levantadas inicialmente foram:</p>
+<ul>
+<li>Apresentação de <strong>gráficos</strong> com a distribuição dos sentimentos;</li>
+<li>Exibição de um <strong>breve resumo textual</strong> das percepções identificadas;</li>
+<li>Disponibilização de <strong>filtros</strong>, incluindo a possibilidade de consultar recortes temporais, como as últimas 24 horas.</li>
+</ul>
+<p>Hellen sugeriu como referência os resumos de avaliações encontrados em serviços como Google Maps e Mercado Livre. A forma de gerar esses resumos, os tipos de gráfico e os filtros específicos ficaram para refinamento posterior.</p>
+<h3 id="22-experimentos-de-classificacao-de-sentimentos">2.2. Experimentos de classificação de sentimentos</h3>
+<p>Renato demonstrou experimentos iniciais com duas alternativas:</p>
+<ul>
+<li><strong>LeIA:</strong> abordagem baseada em léxico, considerada insatisfatória em exemplos apresentados;</li>
+<li><strong>scikit-learn:</strong> abordagem de aprendizado de máquina com resultados exploratórios mencionados entre aproximadamente <strong>75% e 80% de acerto</strong>, conforme a configuração.</li>
+</ul>
+<p>O <strong>scikit-learn</strong> foi considerado a alternativa inicial mais promissora. Ricardo indicou que precisaria estudar melhor o modelo, e Renato se dispôs a compartilhar o material de referência.</p>
+<blockquote>
+<p>Os percentuais apresentados são resultados de provas de conceito mostradas na reunião, <strong>não a avaliação definitiva do modelo do SentIA</strong>.</p>
+</blockquote>
+<h3 id="23-pipeline-de-aquisicao-e-processamento">2.3. Pipeline de aquisição e processamento</h3>
+<p>Foi discutido um fluxo preliminar:</p>
+<ol>
+<li><strong>Aquisição de dados:</strong> estudar datasets disponíveis e, se necessário, coletar textos via web scraping ou APIs;</li>
+<li><strong>Pré-processamento:</strong> conversão para minúsculas, limpeza textual, remoção de stopwords, tratamento de emojis, redução de radicais e vetorização;</li>
+<li><strong>Classificação:</strong> utilização de um modelo para identificar a polaridade dos textos;</li>
+<li><strong>Apresentação:</strong> gráficos, resumos e filtros para consulta dos resultados.</li>
+</ol>
+<p>A adequação dos datasets foi apontada como um ponto ainda a avaliar. Também foi comentado que, caso fosse necessária uma coleta própria, ela não precisaria funcionar em tempo real.</p>
+<h3 id="24-tecnologias-e-formato-da-aplicacao">2.4. Tecnologias e formato da aplicação</h3>
+<p>A seguinte stack foi discutida como <strong>proposta inicial</strong>, sujeita a ajustes:</p>
+<table>
+<thead>
+<tr>
+<th>Área</th>
+<th>Tecnologias consideradas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linguagem principal</td>
+<td>Python</td>
+</tr>
+<tr>
+<td>Interface e visualização</td>
+<td>Streamlit</td>
+</tr>
+<tr>
+<td>Backend / API</td>
+<td>FastAPI</td>
+</tr>
+<tr>
+<td>Banco de dados</td>
+<td>MongoDB</td>
+</tr>
+<tr>
+<td>Machine Learning</td>
+<td>scikit-learn</td>
+</tr>
+<tr>
+<td>Processamento de linguagem natural</td>
+<td>NLTK</td>
+</tr>
+<tr>
+<td>Organização e versionamento</td>
+<td>Git e GitHub</td>
+</tr>
+</tbody>
+</table>
+<p>Também foram discutidas alternativas de aplicação web ou aplicativo e a eventual utilização de Java. A orientação geral foi priorizar uma solução simples, com tecnologias que a equipe pudesse estudar e utilizar de maneira viável.</p>
+<h3 id="25-distribuicao-inicial-de-funcoes">2.5. Distribuição inicial de funções</h3>
+<p>Foi proposta a seguinte divisão das frentes de trabalho, <strong>a ser confirmada com os integrantes que não participaram</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Frente</th>
+<th>Integrante(s)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scrum Master, acompanhamento e testes</td>
+<td>Renato</td>
+</tr>
+<tr>
+<td>Product Owner e apoio ao frontend</td>
+<td>Hellen</td>
+</tr>
+<tr>
+<td>Frontend / dashboard</td>
+<td>Hellen e Juliana</td>
+</tr>
+<tr>
+<td>Banco de dados</td>
+<td>Julia e Maria Eduarda</td>
+</tr>
+<tr>
+<td>Machine Learning e tratamento de dados</td>
+<td>Ricardo e Gabriel</td>
+</tr>
+<tr>
+<td>Dataset e aquisição dos dados</td>
+<td>Breno, com apoio de Renato</td>
+</tr>
+</tbody>
+</table>
+<p>Juliana manifestou preferência por atuar no frontend, mantendo-se disponível para apoiar atividades de banco de dados, área em que relatou experiência.</p>
+<h3 id="26-divisao-do-documento-de-visao">2.6. Divisão do Documento de Visão</h3>
+<p>Foi apresentado o documento compartilhado no Google Docs. A distribuição inicial dos tópicos ficou registrada da seguinte forma:</p>
+<table>
+<thead>
+<tr>
+<th>Seção</th>
+<th>Assunto</th>
+<th>Responsável(eis) indicados</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Visão Geral do Produto</td>
+<td>Julia e Juliana</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Visão Geral do Projeto</td>
+<td>Ricardo e Gabriel</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Processo de Desenvolvimento de Software</td>
+<td>Breno</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Declaração de Escopo do Projeto, incluindo backlog, perfis e cenários</td>
+<td>Hellen</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Métricas e Medições</td>
+<td><strong>Não definido explicitamente na transcrição</strong></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Testes de Software</td>
+<td>Renato</td>
+</tr>
+</tbody>
+</table>
+<p>Foi mencionado um possível prazo para a quarta-feira seguinte, mas a transcrição não permite confirmar a data. A discussão detalhada do <strong>Documento de Arquitetura</strong> foi deixada para a próxima reunião.</p>
+<h3 id="27-processo-de-trabalho-e-comunicacao">2.7. Processo de trabalho e comunicação</h3>
+<p>Foi proposta a organização do desenvolvimento em <strong>Sprints de aproximadamente sete dias</strong>, com priorização de histórias de usuário e manutenção do backlog pela Product Owner, em colaboração com a equipe.</p>
+<p>Renato relembrou orientações de Git e GitHub, incluindo clonagem do repositório, branches, issues e pull requests, e incentivou os integrantes a estudarem suas áreas e auxiliarem outras frentes quando necessário.</p>
+<p>A equipe também foi convidada a realizar <strong>ao menos uma reunião semanal</strong>, com espaço para informar atividades concluídas, planejamento, dificuldades e impedimentos. O horário de sexta-feira à noite foi considerado pouco favorável à presença de todos; ficou pendente buscar um horário em que <strong>seis ou sete integrantes</strong> pudessem participar.</p>
+<h2 id="3-encaminhamentos">3. Encaminhamentos</h2>
+<table>
+<thead>
+<tr>
+<th>Encaminhamento</th>
+<th>Responsável(eis)</th>
+<th>Situação registrada</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Compartilhar o Documento de Visão, o quadro Miro e a transcrição em canais acessíveis</td>
+<td>Renato</td>
+<td>Compartilhamento/organização anunciados; conclusão posterior não verificável</td>
+</tr>
+<tr>
+<td>Iniciar a construção e priorização do Product Backlog</td>
+<td>Hellen, com apoio da equipe</td>
+<td>A iniciar</td>
+</tr>
+<tr>
+<td>Elaborar as seções do Documento de Visão conforme a divisão proposta</td>
+<td>Integrantes indicados na seção 2.6</td>
+<td>A iniciar / em elaboração</td>
+</tr>
+<tr>
+<td>Avaliar datasets e alternativas de aquisição</td>
+<td>Breno, com apoio de Renato</td>
+<td>Pendente</td>
+</tr>
+<tr>
+<td>Estudar o uso de scikit-learn e o pré-processamento</td>
+<td>Ricardo e Gabriel</td>
+<td>Pendente</td>
+</tr>
+<tr>
+<td>Pesquisar as tecnologias de cada frente</td>
+<td>Toda a equipe</td>
+<td>A iniciar</td>
+</tr>
+<tr>
+<td>Revisar as instruções de uso do GitHub</td>
+<td>Toda a equipe</td>
+<td>A verificar</td>
+</tr>
+<tr>
+<td>Confirmar a distribuição de atividades com os demais integrantes</td>
+<td>Toda a equipe</td>
+<td>Pendente</td>
+</tr>
+<tr>
+<td>Definir horário semanal de reunião com maior participação</td>
+<td>Equipe, com facilitação do Scrum Master</td>
+<td>Pendente</td>
+</tr>
+<tr>
+<td>Discutir o Documento de Arquitetura</td>
+<td>Toda a equipe</td>
+<td>Próxima reunião</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-pontos-pendentes-de-confirmacao">4. Pontos pendentes de confirmação</h2>
+<ul>
+<li>Data, horário e lista oficial de presença da primeira reunião;</li>
+<li>Aceite da distribuição de funções pelos integrantes que não participaram;</li>
+<li>Responsável pela <strong>seção 5 — Métricas e Medições</strong> do Documento de Visão;</li>
+<li>Dataset, abordagem final de classificação e stack definitiva;</li>
+<li>Detalhes da interface, filtros e geração do resumo textual;</li>
+<li>Prazo de entrega do Documento de Visão;</li>
+<li>Data e horário da próxima reunião.</li>
+</ul>
+<h2 id="5-proxima-reuniao">5. Próxima reunião</h2>
+<p>Foi indicado que o próximo encontro abordaria o <strong>Documento de Arquitetura</strong>, o andamento das atividades por frente de trabalho e eventuais impedimentos. <strong>A data e o horário não foram definidos na transcrição.</strong></p>
+<hr />
+<p><strong>Fonte:</strong> transcrição automática em formato WebVTT da reunião “Primeira reunião - Grupo Liskov T03”, fornecida pela equipe.</p>
+<p><strong>Nota editorial:</strong> esta ata sintetiza o conteúdo da reunião. Termos claramente distorcidos pela transcrição automática foram normalizados com apoio da documentação do projeto. As propostas iniciais não são apresentadas como definições técnicas definitivas.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
