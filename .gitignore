@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+site/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.coverage
+htmlcov/
+

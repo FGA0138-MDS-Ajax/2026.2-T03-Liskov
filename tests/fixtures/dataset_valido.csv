@@ -1,0 +1,7 @@
+id,texto,sentimento,fonte,data
+tw_001,"A programação da conferência foi ótima e trouxe inovação ao país!",positivo,TweetSentBR,2026-10-01
+tw_002,"Péssimo serviço de atenção ao usuário, não recomendo de jeito nenhum.",negativo,TweetSentBR,2026-10-02
+tw_003,"O relatório técnico sobre inteligência artificial foi publicado hoje.",neutro,TweetSentBR,2026-10-03
+tw_004,"A seleção brasileira venceu a partida com atuação incrível da equipe.",positivo,TweetSentBR,2026-10-04
+tw_005,"O sistema permaneceu indisponível durante a manutenção programada.",negativo,TweetSentBR,
+
