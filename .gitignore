@@ -1,5 +1,6 @@
 ﻿# Ambiente Python
 .venv/
+.venv312/
 venv/
 
 # Cache e arquivos temporários

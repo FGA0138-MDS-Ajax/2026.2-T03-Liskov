@@ -37,6 +37,31 @@ def test_bertweet_mapeia_rotulos_e_respeita_lotes():
     assert set(r["probabilidades"]) == {"positivo", "negativo", "neutro"}
 
 
+def test_bertweet_aceita_texto_unico_e_lista_vazia():
+    clf = ClassificadorBertweet(analisador=AnalisadorFalso())
+    assert clf.prever("muito bom") == ["positivo"]
+    assert clf.prever([]) == []
+
+
+@pytest.mark.parametrize("tamanho_lote", [0, -1])
+def test_bertweet_rejeita_lote_invalido(tamanho_lote):
+    with pytest.raises(ValueError, match="maior que zero"):
+        ClassificadorBertweet(analisador=AnalisadorFalso(), tamanho_lote=tamanho_lote)
+
+
+@pytest.mark.parametrize("texto", ["", "   "])
+def test_bertweet_rejeita_texto_vazio(texto):
+    clf = ClassificadorBertweet(analisador=AnalisadorFalso())
+    with pytest.raises(ValueError, match="não pode ser vazio"):
+        clf.prever(texto)
+
+
+def test_bertweet_rejeita_entrada_que_nao_seja_texto():
+    clf = ClassificadorBertweet(analisador=AnalisadorFalso())
+    with pytest.raises(TypeError, match="deve ser uma string"):
+        clf.prever(["texto", None])
+
+
 def test_baseline_treina_e_preve_somente_rotulos_validos(tmp_path):
     x = ["otimo produto", "adorei o produto", "pessimo produto", "odiei o produto", "produto comum", "produto normal"] * 3
     y = ["positivo", "positivo", "negativo", "negativo", "neutro", "neutro"] * 3

@@ -1,5 +1,57 @@
 # template-repository - Branch Main
 
+## Classificação de sentimentos do SentIA
+
+O módulo `classificacao.bertweet` classifica textos em português como
+`positivo`, `negativo` ou `neutro`. Ele usa o analisador de sentimentos em
+português do [PySentimiento](https://github.com/pysentimiento/pysentimiento),
+que carrega o modelo
+[`pysentimiento/bertweet-pt-sentiment`](https://huggingface.co/pysentimiento/bertweet-pt-sentiment).
+O cartão do modelo informa que a base é o BERTabaporu, uma variante RoBERTa
+treinada com tweets em português. Embora o identificador contenha “bertweet”,
+essa é a arquitetura/base informada pelo próprio cartão do modelo.
+
+### Instalação e primeira execução
+
+Use Python 3.12 e instale as dependências do projeto:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+Na primeira inicialização, o PySentimiento baixa os arquivos do modelo do
+Hugging Face e os mantém no cache local. É necessário ter acesso à internet e
+espaço em disco nessa primeira execução. Os pesos não devem ser adicionados a
+este repositório Git; a biblioteca baixa a versão publicada pelo mantenedor.
+
+### Uso
+
+```python
+from classificacao.bertweet import ClassificadorBertweet
+
+# Carregue uma vez na inicialização da aplicação e reutilize a instância.
+classificador = ClassificadorBertweet(tamanho_lote=32)
+
+# Rótulos simples
+rotulos = classificador.prever(["Adorei o atendimento!", "A entrega atrasou."])
+
+# Rótulo e probabilidades, um resultado para cada texto
+resultados = classificador.prever_com_probabilidades(["Adorei o atendimento!"])
+```
+
+`prever` retorna uma lista de rótulos. `prever_com_probabilidades` retorna uma
+lista de objetos com as chaves `sentimento` e `probabilidades`; as
+probabilidades sempre usam as chaves `positivo`, `negativo` e `neutro`.
+Uma string isolada é tratada como um único texto. Uma lista vazia retorna uma
+lista vazia. Entradas que não sejam strings e textos vazios são rejeitados com
+`TypeError` ou `ValueError`. O tamanho do lote precisa ser um inteiro positivo.
+
+O pré-processamento próprio para tweets é realizado pelo PySentimiento; não
+aplique TF-IDF, stemming ou remoção de stopwords antes deste classificador.
+Este componente fornece inferência, não foi ajustado com dados específicos do
+SentIA. Métricas de desempenho do projeto dependem de avaliação com um conjunto
+rotulado separado.
+
 Template de Repositório para a matéria de Métodos de Desenvolvimento de Software lecionado pelo professor Ricardo Ajax.
 
 Essa Branch deve ser usada exclusivamente para a versão de produção dos softwares da equipe.
