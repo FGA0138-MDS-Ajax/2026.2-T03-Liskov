@@ -1,0 +1,12 @@
+﻿# Ambiente Python
+.venv/
+venv/
+
+# Cache e arquivos temporários
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Modelos treinados e arquivos locais
+modelos/
+.env
