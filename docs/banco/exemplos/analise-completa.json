@@ -1,0 +1,13 @@
+{
+  "id_origem": "tw_001",
+  "fonte": "TweetSentBR",
+  "texto_original": "A programação da conferência foi ótima e trouxe inovação ao país!",
+  "texto_tratado": "programação conferência ótima trouxe inovação país",
+  "sentimento": "positivo",
+  "probabilidades": { "positivo": 0.91, "negativo": 0.03, "neutro": 0.06 },
+  "modelo": "pysentimiento/bertweet-pt-sentiment",
+  "rotulo_original": "positivo",
+  "data_publicacao": { "$date": "2026-10-01T00:00:00Z" },
+  "data_processamento": { "$date": "2026-10-27T14:30:00Z" },
+  "metadados": { "programa": "exemplo" }
+}
