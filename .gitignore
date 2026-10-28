@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.idea/
+.vscode/
+.ipynb_checkpoints/
+.pytest_cache/
+.coverage
+htmlcov/
+data/
+models/*.pkl
