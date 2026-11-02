@@ -6,12 +6,14 @@ from pathlib import Path
 import pytest
 
 from src.processamento.aquisicao import (
+    MAPA_ROTULO_SENTIA,
     ROTULOS_PADRONIZADOS,
     RelatorioImportacao,
-    adquirir_dados,
+    converter_rotulo_para_sentia,
     importar_csv,
     importar_dataset_csv,
     iterar_bpsad,
+    iterar_csv,
     iterar_dataset_csv,
     normalizar_rotulo,
 )
@@ -21,6 +23,7 @@ CAMPOS_OBRIGATORIOS_CONTRATO = {
     "texto_original",
     "fonte",
     "rotulo_original",
+    "rotulo_padronizado",
     "data_publicacao",
 }
 
@@ -33,33 +36,55 @@ CAMPOS_OBRIGATORIOS_CONTRATO = {
 @pytest.mark.parametrize(
     "entrada, esperado",
     [
-        ("1", "negativo"),
-        ("2", "negativo"),
-        ("3", "neutro"),
-        ("4", "positivo"),
-        ("5", "positivo"),
-        ("2.3", "negativo"),
-        ("2.5", "neutro"),
-        ("3.2", "neutro"),
-        ("3.5", "positivo"),
-        ("4.8", "positivo"),
-        (1, "negativo"),
-        (3, "neutro"),
-        (5, "positivo"),
-        ("negativo", "negativo"),
-        ("neutro", "neutro"),
-        ("positivo", "positivo"),
-        ("negative", "negativo"),
-        ("neutral", "neutro"),
-        ("positive", "positivo"),
-        ("NEG", "negativo"),
-        ("NEU", "neutro"),
-        ("POS", "positivo"),
-        ("  Positivo  ", "positivo"),
+        ("1", "NEG"),
+        ("2", "NEG"),
+        ("3", "NEU"),
+        ("4", "POS"),
+        ("5", "POS"),
+        ("2.3", "NEG"),
+        ("2.5", "NEU"),
+        ("3.2", "NEU"),
+        ("3.5", "POS"),
+        ("4.8", "POS"),
+        (1, "NEG"),
+        (3, "NEU"),
+        (5, "POS"),
+        ("negativo", "NEG"),
+        ("neutro", "NEU"),
+        ("positivo", "POS"),
+        ("negative", "NEG"),
+        ("neutral", "NEU"),
+        ("positive", "POS"),
+        ("NEG", "NEG"),
+        ("NEU", "NEU"),
+        ("POS", "POS"),
+        ("  Positivo  ", "POS"),
     ],
 )
 def test_normalizar_rotulo(entrada, esperado):
     assert normalizar_rotulo(entrada) == esperado
+
+
+@pytest.mark.parametrize(
+    "entrada, esperado",
+    [
+        ("POS", "positivo"),
+        ("NEG", "negativo"),
+        ("NEU", "neutro"),
+        ("positivo", "positivo"),
+        ("negativo", "negativo"),
+        ("neutro", "neutro"),
+        ("5", "positivo"),
+        ("3", "neutro"),
+        ("1", "negativo"),
+        (None, None),
+        ("", None),
+        ("   ", None),
+    ],
+)
+def test_converter_rotulo_para_sentia_fronteira(entrada, esperado):
+    assert converter_rotulo_para_sentia(entrada) == esperado
+    assert set(MAPA_ROTULO_SENTIA.keys()) == set(ROTULOS_PADRONIZADOS)
 
 
 @pytest.mark.parametrize("entrada_invalida", ["excelente", "", "   ", None, True, False])
@@ -89,9 +114,13 @@ def test_importar_csv_valido(tmp_path: Path):
 
     assert len(registros) == 3
 
-    assert registros[0]["rotulo_original"] == "negativo"
-    assert registros[1]["rotulo_original"] == "neutro"
-    assert registros[2]["rotulo_original"] == "positivo"
+    assert registros[0]["rotulo_original"] == "1"
+    assert registros[1]["rotulo_original"] == "3"
+    assert registros[2]["rotulo_original"] == "5"
+
+    assert registros[0]["rotulo_padronizado"] == "NEG"
+    assert registros[1]["rotulo_padronizado"] == "NEU"
+    assert registros[2]["rotulo_padronizado"] == "POS"
 
     assert registros[0]["texto_original"] == "Produto horrível"
     assert registros[0]["fonte"] == "BPSAD"
@@ -102,7 +131,6 @@ def test_importar_csv_valido(tmp_path: Path):
     assert registros[1]["id_origem"] == "456"
     assert registros[2]["id_origem"] == "789"
     assert "sentimento" not in registros[0]
-    assert "rotulo_padronizado" not in registros[0]
 
 
 # ============================================================================
@@ -124,11 +152,14 @@ def test_importar_bpsad_valido(tmp_path: Path):
 
     assert len(registros) == 3
     assert registros[0]["texto_original"] == "Entrega rápida e produto ótimo!"
-    assert registros[0]["rotulo_original"] == "positivo"
+    assert registros[0]["rotulo_original"] == "5"
+    assert registros[0]["rotulo_padronizado"] == "POS"
     assert registros[0]["fonte"] == "olist"
     assert registros[0]["id_origem"].startswith("olist_000001_")
-    assert registros[1]["rotulo_original"] == "neutro"
-    assert registros[2]["rotulo_original"] == "negativo"
+    assert registros[1]["rotulo_original"] == "3"
+    assert registros[1]["rotulo_padronizado"] == "NEU"
+    assert registros[2]["rotulo_original"] == "1"
+    assert registros[2]["rotulo_padronizado"] == "NEG"
     assert registros[2]["fonte"] == "b2w"
     assert registros[2]["id_origem"].startswith("b2w_000001_")
     assert all("sentimento" not in r for r in registros)
@@ -148,7 +179,8 @@ def test_iterar_bpsad_direto_com_id_data_e_metadados(tmp_path: Path):
         "id_origem": "rev_10",
         "texto_original": "Excelente qualidade",
         "fonte": "olist",
-        "rotulo_original": "positivo",
+        "rotulo_original": "5",
+        "rotulo_padronizado": "POS",
         "data_publicacao": "2026-10-01",
         "metadados": {"polarity": "1"},
     }
@@ -173,7 +205,9 @@ def test_importar_csv_sem_coluna_rotulo(tmp_path: Path):
     assert len(registros) == 2
     assert registros[0]["id_origem"] == "coleta_01"
     assert registros[0]["rotulo_original"] is None
+    assert registros[0]["rotulo_padronizado"] is None
     assert registros[1]["rotulo_original"] is None
+    assert registros[1]["rotulo_padronizado"] is None
     assert "sentimento" not in registros[0]
     assert "sentimento" not in registros[1]
 
@@ -192,8 +226,11 @@ def test_importar_csv_com_celula_rotulo_vazia(tmp_path: Path):
 
     assert len(registros) == 3
     assert registros[0]["rotulo_original"] == "positivo"
+    assert registros[0]["rotulo_padronizado"] == "POS"
     assert registros[1]["rotulo_original"] is None
+    assert registros[1]["rotulo_padronizado"] is None
     assert registros[2]["rotulo_original"] is None
+    assert registros[2]["rotulo_padronizado"] is None
 
 
 def test_importar_bpsad_sem_coluna_rating(tmp_path: Path):
@@ -207,6 +244,7 @@ def test_importar_bpsad_sem_coluna_rating(tmp_path: Path):
     registros = importar_dataset_csv(arquivo)
     assert len(registros) == 1
     assert registros[0]["rotulo_original"] is None
+    assert registros[0]["rotulo_padronizado"] is None
     assert "sentimento" not in registros[0]
 
 
@@ -488,7 +526,8 @@ def test_csv_com_ponto_e_virgula(tmp_path: Path):
     )
 
     assert len(registros) == 1
-    assert registros[0]["rotulo_original"] == "positivo"
+    assert registros[0]["rotulo_original"] == "5"
+    assert registros[0]["rotulo_padronizado"] == "POS"
 
 
 @pytest.mark.parametrize("delimitador", ["\t", "|"])
@@ -504,6 +543,21 @@ def test_csv_com_outros_delimitadores(tmp_path: Path, delimitador: str):
     assert len(registros) == 1
     assert registros[0]["id_origem"] == "10"
     assert registros[0]["rotulo_original"] == "positivo"
+    assert registros[0]["rotulo_padronizado"] == "POS"
+
+
+def test_csv_utf8_com_bom(tmp_path: Path):
+    arquivo = tmp_path / "com_bom.csv"
+    arquivo.write_bytes(
+        "\ufeffid,texto,rotulo,fonte\n1,Texto com BOM no início,positivo,TweetSentBR\n".encode(
+            "utf-8"
+        )
+    )
+
+    registros = importar_dataset_csv(arquivo)
+    assert len(registros) == 1
+    assert registros[0]["id_origem"] == "1"
+    assert registros[0]["rotulo_padronizado"] == "POS"
 
 
 @pytest.mark.parametrize("delimitador_invalido", ["", ";;", "::"])
@@ -589,7 +643,8 @@ def test_bpsad_modo_tolerante_contabiliza_descartes_e_motivos(tmp_path: Path):
 
     assert len(registros) == 2
     assert [r["id_origem"] for r in registros] == ["r1", "r6"]
-    assert [r["rotulo_original"] for r in registros] == ["positivo", "negativo"]
+    assert [r["rotulo_original"] for r in registros] == ["5", "1"]
+    assert [r["rotulo_padronizado"] for r in registros] == ["POS", "NEG"]
 
     assert relatorio.total_lidos == 7
     assert relatorio.total_importados == 2
@@ -627,7 +682,9 @@ def test_csv_padrao_modo_tolerante_contabiliza_descartes(tmp_path: Path):
     assert len(registros) == 2
     assert [r["id_origem"] for r in registros] == ["1", "6"]
     assert registros[0]["rotulo_original"] == "positivo"
+    assert registros[0]["rotulo_padronizado"] == "POS"
     assert registros[1]["rotulo_original"] is None
+    assert registros[1]["rotulo_padronizado"] is None
 
     assert relatorio.total_lidos == 6
     assert relatorio.total_importados == 2
@@ -656,20 +713,25 @@ def test_compatibilidade_contrato_issue_11_e_preservacao_datas_metadados(tmp_pat
     )
 
     registros = importar_csv(arquivo)
-    assert adquirir_dados(arquivo) == registros
+    assert list(iterar_csv(arquivo)) == registros
     assert len(registros) == 3
 
     for r in registros:
         assert CAMPOS_OBRIGATORIOS_CONTRATO.issubset(r.keys())
         assert "sentimento" not in r
-        assert "rotulo_padronizado" not in r
         assert isinstance(r["id_origem"], str) and r["id_origem"]
         assert isinstance(r["texto_original"], str) and r["texto_original"].strip()
         assert isinstance(r["fonte"], str) and r["fonte"]
-        assert r["rotulo_original"] in ROTULOS_PADRONIZADOS
+        assert r["rotulo_padronizado"] in ROTULOS_PADRONIZADOS
+        assert converter_rotulo_para_sentia(r["rotulo_padronizado"]) in {
+            "positivo",
+            "negativo",
+            "neutro",
+        }
 
     assert registros[0]["id_origem"] == "tw_001"
     assert registros[0]["rotulo_original"] == "positivo"
+    assert registros[0]["rotulo_padronizado"] == "POS"
     assert registros[0]["data_publicacao"] == "2026-10-01"
     assert registros[0]["metadados"] == {"categoria": "eventos", "idioma": "pt-br"}
 
@@ -715,8 +777,12 @@ def test_ausencia_criacao_indevida_campo_sentimento(tmp_path: Path):
     registros = importar_dataset_csv(arquivo)
     for r in registros:
         assert "sentimento" not in r
-    assert registros[0]["rotulo_original"] == "positivo"
+    assert registros[0]["rotulo_original"] == "POS"
+    assert registros[0]["rotulo_padronizado"] == "POS"
+    assert converter_rotulo_para_sentia(registros[0]["rotulo_padronizado"]) == "positivo"
     assert registros[1]["rotulo_original"] is None
+    assert registros[1]["rotulo_padronizado"] is None
+    assert converter_rotulo_para_sentia(registros[1]["rotulo_padronizado"]) is None
 
 
 @pytest.mark.parametrize("caminho_invalido", [None, "", "   "])

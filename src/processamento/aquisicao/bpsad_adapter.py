@@ -47,7 +47,7 @@ def iterar_bpsad(
 
     Mapeamento principal:
         - ``review_text`` -> ``texto_original``
-        - ``rating``      -> ``rotulo_original`` (normalizado para ``positivo``/``negativo``/``neutro``)
+        - ``rating``      -> ``rotulo_original`` (valor original) e ``rotulo_padronizado`` (``POS``/``NEG``/``NEU``)
         - ``dataset``     -> ``fonte``
         - ``id`` / ``review_id`` (se presente) -> ``id_origem`` (ou hash determinístico se ausente)
 
@@ -199,9 +199,10 @@ def iterar_bpsad(
                         continue
 
                     try:
-                        rotulo_original: str | None = normalizar_rotulo(
+                        rotulo_padronizado: str | None = normalizar_rotulo(
                             rotulo_bruto
                         )
+                        rotulo_original: str | None = rotulo_bruto.strip()
                     except ValueError as erro:
                         _tratar_erro_registro(
                             modo_estrito=modo_estrito,
@@ -213,6 +214,7 @@ def iterar_bpsad(
                         continue
                 else:
                     rotulo_original = None
+                    rotulo_padronizado = None
 
                 data_bruta = (
                     linha.get(coluna_data) if coluna_data is not None else None
@@ -260,6 +262,7 @@ def iterar_bpsad(
                     "texto_original": texto,
                     "fonte": fonte_limpa,
                     "rotulo_original": rotulo_original,
+                    "rotulo_padronizado": rotulo_padronizado,
                     "data_publicacao": data_publicacao,
                 }
 

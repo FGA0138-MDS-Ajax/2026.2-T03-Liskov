@@ -3,8 +3,9 @@
 Implementa o contrato canônico de entrada de dados alinhado às Issues #2, #4, #11 e #19:
 - Preserva identificadores originais (`id_origem`, `id`, `identificador`) quando fornecidos;
 - Gera identificadores determinísticos baseados em SHA-256 e posição por fonte quando ausentes;
-- Normaliza rótulos humanos/de datasets para `positivo`, `negativo` e `neutro` em `rotulo_original`;
-- Suporta datasets não rotulados (`rotulo_original = None`), sem atribuir `sentimento` previsto;
+- Preserva o valor bruto em `rotulo_original` e normaliza para `POS`, `NEG` e `NEU` em `rotulo_padronizado`;
+- Fornece `converter_rotulo_para_sentia()` para conversão explícita de fronteira (`POS/NEG/NEU` -> `positivo/negativo/neutro`);
+- Suporta datasets não rotulados (`rotulo_original = None`, `rotulo_padronizado = None`), sem atribuir `sentimento` previsto;
 - Oferece modo estrito (padrão) e modo tolerante com contabilização auditável de descartes.
 """
 
@@ -22,7 +23,13 @@ from typing import Any, Iterator
 
 logger = logging.getLogger(__name__)
 
-ROTULOS_PADRONIZADOS: tuple[str, ...] = ("positivo", "negativo", "neutro")
+ROTULOS_PADRONIZADOS: tuple[str, ...] = ("POS", "NEG", "NEU")
+
+MAPA_ROTULO_SENTIA: dict[str, str] = {
+    "POS": "positivo",
+    "NEG": "negativo",
+    "NEU": "neutro",
+}
 
 _COLUNAS_ID: tuple[str, ...] = ("id_origem", "id", "identificador")
 _COLUNAS_TEXTO: tuple[str, ...] = ("texto_original", "texto")
@@ -57,9 +64,9 @@ class RelatorioImportacao:
 
 
 def normalizar_rotulo(rotulo: object) -> str:
-    """Converte rótulos textuais (PT/EN/siglas) ou notas de 1 a 5 para o padrão do SentIA.
+    """Converte rótulos textuais (PT/EN/siglas) ou notas de 1 a 5 para o padrão de aquisição.
 
-    Retorna exclusivamente ``"positivo"``, ``"negativo"`` ou ``"neutro"``.
+    Retorna exclusivamente ``"POS"``, ``"NEG"`` ou ``"NEU"``.
     """
     if rotulo is None or isinstance(rotulo, bool):
         raise ValueError(f"Rótulo inválido: {rotulo!r}")
@@ -69,15 +76,15 @@ def normalizar_rotulo(rotulo: object) -> str:
         raise ValueError(f"Rótulo inválido: {rotulo!r}")
 
     mapeamento = {
-        "negativo": "negativo",
-        "negative": "negativo",
-        "neg": "negativo",
-        "neutro": "neutro",
-        "neutral": "neutro",
-        "neu": "neutro",
-        "positivo": "positivo",
-        "positive": "positivo",
-        "pos": "positivo",
+        "negativo": "NEG",
+        "negative": "NEG",
+        "neg": "NEG",
+        "neutro": "NEU",
+        "neutral": "NEU",
+        "neu": "NEU",
+        "positivo": "POS",
+        "positive": "POS",
+        "pos": "POS",
     }
 
     if rotulo_str in mapeamento:
@@ -92,12 +99,26 @@ def normalizar_rotulo(rotulo: object) -> str:
         raise ValueError(f"Nota fora do intervalo de 1 a 5: {rotulo}")
 
     if nota < Decimal("2.5"):
-        return "negativo"
+        return "NEG"
 
     if nota < Decimal("3.5"):
-        return "neutro"
+        return "NEU"
 
-    return "positivo"
+    return "POS"
+
+
+def converter_rotulo_para_sentia(rotulo: object | None) -> str | None:
+    """Converte explicitamente um rótulo (``POS/NEG/NEU`` ou valor bruto) na fronteira
+    entre aquisição, avaliação (ML) e persistência (MongoDB).
+
+    Retorna ``"positivo"``, ``"negativo"``, ``"neutro"`` ou ``None`` quando ausente.
+    """
+    if rotulo is None:
+        return None
+    if isinstance(rotulo, str) and not rotulo.strip():
+        return None
+    sigla = normalizar_rotulo(rotulo)
+    return MAPA_ROTULO_SENTIA[sigla]
 
 
 def _normalizar_fonte_para_id(fonte: str) -> str:
@@ -276,7 +297,10 @@ def _iterar_csv_padrao(
             )
             if rotulo_bruto is not None and rotulo_bruto.strip():
                 try:
-                    rotulo_original: str | None = normalizar_rotulo(rotulo_bruto)
+                    rotulo_padronizado: str | None = normalizar_rotulo(
+                        rotulo_bruto
+                    )
+                    rotulo_original: str | None = rotulo_bruto.strip()
                 except ValueError as erro:
                     _tratar_erro_registro(
                         modo_estrito=modo_estrito,
@@ -288,6 +312,7 @@ def _iterar_csv_padrao(
                     continue
             else:
                 rotulo_original = None
+                rotulo_padronizado = None
 
             data_bruta = (
                 linha.get(coluna_data) if coluna_data is not None else None
@@ -333,6 +358,7 @@ def _iterar_csv_padrao(
                 "texto_original": texto,
                 "fonte": fonte_limpa,
                 "rotulo_original": rotulo_original,
+                "rotulo_padronizado": rotulo_padronizado,
                 "data_publicacao": data_publicacao,
             }
 
@@ -485,6 +511,6 @@ def importar_dataset_csv(
     return registros
 
 
-# Aliases de compatibilidade com a suíte de contrato da Issue #4
+# Alias de compatibilidade para importação CSV (Issue #2 / Issue #4)
 importar_csv = importar_dataset_csv
-adquirir_dados = importar_dataset_csv
+iterar_csv = iterar_dataset_csv
