@@ -20,6 +20,18 @@ from typing import Any, Callable
 
 import pytest
 
+from src.processamento.aquisicao import (
+    CAMINHO_PADRAO_TWEETSENTBR,
+    RelatorioImportacao,
+    carregar_tweetsentbr,
+    converter_rotulo_para_sentia,
+    iterar_bpsad,
+    iterar_dados_aquisicao,
+    iterar_tweetsentbr,
+    normalizar_rotulo,
+    resolver_caminho_tweetsentbr,
+)
+
 CARACTERES_PT_BR_OBRIGATORIOS: tuple[str, ...] = ("ç", "ã", "é", "í")
 
 
@@ -248,3 +260,164 @@ def test_aquisicao_tratamento_erros_previsiveis_esquema_incompativel(
     assert str(exc_info.value).strip(), (
         "Fonte com esquema incompatível deve ser rejeitada com mensagem de erro clara."
     )
+
+
+def test_aquisicao_caminho_padrao_independente_do_diretorio_atual(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    adquirir_dados: Callable[..., list[dict[str, Any]]],
+) -> None:
+    """Verifica que o carregamento padrão do TweetSentBR funciona fora da raiz do projeto."""
+    monkeypatch.chdir(tmp_path)
+
+    caminho_resolvido = resolver_caminho_tweetsentbr()
+    assert caminho_resolvido == CAMINHO_PADRAO_TWEETSENTBR.resolve()
+    assert caminho_resolvido.is_file()
+
+    amostra_padrao = adquirir_dados(limite=5)
+    assert len(amostra_padrao) == 5
+    for registro in amostra_padrao:
+        assert registro["fonte"] == "TweetSentBR"
+        assert registro["rotulo_padronizado"] in ("POS", "NEG", "NEU")
+        assert "sentimento" not in registro
+
+    amostra_relativa_canonica = carregar_tweetsentbr(
+        "Datasets/tweetsent.csv",
+        limite=3,
+    )
+    amostra_relativa_minuscula = carregar_tweetsentbr(
+        "datasets/tweetsent.csv",
+        limite=3,
+    )
+    assert amostra_relativa_canonica == amostra_relativa_minuscula
+
+
+def test_aquisicao_processamento_iterativo_e_limite(
+    arquivo_csv_valido: Path,
+) -> None:
+    """Verifica o processamento iterativo em fluxo com e sem limite."""
+    relatorio = RelatorioImportacao()
+    parcial = list(
+        iterar_tweetsentbr(
+            arquivo_csv_valido,
+            relatorio=relatorio,
+            limite=2,
+        )
+    )
+    assert len(parcial) == 2
+    assert relatorio.total_importados == 2
+
+    completo = list(iterar_dados_aquisicao(arquivo_csv_valido))
+    assert len(completo) == 5
+
+
+@pytest.mark.parametrize(
+    "limite_invalido,excecao_esperada",
+    [
+        (0, ValueError),
+        (-3, ValueError),
+        (True, TypeError),
+        ("10", TypeError),
+    ],
+)
+def test_aquisicao_rejeita_limite_invalido(
+    arquivo_csv_valido: Path,
+    limite_invalido: Any,
+    excecao_esperada: type[Exception],
+) -> None:
+    """Verifica validação estrita do parâmetro opcional limite."""
+    with pytest.raises(excecao_esperada):
+        carregar_tweetsentbr(arquivo_csv_valido, limite=limite_invalido)
+
+
+def test_aquisicao_rejeita_tipo_caminho_invalido(
+    adquirir_dados: Callable[..., list[dict[str, Any]]],
+) -> None:
+    """Verifica que tipos não textuais para caminho levantam TypeError."""
+    with pytest.raises(TypeError):
+        adquirir_dados(12345)
+
+
+def test_aquisicao_rejeita_diretorio_relativo_a_raiz(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verifica que caminho relativo apontando para diretório na raiz levanta IsADirectoryError."""
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(IsADirectoryError):
+        resolver_caminho_tweetsentbr("Datasets")
+
+
+def test_aquisicao_preserva_acentuacao_emojis_estabilidade_id_e_rotulos(
+    tmp_path: Path,
+    adquirir_dados: Callable[..., list[dict[str, Any]]],
+) -> None:
+    """Verifica acentuação, emojis, estabilidade de IDs determinísticos e contrato de rótulos."""
+    arquivo_tweets = tmp_path / "tweets_emojis.csv"
+    arquivo_tweets.write_text(
+        "texto,rotulo,fonte,split\n"
+        '"Sensação incrível na estréia do programa! 😍🔥🇧🇷",positivo,TweetSentBR,test\n'
+        '"Não gostei da edição de hoje 😡👎",negativo,TweetSentBR,test\n'
+        '"O episódio começou às 22h na televisão 📺",neutro,TweetSentBR,test\n',
+        encoding="utf-8",
+    )
+
+    primeira_leitura = adquirir_dados(arquivo_tweets)
+    segunda_leitura = carregar_tweetsentbr(arquivo_tweets)
+
+    assert primeira_leitura == segunda_leitura
+    assert [r["rotulo_padronizado"] for r in primeira_leitura] == [
+        "POS",
+        "NEG",
+        "NEU",
+    ]
+    assert [
+        converter_rotulo_para_sentia(r["rotulo_padronizado"])
+        for r in primeira_leitura
+    ] == ["positivo", "negativo", "neutro"]
+    assert "😍🔥🇧🇷" in primeira_leitura[0]["texto_original"]
+    assert primeira_leitura[0]["metadados"] == {"split": "test"}
+    for registro in primeira_leitura:
+        assert normalizar_rotulo(registro["rotulo_original"]) == registro["rotulo_padronizado"]
+        assert "sentimento" not in registro
+
+
+def test_aquisicao_erro_encoding_invalido(
+    tmp_path: Path,
+    adquirir_dados: Callable[..., list[dict[str, Any]]],
+) -> None:
+    """Verifica erro compreensível quando o arquivo não está em UTF-8."""
+    arquivo_latin1 = tmp_path / "tweets_latin1.csv"
+    arquivo_latin1.write_bytes(
+        "texto,rotulo,fonte\nAvaliação ótima,positivo,TweetSentBR\n".encode(
+            "latin-1"
+        )
+    )
+    with pytest.raises(ValueError, match="UTF-8"):
+        adquirir_dados(arquivo_latin1)
+
+
+def test_aquisicao_amostra_sintetica_bpsad(
+    arquivo_bpsad_sample: Path,
+    adquirir_dados: Callable[..., list[dict[str, Any]]],
+) -> None:
+    """Verifica que a fixture sintética do BPSAD é carregada pelo adaptador e pela aquisição."""
+    registros = adquirir_dados(arquivo_bpsad_sample)
+    registros_bpsad = list(iterar_bpsad(arquivo_bpsad_sample))
+
+    assert len(registros) == 5
+    assert registros == registros_bpsad
+    assert [r["rotulo_padronizado"] for r in registros] == [
+        "POS",
+        "POS",
+        "NEU",
+        "NEG",
+        "NEG",
+    ]
+    assert [r["id_origem"] for r in registros] == [
+        "bpsad_syn_001",
+        "bpsad_syn_002",
+        "bpsad_syn_003",
+        "bpsad_syn_004",
+        "bpsad_syn_005",
+    ]
