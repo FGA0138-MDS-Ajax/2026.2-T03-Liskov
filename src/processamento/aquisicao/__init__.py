@@ -1,5 +1,12 @@
 """Módulo de aquisição e importação de datasets textuais do SentIA."""
 
+from .auditoria_datasets import (
+    RelatorioAuditoriaDataset,
+    ResumoDuplicatas,
+    auditar_dataset_csv,
+    calcular_sha256_arquivo,
+    detectar_codificacao_utf8,
+)
 from .bpsad_adapter import iterar_bpsad
 from .csv_importer import (
     MAPA_ROTULO_SENTIA,
@@ -29,10 +36,15 @@ __all__ = [
     "FONTE_PADRAO_TWEETSENTBR",
     "MAPA_ROTULO_SENTIA",
     "ROTULOS_PADRONIZADOS",
+    "RelatorioAuditoriaDataset",
     "RelatorioImportacao",
+    "ResumoDuplicatas",
     "adquirir_dados",
+    "auditar_dataset_csv",
+    "calcular_sha256_arquivo",
     "carregar_tweetsentbr",
     "converter_rotulo_para_sentia",
+    "detectar_codificacao_utf8",
     "importar_csv",
     "importar_dataset_csv",
     "iterar_bpsad",
