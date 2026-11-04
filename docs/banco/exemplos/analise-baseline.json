@@ -1,12 +1,14 @@
 {
-  "id_origem": "a_002",
-  "fonte": "exemplo_dataset_rotulado",
-  "texto_original": "O relatório técnico sobre inteligência artificial foi publicado hoje.",
-  "texto_tratado": "relatório técnico inteligência artificial publicado hoje",
+  "id_origem": "bpsad_syn_003",
+  "fonte": "olist",
+  "texto_original": "O item cumpre o básico esperado pelo preço, sem grandes destaques.",
+  "texto_tratado": "item cumpre básico esperado preço grandes destaques",
   "sentimento": "neutro",
   "probabilidades": { "positivo": 0.12, "negativo": 0.08, "neutro": 0.80 },
   "modelo": { "nome": "baseline-tfidf-logreg", "versao": "a-definir" },
-  "rotulo_original": "neutro",
+  "rotulo_original": "3",
+  "rotulo_padronizado": "neutro",
   "data_publicacao": { "$date": "2026-10-03T00:00:00Z" },
-  "data_processamento": { "$date": "2026-10-29T14:31:00Z" }
+  "data_processamento": { "$date": "2026-11-03T14:31:00Z" },
+  "metadados": { "category": "utilidades" }
 }

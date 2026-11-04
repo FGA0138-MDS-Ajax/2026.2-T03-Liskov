@@ -16,7 +16,7 @@ sentimento (RF12) diretamente na consulta ao banco.
 
 
 
-**Escopo:** apenas documenta e definev o esquema. A
+**Escopo:** apenas documenta e define o esquema. A
 implementação da persistência (pymongo, gravação e consultas) pertence à
 Sprint 4, e a configuração do ambiente e da conexão pertence à issue #12.
 
@@ -49,7 +49,7 @@ Datasets / coletas ─► Aquisição e importação ─► Classificação ─�
 | RF07 – Classificação em três classes | O campo de sentimento aceita apenas `positivo`, `negativo` ou `neutro` |
 | RF08 – Persistência das análises | Cada documento guarda o texto, seus metadados e o resultado da análise |
 | RF10 – Consulta das análises | Os documentos ficam em uma única collection, consultada pela API |
-| RF11 – Filtro por período | As datas são armazenadas no tipo `Date`, e cada consulta declara qual data utiliza (seção 4.6) |
+| RF11 – Filtro por período | As datas são armazenadas no tipo `Date`, e cada consulta declara qual data utiliza (seção 4.7) |
 | RF12 – Filtro por sentimento | O sentimento é um campo próprio, com valores padronizados |
 
 ### 1.3 Glossário
@@ -94,10 +94,13 @@ Datasets / coletas ─► Aquisição e importação ─► Classificação ─�
   de importação ou de processamento.
 - **Campos ausentes são omitidos.** Quando um campo opcional não se aplica, ele
   não aparece no documento (em vez de ser gravado como `null`). Para encontrar
-  documentos sem o campo, usa-se `$exists: false` (seção 4.6).
-- **Privacidade (LGPD).** Não são armazenados dados que identifiquem o autor
+  documentos sem o campo, usa-se `$exists: false` (seção 4.7). O importador
+  entrega esses campos como `None`; a Persistência os omite ao gravar.
+- **Privacidade (LGPD).** Não são armazenados campos que identifiquem o autor
   do texto, como nome de usuário ou perfil, pois não são necessários para a
-  análise de sentimentos.
+  análise de sentimentos.  O `texto_original` do TweetSentBR contém
+  `@menções` de usuários; a anonimização desses textos depende de decisão da
+  Product Owner (ver [`docs/tweetsentbr.md`](../tweetsentbr.md), seção 6).
 
 ### 2.2 Ambiente
 
@@ -111,8 +114,8 @@ são tratados na issue #12. Este esquema vale para os dois ambientes.
 | Campo | Tipo | Obrigatório | Descrição |
 |---|---|---|---|
 | `_id` | ObjectId | Sim (automático) | Identificador único do documento, gerado pelo MongoDB |
-| `id_origem` | String | Sim | Identificador do texto na fonte original. Junto com `fonte`, evita que o mesmo texto seja gravado duas vezes |
-| `fonte` | String | Sim | Nome do dataset ou da coleta de onde o texto veio, conforme definido na issue #3. Exigido pela arquitetura (RF08) |
+| `id_origem` | String | Sim | Identificador do texto na fonte original (ex.: `review_id` do BPSAD). Quando a fonte não possui identificador, como o TweetSentBR, o importador gera um identificador determinístico (ex.: `TweetSentBR_000263_813e105164b8`). Junto com `fonte`, evita que o mesmo texto seja gravado duas vezes |
+| `fonte` | String | Sim | Nome do dataset ou da coleta de onde o texto veio, conforme entregue pelo importador (ex.: `TweetSentBR`; no BPSAD, a plataforma de origem, como `b2w` ou `olist`). Exigido pela arquitetura (RF08) |
 
 ### 3.2 Texto
 
@@ -132,21 +135,22 @@ são tratados na issue #12. Este esquema vale para os dois ambientes.
 | `probabilidades.neutro` | Double | Sim, se `probabilidades` existir | Valor entre 0 e 1 |
 | `modelo` | Object | Sim | Identificação do modelo que realizou a classificação. Permite rastrear qual modelo gerou cada resultado caso ele seja trocado |
 | `modelo.nome` | String | Sim | Nome do modelo (ex.: `pysentimiento/bertweet-pt-sentiment`) |
-| `modelo.versao` | String | ⏳ Não | Versão do modelo ou do checkpoint utilizado, a ser definida na issue #16 |
-| `rotulo_original` | String | Não | Sentimento **anotado manualmente** na fonte, quando existir. Mesmos valores de `sentimento`. Permite comparar a previsão com o rótulo humano e medir a acurácia. Nunca é preenchido com a previsão do modelo |
+| `modelo.versao` | String |  Não | Versão do modelo ou do checkpoint utilizado, a ser definida na issue #16 |
+| `rotulo_original` | String | Não | Rótulo **humano** exatamente como veio da fonte, sem conversão (ex.: `positivo` no TweetSentBR, nota `5` no BPSAD). Preserva a informação original para auditoria. Nunca é preenchido com a previsão do modelo |
+| `rotulo_padronizado` | String | Não | O rótulo humano convertido para os mesmos valores de `sentimento` (`positivo`, `negativo`, `neutro`), pela função `converter_rotulo_para_sentia()` do importador. Existe sempre que `rotulo_original` existir. Permite medir a acurácia comparando-o diretamente com `sentimento`. Formato a confirmar na issue #19 |
 
 ### 3.4 Datas
 
 | Campo | Tipo | Obrigatório | Descrição |
 |---|---|---|---|
-| `data_publicacao` | Date | Não | Data real em que o texto foi publicado, quando a fonte a informa. Nunca é substituída por outra data |
+| `data_publicacao` | Date | Não | Data real em que o texto foi publicado, quando a fonte a informa (ex.: `review_date` do BPSAD). O TweetSentBR não possui data em nenhum registro. Nunca é substituída por outra data |
 | `data_processamento` | Date | Sim | Data e hora em que o texto foi classificado e gravado. Preenchida pelo próprio sistema, por isso sempre existe |
 
 ### 3.5 Metadados adicionais
 
 | Campo | Tipo | Obrigatório | Descrição |
 |---|---|---|---|
-| `metadados` | Object | Não | Informações extras específicas de cada fonte (ex.: categoria ou tema do texto). O conteúdo varia conforme a fonte. Não deve conter dados que identifiquem o autor (ver seção 2.1) |
+| `metadados` | Object | Não | Informações extras específicas de cada fonte. O importador coloca aqui, como texto, as colunas do arquivo que não correspondem a nenhum outro campo (ex.: `category` do BPSAD). O conteúdo varia conforme a fonte. Não deve conter dados que identifiquem o autor (ver seção 2.1) |
 
 ## 4. Exemplos JSON
 
@@ -155,29 +159,36 @@ escritas como `{ "$date": "..." }` para indicar que são do tipo `Date`, e não
 texto. Os mesmos exemplos estão na pasta [`exemplos/`](exemplos/) e podem ser
 importados no MongoDB Compass (*ADD DATA → Import JSON or CSV file*).
 
-Os nomes de fontes, os textos, as probabilidades e o nome do modelo baseline
-(`baseline-tfidf-logreg`) são ilustrativos; as fontes reais serão definidas na
-issue #3, e o nome e a versão dos modelos, na issue #16. O campo `_id` não aparece porque é gerado pelo MongoDB
-no momento da gravação.
+Os registros do BPSAD (seções 4.1 e 4.2) seguem a amostra sintética do projeto
+([`tests/fixtures/bpsad_sample.csv`](../../tests/fixtures/bpsad_sample.csv)).
+O texto e o `id_origem` do TweetSentBR (4.3) são sintéticos, seguindo o formato
+gerado pelo importador, para não redistribuir textos reais de usuários. O
+documento mínimo (4.4) é inteiramente ilustrativo. As probabilidades, o `texto_tratado` e o nome do modelo baseline
+(`baseline-tfidf-logreg`) são ilustrativos; o nome e a versão dos modelos
+serão definidos na issue #16. O campo `_id` não aparece porque é gerado pelo
+MongoDB no momento da gravação.
 
-### 4.1 Documento completo (BERTweet)
+### 4.1 Documento completo (BPSAD + BERTweet)
 
-Fonte com data de publicação e rótulo original, classificada pelo BERTweet
+Avaliação do BPSAD com nota, data e categoria, classificada pelo BERTweet
 ([`exemplos/analise-completa.json`](exemplos/analise-completa.json)).
-Não possui `texto_tratado`, pois o BERTweet usa tokenização própria:
+A nota `5` fica preservada em `rotulo_original` e convertida em
+`rotulo_padronizado`. Não possui `texto_tratado`, pois o BERTweet usa
+tokenização própria:
 
 ```json
 {
-  "id_origem": "a_001",
-  "fonte": "exemplo_dataset_rotulado",
-  "texto_original": "A programação da conferência foi ótima e trouxe inovação ao país!",
+  "id_origem": "bpsad_syn_001",
+  "fonte": "b2w",
+  "texto_original": "Excelente produto! A entrega foi rápida e superou minhas expectativas na conferência.",
   "sentimento": "positivo",
   "probabilidades": { "positivo": 0.91, "negativo": 0.03, "neutro": 0.06 },
   "modelo": { "nome": "pysentimiento/bertweet-pt-sentiment", "versao": "a-definir" },
-  "rotulo_original": "positivo",
+  "rotulo_original": "5",
+  "rotulo_padronizado": "positivo",
   "data_publicacao": { "$date": "2026-10-01T00:00:00Z" },
-  "data_processamento": { "$date": "2026-10-29T14:30:00Z" },
-  "metadados": { "categoria": "eventos" }
+  "data_processamento": { "$date": "2026-11-03T14:30:00Z" },
+  "metadados": { "category": "eletronicos" }
 }
 ```
 
@@ -189,20 +200,42 @@ pré-processamento externo, por isso `texto_tratado` aparece
 
 ```json
 {
-  "id_origem": "a_002",
-  "fonte": "exemplo_dataset_rotulado",
-  "texto_original": "O relatório técnico sobre inteligência artificial foi publicado hoje.",
-  "texto_tratado": "relatório técnico inteligência artificial publicado hoje",
+  "id_origem": "bpsad_syn_003",
+  "fonte": "olist",
+  "texto_original": "O item cumpre o básico esperado pelo preço, sem grandes destaques.",
+  "texto_tratado": "item cumpre básico esperado preço grandes destaques",
   "sentimento": "neutro",
   "probabilidades": { "positivo": 0.12, "negativo": 0.08, "neutro": 0.80 },
   "modelo": { "nome": "baseline-tfidf-logreg", "versao": "a-definir" },
-  "rotulo_original": "neutro",
+  "rotulo_original": "3",
+  "rotulo_padronizado": "neutro",
   "data_publicacao": { "$date": "2026-10-03T00:00:00Z" },
-  "data_processamento": { "$date": "2026-10-29T14:31:00Z" }
+  "data_processamento": { "$date": "2026-11-03T14:31:00Z" },
+  "metadados": { "category": "utilidades" }
 }
 ```
 
-### 4.3 Documento mínimo
+### 4.3 Documento do TweetSentBR (sem data)
+
+O TweetSentBR não possui identificador original nem data de publicação. O
+`id_origem` é gerado pelo importador e `data_publicacao` é omitida
+([`exemplos/analise-tweetsentbr.json`](exemplos/analise-tweetsentbr.json)):
+
+```json
+{
+  "id_origem": "TweetSentBR_000001_0a1b2c3d4e5f",
+  "fonte": "TweetSentBR",
+  "texto_original": "Adorei o programa de hoje, muito divertido!",
+  "sentimento": "positivo",
+  "probabilidades": { "positivo": 0.88, "negativo": 0.02, "neutro": 0.10 },
+  "modelo": { "nome": "pysentimiento/bertweet-pt-sentiment", "versao": "a-definir" },
+  "rotulo_original": "positivo",
+  "rotulo_padronizado": "positivo",
+  "data_processamento": { "$date": "2026-11-03T14:32:00Z" }
+}
+```
+
+### 4.4 Documento mínimo
 
 Fonte sem data de publicação e sem rótulo, apenas com os campos obrigatórios
 ([`exemplos/analise-minima.json`](exemplos/analise-minima.json)):
@@ -218,7 +251,7 @@ Fonte sem data de publicação e sem rótulo, apenas com os campos obrigatórios
 }
 ```
 
-### 4.4 Documentos inválidos
+### 4.5 Documentos inválidos
 
 Exemplos que **não** obedecem ao esquema e devem ser recusados pela
 Persistência quando ela for implementada na Sprint 4
@@ -233,29 +266,35 @@ Persistência quando ela for implementada na Sprint 4
 | Probabilidade fora do intervalo | `"positivo": 1.7` | Seção 3.3 (valor entre 0 e 1) |
 | Modelo sem nome | `"modelo": { "versao": "1.0" }` | Seção 3.3 (`modelo.nome` obrigatório) |
 | Modelo como texto | `"modelo": "pysentimiento/bertweet-pt-sentiment"` | Seção 3.3 (`modelo` é um objeto) |
+| Rótulo padronizado na sigla do importador | `"rotulo_padronizado": "POS"` | Seção 3.3 (convertido para `positivo`, `negativo` ou `neutro`) |
 
-### 4.5 Correspondência com os dados de entrada
+### 4.6 Correspondência com os dados de entrada
 
-O contrato de registros da issue #3 entrega os campos abaixo, que são
-convertidos da seguinte forma:
+O importador (`src/processamento/aquisicao/`, issues #1 e #2) entrega cada
+registro com os campos abaixo, que a Persistência converte da seguinte forma:
 
-| Campo de entrada (#3) | Campo no MongoDB | Observação |
+| Campo entregue pelo importador | Campo no MongoDB | Conversão |
 |---|---|---|
-| `id_origem` | `id_origem` | |
-| `texto` | `texto_original` | |
-| `fonte` | `fonte` | |
-| rótulo original, quando houver | `rotulo_original` | Rótulo humano, não a previsão do modelo. Omitido se a fonte não tiver rótulo |
-| `data_publicacao`, quando existir | `data_publicacao` | Convertida de texto para `Date`. Omitida se a fonte não tiver data |
+| `id_origem` | `id_origem` | Nenhuma |
+| `texto_original` | `texto_original` | Nenhuma |
+| `fonte` | `fonte` | Nenhuma |
+| `rotulo_original` | `rotulo_original` | Nenhuma. Omitido quando `None` |
+| `rotulo_padronizado` (`POS`, `NEG`, `NEU`) | `rotulo_padronizado` | Convertido para `positivo`, `negativo` ou `neutro` com `converter_rotulo_para_sentia()`. Omitido quando `None` |
+| `data_publicacao` (texto, ex.: `2026-10-01`) | `data_publicacao` | Convertida para `Date` em UTC. Omitida quando `None` |
+| `metadados` | `metadados` | Nenhuma. Omitido quando o importador não o entrega |
 
-O CSV usado nos testes da issue #4 (colunas `id`, `texto`, `sentimento`,
-`fonte`, `data`) segue a mesma correspondência: `id` → `id_origem`,
-`sentimento` → `rotulo_original` e `data` → `data_publicacao`.
+O importador aceita nomes alternativos de colunas e os converte antes da
+Persistência. Por exemplo, no CSV padrão `id` → `id_origem`, `texto` →
+`texto_original`, `rotulo` ou `sentimento` → `rotulo_original` e `data` →
+`data_publicacao`; no BPSAD, `review_id` → `id_origem`, `review_text` →
+`texto_original`, `rating` → `rotulo_original`, `dataset` → `fonte` e
+`review_date` → `data_publicacao`.
 
 Os demais campos são preenchidos pelo sistema: `sentimento`,
 `probabilidades` e `modelo` pela Classificação (issues #9 e #16), e
 `data_processamento` pela Persistência.
 
-### 4.6 Consultas de exemplo
+### 4.7 Consultas de exemplo
 
 Consultas que a API deverá fazer para atender ao dashboard. Os filtros são
 aplicados no próprio banco, conforme a meta de desempenho da arquitetura.
@@ -274,7 +313,9 @@ aplicados no próprio banco, conforme a meta de desempenho da arquitetura.
 No filtro por período de publicação, documentos sem `data_publicacao` **não
 aparecem no resultado**, pois não há data real para compará-los. Recomenda-se
 que o dashboard informe isso ao usuário (ex.: "N textos sem data de publicação
-não foram incluídos").
+não foram incluídos").  Como nenhum registro do TweetSentBR tem data, o filtro
+por período de publicação não retorna nenhum tweet; a data usada por padrão
+no dashboard (RF11) ainda precisa ser decidida pela equipe e pela Product Owner.
 
 Contagem por sentimento, usada no gráfico de distribuição do dashboard:
 
@@ -302,7 +343,7 @@ analises = colecao.find(filtro)
 
 ## 5. Índices
 
-Índices aceleram as consultas da seção 4.6 e garantem a unicidade dos textos.
+Índices aceleram as consultas da seção 4.7 e garantem a unicidade dos textos.
 
 | Nome | Campos | Tipo | Motivo |
 |---|---|---|---|

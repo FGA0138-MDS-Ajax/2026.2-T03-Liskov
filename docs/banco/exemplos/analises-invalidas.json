@@ -54,5 +54,15 @@
     "sentimento": "neutro",
     "modelo": "pysentimiento/bertweet-pt-sentiment",
     "data_processamento": { "$date": "2026-10-29T14:30:00Z" }
+  },
+  {
+    "id_origem": "inv_008",
+    "fonte": "exemplo_coleta",
+    "texto_original": "Rótulo padronizado na sigla do importador.",
+    "sentimento": "positivo",
+    "modelo": { "nome": "pysentimiento/bertweet-pt-sentiment" },
+    "rotulo_original": "5",
+    "rotulo_padronizado": "POS",
+    "data_processamento": { "$date": "2026-10-29T14:30:00Z" }
   }
 ]
