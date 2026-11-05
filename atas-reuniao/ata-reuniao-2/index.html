@@ -1,0 +1,1132 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentação do projeto SentIA - Grupo Liskov T03 - MDS UnB/FGA">
+      
+      
+      
+      
+        <link rel="prev" href="../ata-reuniao-1/">
+      
+      
+        <link rel="next" href="../../instrucoes/instrucoes/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Ata 2 - SentIA - Análise de Sentimentos</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ata-de-reuniao-02-daily-e-alinhamento-tecnico-do-sentia" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href="../.." title="SentIA - Análise de Sentimentos" class="md-header__button md-logo" aria-label="SentIA - Análise de Sentimentos" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SentIA - Análise de Sentimentos
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Ata 2
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SentIA - Análise de Sentimentos" class="md-nav__button md-logo" aria-label="SentIA - Análise de Sentimentos" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SentIA - Análise de Sentimentos
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Atas de Reunião
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Atas de Reunião
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ata-reuniao-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ata 1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ata 2
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ata 2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#informacoes-gerais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Informações gerais
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-objetivo-da-reuniao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Objetivo da reunião
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-andamento-e-assuntos-discutidos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Andamento e assuntos discutidos
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Andamento e assuntos discutidos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-acompanhamento-das-issues-e-do-banco-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1. Acompanhamento das issues e do banco de dados
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-ponto-de-controle-e-inspecao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2. Ponto de controle e inspeção
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-aquisicao-dos-dados-treinamento-e-avaliacao-do-modelo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3. Aquisição dos dados, treinamento e avaliação do modelo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-esclarecimento-do-escopo-funcional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4. Esclarecimento do escopo funcional
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-proposta-de-consulta-externa-e-reaproveitamento-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5. Proposta de consulta externa e reaproveitamento de dados
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26-interface-prototipacao-e-filtros" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6. Interface, prototipação e filtros
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#27-integracao-e-organizacao-do-trabalho" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.7. Integração e organização do trabalho
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#28-prazos-e-disponibilidade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.8. Prazos e disponibilidade
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-encaminhamentos-e-responsabilidades" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Encaminhamentos e responsabilidades
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-decisoes-e-consensos-de-trabalho" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Decisões e consensos de trabalho
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-riscos-impedimentos-e-pontos-a-confirmar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Riscos, impedimentos e pontos a confirmar
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-proximos-acompanhamentos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Próximos acompanhamentos
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Instruções
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Instruções
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../instrucoes/instrucoes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MkDocs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#informacoes-gerais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Informações gerais
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-objetivo-da-reuniao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Objetivo da reunião
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-andamento-e-assuntos-discutidos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Andamento e assuntos discutidos
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Andamento e assuntos discutidos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-acompanhamento-das-issues-e-do-banco-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1. Acompanhamento das issues e do banco de dados
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-ponto-de-controle-e-inspecao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2. Ponto de controle e inspeção
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-aquisicao-dos-dados-treinamento-e-avaliacao-do-modelo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3. Aquisição dos dados, treinamento e avaliação do modelo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-esclarecimento-do-escopo-funcional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4. Esclarecimento do escopo funcional
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-proposta-de-consulta-externa-e-reaproveitamento-de-dados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5. Proposta de consulta externa e reaproveitamento de dados
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26-interface-prototipacao-e-filtros" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6. Interface, prototipação e filtros
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#27-integracao-e-organizacao-do-trabalho" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.7. Integração e organização do trabalho
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#28-prazos-e-disponibilidade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.8. Prazos e disponibilidade
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-encaminhamentos-e-responsabilidades" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Encaminhamentos e responsabilidades
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-decisoes-e-consensos-de-trabalho" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Decisões e consensos de trabalho
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-riscos-impedimentos-e-pontos-a-confirmar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Riscos, impedimentos e pontos a confirmar
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-proximos-acompanhamentos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Próximos acompanhamentos
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="ata-de-reuniao-02-daily-e-alinhamento-tecnico-do-sentia">Ata de Reunião 02 — Daily e alinhamento técnico do SentIA</h1>
+<h2 id="informacoes-gerais">Informações gerais</h2>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Informação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Projeto</td>
+<td>SentIA — Análise de Sentimentos</td>
+</tr>
+<tr>
+<td>Equipe</td>
+<td>Liskov — Turma 03</td>
+</tr>
+<tr>
+<td>Disciplina</td>
+<td>Métodos de Desenvolvimento de Software (MDS) — UnB/FGA, 2026.2</td>
+</tr>
+<tr>
+<td>Data</td>
+<td>04/11/2026 (quarta-feira)</td>
+</tr>
+<tr>
+<td>Horário</td>
+<td>18h00 às 19h15 (horário de Brasília)</td>
+</tr>
+<tr>
+<td>Duração da gravação</td>
+<td>Aproximadamente 59 minutos e 21 segundos</td>
+</tr>
+<tr>
+<td>Plataforma</td>
+<td>Microsoft Teams</td>
+</tr>
+<tr>
+<td>Condução</td>
+<td>Renato Rodrigues Campos Filho (Scrum Master)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Participantes identificados por falas na transcrição:</strong> Renato Rodrigues Campos Filho, Breno Weber Rabelo, Julia Neiva Lima, Maria Eduarda de Jezus Guimaraes, Juliana Silva Teixeira e Hellen Clicia Barros Rego.</p>
+<p><strong>Observação:</strong> Gabriel Souza de Matos e Ricardo Eduardo da Silva Leal foram mencionados e parecem ter interagido por outros meios durante a chamada, mas <strong>não possuem falas identificadas nominalmente no arquivo VTT</strong>. Sua presença deve ser confirmada antes de atualizar a lista oficial. Maria Eduarda entrou após o início da reunião, e Julia saiu antes do encerramento.</p>
+<h2 id="1-objetivo-da-reuniao">1. Objetivo da reunião</h2>
+<p>Acompanhar o andamento do desenvolvimento do SentIA, identificar dependências entre as frentes de trabalho e preparar os próximos pontos de controle e apresentações. A reunião também tratou de uma possível ampliação do fluxo de aquisição de dados: <strong>pesquisar publicações por palavra-chave, consultando o banco existente e utilizando uma API externa quando necessário</strong>.</p>
+<h2 id="2-andamento-e-assuntos-discutidos">2. Andamento e assuntos discutidos</h2>
+<h3 id="21-acompanhamento-das-issues-e-do-banco-de-dados">2.1. Acompanhamento das issues e do banco de dados</h3>
+<p>Breno comentou que algumas atividades do GitHub já poderiam começar sem depender da conclusão das demais frentes. Indicou a <strong>issue #12</strong> como iniciável e sugeriu que Julia verificasse a viabilidade de começar a <strong>issue #20</strong>, sem garantir que todas as suas dependências estivessem resolvidas.</p>
+<p>Julia confirmou sua atuação no banco de dados. O grupo avaliou que a <strong>modelagem e a estrutura inicial do banco</strong> poderiam ser adiantadas enquanto se aguardavam dados e artefatos de integração dos demais componentes. Breno mencionou a dependência de um arquivo CSV a ser finalizado por Ricardo, no contexto então discutido.</p>
+<h3 id="22-ponto-de-controle-e-inspecao">2.2. Ponto de controle e inspeção</h3>
+<p>A pedido de Renato, Maria Eduarda compartilhou sua compreensão das avaliações da disciplina:</p>
+<ul>
+<li><strong>Ponto de controle:</strong> apresentação do progresso do projeto, incluindo artefatos já desenvolvidos, demonstração do sistema quando possível, andamento do Scrum e situação do cronograma;</li>
+<li><strong>Inspeção:</strong> avaliação por formulário, com observações sobre o que está adequado e o que precisa ser melhorado.</li>
+</ul>
+<p>Maria Eduarda ressaltou que estava explicando com base em sua lembrança de experiências anteriores. Portanto, detalhes como a escala de notas e as exigências de demonstração <strong>não foram confirmados como regras oficiais</strong> durante a reunião.</p>
+<p>A equipe destacou a necessidade de preparar entregáveis para as apresentações mencionadas para a <strong>segunda-feira e a quarta-feira seguintes</strong>, com preferência por ter material apresentável já na segunda-feira. As datas de calendário não constam da transcrição.</p>
+<h3 id="23-aquisicao-dos-dados-treinamento-e-avaliacao-do-modelo">2.3. Aquisição dos dados, treinamento e avaliação do modelo</h3>
+<p>Renato relatou resultados de uma sessão de trabalho anterior (<em>war room</em>) com Breno e Gabriel, na qual avançaram na obtenção e organização de datasets. A etapa seguinte seria garantir que os dados chegassem corretamente ao modelo e aferir a qualidade de suas classificações.</p>
+<p>A discussão diferenciou duas finalidades dos dados:</p>
+<ol>
+<li><strong>Treinamento e validação:</strong> manter datasets disponíveis para desenvolver e medir o desempenho do classificador;</li>
+<li><strong>Uso da aplicação:</strong> consultar publicações relacionadas a um assunto pesquisado pelo usuário e apresentar a distribuição dos sentimentos.</li>
+</ol>
+<p>Foram mencionados datasets de tweets e de avaliações de produtos, bem como o uso do <strong>BERTweet</strong> (nome citado na discussão sobre o modelo). Breno alertou que resultados obtidos sobre dados próximos dos utilizados no treinamento podem não demonstrar generalização adequada, propondo validação com dados de outra origem. <strong>Nenhum percentual definitivo de acurácia foi aprovado na reunião.</strong></p>
+<h3 id="24-esclarecimento-do-escopo-funcional">2.4. Esclarecimento do escopo funcional</h3>
+<p>Surgiu uma divergência sobre o produto: uma proposta era permitir que o usuário digitasse um texto isolado para receber sua classificação; outra era analisar o sentimento de <strong>publicações de redes sociais relativas a determinado tema</strong>.</p>
+<p>Renato reforçou que o objetivo do SentIA é a <strong>análise de sentimentos em redes sociais</strong>, e não apenas a classificação pontual de frases digitadas manualmente. Exemplificou uma busca por palavra-chave ou assunto, seguida da apresentação de menções positivas, negativas e neutras. Também defendeu manter, quando viável, a visualização dos resultados por período.</p>
+<p>Breno observou que datasets estáticos podem não conter publicações sobre todos os assuntos pesquisados, o que motivou a discussão sobre novas consultas a fontes externas.</p>
+<h3 id="25-proposta-de-consulta-externa-e-reaproveitamento-de-dados">2.5. Proposta de consulta externa e reaproveitamento de dados</h3>
+<p>A equipe debateu uma evolução do fluxo do SentIA:</p>
+<ol>
+<li>Receber do usuário um <strong>termo ou palavra-chave</strong>;</li>
+<li>Consultar inicialmente os registros armazenados no <strong>MongoDB</strong>;</li>
+<li>Quando necessário, buscar novas publicações por meio de <strong>API externa</strong>;</li>
+<li>Encaminhar os textos obtidos para o pipeline de tratamento e classificação;</li>
+<li>Salvar as novas publicações/resultados, permitindo reutilizá-los em consultas posteriores;</li>
+<li>Apresentar os resultados no dashboard, com distribuição de sentimentos e filtros aplicáveis.</li>
+</ol>
+<p>Breno demonstrou opções de uma ferramenta externa de consulta de tweets, inclusive a possibilidade de pesquisa por tendências ou termos, e explicou que seria preciso confirmar o comportamento da API. Também mencionou créditos de uso já adquiridos e o custo associado a novas consultas. A ideia de contribuição financeira para comprar créditos adicionais foi <strong>levantada como possibilidade, não aprovada como despesa do grupo</strong>.</p>
+<p>Foi considerada a realização de buscas antecipadas para a apresentação, a fim de evitar consumo excessivo de créditos em demonstrações. O grupo concordou que o banco de dados continuaria útil para persistência e redução da repetição de consultas pagas.</p>
+<p><strong>Estado da definição:</strong> ao final, o encaminhamento foi <strong>manter o projeto e acrescentar essa nova entrada/consulta externa</strong>, sem remover o banco ou os datasets de treinamento. A API específica, os limites de consulta, a estratégia de cache e as alterações formais dos requisitos permaneceram dependentes de implementação e validação.</p>
+<h3 id="26-interface-prototipacao-e-filtros">2.6. Interface, prototipação e filtros</h3>
+<p>Juliana informou que ela e Hellen estavam desenvolvendo o protótipo no <strong>Figma</strong>. Hellen já havia elaborado parte significativa do material, e Juliana planejava avançar na sua seção. Hellen estimou concluir um protótipo mais fiel até o fim da semana.</p>
+<p>Foram discutidos elementos para a interface:</p>
+<ul>
+<li><strong>Campo de busca</strong> por assunto ou palavra-chave;</li>
+<li><strong>Gráficos de distribuição</strong> de sentimentos;</li>
+<li>Possível <strong>evolução temporal</strong> das menções e filtro por data, quando a fonte oferecer metadados suficientes;</li>
+<li><strong>Filtros ou sugestões de temas</strong>, para ajudar a demonstrar a utilização da plataforma.</li>
+</ul>
+<p>Renato sugeriu que o frontend fosse implementado <strong>com dados simulados (<em>mockados</em>)</strong>, mesmo sem o backend e o modelo concluídos, para viabilizar testes e uma apresentação navegável. Juliana confirmou que havia anotado essa orientação e que alinharia os próximos passos com Hellen.</p>
+<h3 id="27-integracao-e-organizacao-do-trabalho">2.7. Integração e organização do trabalho</h3>
+<p>A equipe discutiu a necessidade de integrar as frentes de aquisição, modelo, banco de dados, API e dashboard. Renato destacou que a integração não deveria ficar exclusivamente sob responsabilidade do frontend, devendo envolver integrantes de cada componente.</p>
+<p>Foram citadas issues de integração existentes, mas a reunião identificou a necessidade de <strong>ajustar o backlog para incluir o novo fluxo de consulta externa e reaproveitamento dos dados</strong>. Renato assumiu a articulação da integração final com apoio das demais frentes.</p>
+<h3 id="28-prazos-e-disponibilidade">2.8. Prazos e disponibilidade</h3>
+<p>Foi solicitado que <strong>Gabriel e Ricardo disponibilizassem o modelo até sexta-feira, preferencialmente à tarde</strong>, para permitir testes e integração entre quinta e sexta-feira, conforme disponibilidade dos envolvidos.</p>
+<p>A disponibilidade para uma chamada de integração na sexta-feira não ficou totalmente fechada: Breno relatou que só conseguiria participar tarde da noite, e Renato mencionou a possibilidade de começar com os integrantes disponíveis e incorporar outros posteriormente. A presença de Gabriel e Ricardo nesse encontro deveria ser confirmada.</p>
+<h2 id="3-encaminhamentos-e-responsabilidades">3. Encaminhamentos e responsabilidades</h2>
+<table>
+<thead>
+<tr>
+<th>Encaminhamento</th>
+<th>Responsável(eis)</th>
+<th>Prazo / situação registrada</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Avaliar e iniciar a issue #12; verificar dependências da issue #20</td>
+<td>Julia</td>
+<td>Início conforme viabilidade</td>
+</tr>
+<tr>
+<td>Avançar na modelagem e estrutura do MongoDB, mantendo preparação para receber dados</td>
+<td>Julia e Maria Eduarda</td>
+<td>Dar continuidade imediatamente</td>
+</tr>
+<tr>
+<td>Entregar o modelo de classificação em versão adequada para integração e testes</td>
+<td>Gabriel e Ricardo</td>
+<td><strong>Até sexta-feira</strong>, preferencialmente à tarde</td>
+</tr>
+<tr>
+<td>Documentar o código do modelo e as interfaces necessárias à integração</td>
+<td>Gabriel e Ricardo</td>
+<td>Junto à entrega do modelo</td>
+</tr>
+<tr>
+<td>Implementar/adaptar a obtenção de publicações por termo de pesquisa via fonte externa</td>
+<td>Breno</td>
+<td>Iniciar a adaptação; prazo exato não fixado</td>
+</tr>
+<tr>
+<td>Articular uma sessão de testes e integração do modelo e da aquisição</td>
+<td>Renato, com Breno, Ricardo e demais participantes disponíveis</td>
+<td>Entre quinta e sexta-feira, conforme entrega e disponibilidade</td>
+</tr>
+<tr>
+<td>Continuar o protótipo no Figma e iniciar a interface funcional</td>
+<td>Hellen e Juliana</td>
+<td>Avançar até o fim da semana</td>
+</tr>
+<tr>
+<td>Criar dados simulados para demonstrar e testar o frontend independentemente da integração</td>
+<td>Hellen e Juliana</td>
+<td>Próxima versão apresentável</td>
+</tr>
+<tr>
+<td>Atualizar/refinar o backlog para abranger a nova forma de entrada e consulta</td>
+<td>Hellen (Product Owner), com apoio de Renato e equipe</td>
+<td>Após alinhamento dos requisitos</td>
+</tr>
+<tr>
+<td>Organizar e divulgar as issues disponíveis, registros e materiais da reunião</td>
+<td>Renato</td>
+<td>Compartilhamento prometido ao grupo</td>
+</tr>
+<tr>
+<td>Preparar material demonstrável e andamento do Scrum para o ponto de controle</td>
+<td>Toda a equipe</td>
+<td>Preferencialmente até a segunda-feira mencionada</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-decisoes-e-consensos-de-trabalho">4. Decisões e consensos de trabalho</h2>
+<ul>
+<li><strong>Preservar o propósito do produto:</strong> analisar o sentimento de publicações de redes sociais relacionadas a temas ou palavras-chave.</li>
+<li><strong>Não substituir os datasets de treinamento/avaliação</strong> pela nova busca de publicações; os dois usos têm finalidades diferentes.</li>
+<li><strong>Manter o banco de dados</strong> e aproveitar consultas anteriores para evitar buscas externas repetidas quando possível.</li>
+<li><strong>Acrescentar ao planejamento</strong> o fluxo de pesquisa por palavra-chave, sujeito a validação técnica e ao refinamento do backlog.</li>
+<li><strong>Desacoplar o progresso do frontend</strong> da conclusão do modelo, utilizando dados simulados para prototipação, testes e apresentações.</li>
+<li><strong>Priorizar a entrega do modelo e o início dos testes integrados</strong> antes do próximo ponto de controle.</li>
+</ul>
+<h2 id="5-riscos-impedimentos-e-pontos-a-confirmar">5. Riscos, impedimentos e pontos a confirmar</h2>
+<table>
+<thead>
+<tr>
+<th>Ponto</th>
+<th>Observação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fonte externa</td>
+<td>Confirmar API, autenticação, custos, limites de uso e viabilidade da pesquisa por termos/tendências</td>
+</tr>
+<tr>
+<td>Metadados temporais</td>
+<td>Nem todos os datasets discutidos possuem data; o filtro por período dependerá da origem dos dados</td>
+</tr>
+<tr>
+<td>Validação do modelo</td>
+<td>Definir conjunto de teste independente e registrar métricas para evitar uma avaliação enviesada</td>
+</tr>
+<tr>
+<td>Integração</td>
+<td>Delimitar interfaces entre API, modelo, aquisição e MongoDB, incluindo tratamento de consultas sem resultados</td>
+</tr>
+<tr>
+<td>Banco de dados</td>
+<td>Definir como identificar, armazenar e reutilizar publicações obtidas em pesquisas anteriores</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>Concluir protótipo e implementar telas com dados simulados antes da integração definitiva</td>
+</tr>
+<tr>
+<td>Planejamento</td>
+<td>Revisar backlog, critérios de aceitação, estimativas e impacto da busca externa sobre o escopo</td>
+</tr>
+<tr>
+<td>Calendário</td>
+<td>Confirmar as datas dos pontos de controle e o horário da sessão de integração</td>
+</tr>
+<tr>
+<td>Participação</td>
+<td>Confirmar presença de Gabriel e Ricardo e as disponibilidades efetivas para a integração</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-proximos-acompanhamentos">6. Próximos acompanhamentos</h2>
+<p>O acompanhamento seguinte deve verificar a disponibilidade do modelo para testes, o progresso da nova aquisição por API, a preparação do MongoDB, a conclusão do protótipo e a apresentação do frontend com dados simulados. Também deverá ser verificado se os requisitos e o backlog foram atualizados para refletir o fluxo discutido.</p>
+<hr />
+<p><strong>Fonte:</strong> transcrição automática em formato WebVTT, arquivo “Daily - Liskov.vtt”, fornecido pela equipe.</p>
+<p><strong>Nota editorial:</strong> nomes de ferramentas e trechos técnicos foram normalizados apenas quando o contexto permitiu. A transcrição contém falas truncadas, palavras em inglês atribuídas incorretamente e intervenções sem identificação de participante. Por isso, propostas, hipóteses e prazos relativos não foram convertidos em decisões formais ou datas absolutas sem evidência suficiente.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+    
+  </body>
+</html>
