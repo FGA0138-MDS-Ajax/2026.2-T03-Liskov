@@ -1,2 +1,11 @@
 site/
 .venv/
+# Python
+__pycache__/
+*.pyc
+
+# Backups locais
+backup-issues-*.json
+
+# Script administrativo local
+atualizar_issues_sentia.py
