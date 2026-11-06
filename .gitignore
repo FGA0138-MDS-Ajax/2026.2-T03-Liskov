@@ -11,3 +11,7 @@ venv/
 htmlcov/
 data/
 models/*.pkl
+
+# Ambientes virtuais e modelos treinados locais
+.venv312/
+modelos/*.pkl
