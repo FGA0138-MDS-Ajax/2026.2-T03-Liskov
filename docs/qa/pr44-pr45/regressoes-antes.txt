@@ -1,0 +1,360 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-9.2.0, pluggy-1.7.0 -- <REPO>/.qa-pr44-pr45/venv/bin/python
+cachedir: .pytest_cache
+rootdir: <REPO>/.qa-pr44-pr45/cenario-a
+configfile: pytest.ini
+plugins: cov-7.1.0, anyio-4.16.0
+collecting ... collected 10 items
+
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_csv_aquisicao_classificacao_avaliacao_bson PASSED [ 10%]
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_rotulo_humano_nao_e_substituido_por_previsao PASSED [ 20%]
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_particao_agrupa_duplicatas_e_exclui_conflitos PASSED [ 30%]
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_pipeline_rejeita_identificacao_obrigatoria_invalida[None-id_origem] FAILED [ 40%]
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_pipeline_rejeita_identificacao_obrigatoria_invalida[None-fonte] FAILED [ 50%]
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_pipeline_rejeita_identificacao_obrigatoria_invalida[-id_origem] FAILED [ 60%]
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_pipeline_rejeita_identificacao_obrigatoria_invalida[-fonte] FAILED [ 70%]
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_pipeline_rejeita_sentimento_ausente[None] FAILED [ 80%]
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_pipeline_rejeita_sentimento_ausente[] FAILED [ 90%]
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_pipeline_aceita_data_calendario_prevista_no_contrato FAILED [100%]
+
+=================================== FAILURES ===================================
+___ test_pipeline_rejeita_identificacao_obrigatoria_invalida[None-id_origem] ___
+
+campo = 'id_origem', valor = None
+
+    @pytest.mark.parametrize('campo',['id_origem','fonte'])
+    @pytest.mark.parametrize('valor',[None,''])
+    def test_pipeline_rejeita_identificacao_obrigatoria_invalida(campo,valor):
+        r=reg(); r[campo]=valor
+>       with pytest.raises(ErroPipeline):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ErroPipeline
+
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py:103: Failed
+_____ test_pipeline_rejeita_identificacao_obrigatoria_invalida[None-fonte] _____
+
+campo = 'fonte', valor = None
+
+    @pytest.mark.parametrize('campo',['id_origem','fonte'])
+    @pytest.mark.parametrize('valor',[None,''])
+    def test_pipeline_rejeita_identificacao_obrigatoria_invalida(campo,valor):
+        r=reg(); r[campo]=valor
+>       with pytest.raises(ErroPipeline):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ErroPipeline
+
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py:103: Failed
+_____ test_pipeline_rejeita_identificacao_obrigatoria_invalida[-id_origem] _____
+
+campo = 'id_origem', valor = ''
+
+    @pytest.mark.parametrize('campo',['id_origem','fonte'])
+    @pytest.mark.parametrize('valor',[None,''])
+    def test_pipeline_rejeita_identificacao_obrigatoria_invalida(campo,valor):
+        r=reg(); r[campo]=valor
+>       with pytest.raises(ErroPipeline):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ErroPipeline
+
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py:103: Failed
+_______ test_pipeline_rejeita_identificacao_obrigatoria_invalida[-fonte] _______
+
+campo = 'fonte', valor = ''
+
+    @pytest.mark.parametrize('campo',['id_origem','fonte'])
+    @pytest.mark.parametrize('valor',[None,''])
+    def test_pipeline_rejeita_identificacao_obrigatoria_invalida(campo,valor):
+        r=reg(); r[campo]=valor
+>       with pytest.raises(ErroPipeline):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ErroPipeline
+
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py:103: Failed
+________________ test_pipeline_rejeita_sentimento_ausente[None] ________________
+
+sentimento = None
+
+    @pytest.mark.parametrize('sentimento',[None,''])
+    def test_pipeline_rejeita_sentimento_ausente(sentimento):
+        clf=ClassificadorSaida(); clf.sentimento=sentimento
+>       with pytest.raises(ErroPipeline):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ErroPipeline
+
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py:109: Failed
+__________________ test_pipeline_rejeita_sentimento_ausente[] __________________
+
+sentimento = ''
+
+    @pytest.mark.parametrize('sentimento',[None,''])
+    def test_pipeline_rejeita_sentimento_ausente(sentimento):
+        clf=ClassificadorSaida(); clf.sentimento=sentimento
+>       with pytest.raises(ErroPipeline):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ErroPipeline
+
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py:109: Failed
+__________ test_pipeline_aceita_data_calendario_prevista_no_contrato ___________
+
+self = <src.processamento.pipeline.PipelineClassificacao object at 0x7ff5d5bd8750>
+registros = [{'id_origem': 'syn', 'fonte': 'sintetica', 'texto_original': 'Texto', 'data_publicacao': '2026-10-01'}]
+indice_inicial = 1
+
+    def _processar_lote(
+        self, registros: list[dict[str, Any]], indice_inicial: int
+    ) -> list[dict[str, Any]]:
+        textos = []
+        for deslocamento, registro in enumerate(registros):
+            indice = indice_inicial + deslocamento
+            if not isinstance(registro, dict):
+                raise ErroPipeline(f"Registro {indice}: esperado um dicionário.")
+            texto = registro.get("texto_original")
+            if not isinstance(texto, str) or not texto.strip():
+                raise ErroPipeline(
+                    f"Registro {indice}: texto_original ausente ou vazio."
+                )
+            metadados = registro.get("metadados")
+            if metadados is not None and not isinstance(metadados, dict):
+                raise ErroPipeline(
+                    f"Registro {indice}: metadados precisam ser um dicion?rio."
+                )
+
+            textos.append(texto)
+
+        try:
+            previsoes = self.classificador.prever_com_probabilidades(textos)
+        except Exception as erro:
+            raise ErroPipeline(
+                f"Falha ao classificar o lote iniciado no registro {indice_inicial}."
+            ) from erro
+
+        if not isinstance(previsoes, list) or len(previsoes) != len(registros):
+            raise ErroPipeline(
+                "O classificador retornou quantidade de previsões diferente "
+                "da quantidade de registros."
+            )
+
+        resultados = []
+        nome_modelo = self.classificador.nome_modelo
+
+        for deslocamento, (registro, previsao) in enumerate(
+            zip(registros, previsoes)
+        ):
+            indice = indice_inicial + deslocamento
+
+            if not isinstance(previsao, dict):
+                raise ErroPipeline(
+                    f"Registro {indice}: previsão retornada em formato inválido."
+                )
+
+            if "sentimento" not in previsao or "probabilidades" not in previsao:
+                raise ErroPipeline(
+                    f"Registro {indice}: previsão sem sentimento ou probabilidades."
+                )
+
+            probabilidades = previsao["probabilidades"]
+            if not isinstance(probabilidades, dict):
+                raise ErroPipeline(
+                    f"Registro {indice}: probabilidades em formato inválido."
+                )
+
+            if set(probabilidades) != set(ROTULOS):
+                raise ErroPipeline(
+                    f"Registro {indice}: probabilidades devem conter "
+                    "positivo, negativo e neutro."
+                )
+
+            for rotulo in ROTULOS:
+                valor = probabilidades[rotulo]
+                if isinstance(valor, bool) or not isinstance(valor, (int, float)):
+                    raise ErroPipeline(
+                        f"Registro {indice}: probabilidade inv?lida para {rotulo}."
+                    )
+                try:
+                    finito = math.isfinite(float(valor))
+                except (OverflowError, TypeError, ValueError):
+                    finito = False
+                if not finito or not 0 <= valor <= 1:
+                    raise ErroPipeline(
+                        f"Registro {indice}: probabilidade fora do intervalo [0, 1]."
+                    )
+
+            if not math.isclose(
+                sum(probabilidades.values()), 1.0, rel_tol=0.0, abs_tol=1e-3
+            ):
+                raise ErroPipeline(
+                    f"Registro {indice}: soma das probabilidades deve ser 1."
+                )
+
+            try:
+                sentimento = converter_rotulo_para_sentia(
+                    previsao["sentimento"]
+                )
+                rotulo_padronizado = converter_rotulo_para_sentia(
+                    registro.get("rotulo_padronizado")
+                )
+>               data_publicacao = _normalizar_data_publicacao(
+                    registro.get("data_publicacao"), indice
+                )
+
+.qa-pr44-pr45/cenario-a/src/processamento/pipeline.py:164:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+valor = '2026-10-01', indice = 1
+
+    def _normalizar_data_publicacao(valor: Any, indice: int) -> datetime | None:
+        """Converte data ISO 8601 para datetime UTC; não inventa datas."""
+        if valor is None or (isinstance(valor, str) and not valor.strip()):
+            return None
+
+        if isinstance(valor, datetime):
+            data = valor
+        elif isinstance(valor, str):
+            try:
+                data = datetime.fromisoformat(valor.strip().replace("Z", "+00:00"))
+            except ValueError as erro:
+                raise ErroPipeline(
+                    f"Registro {indice}: data_publicacao não está em formato ISO 8601."
+                ) from erro
+        else:
+            raise ErroPipeline(
+                f"Registro {indice}: tipo inválido para data_publicacao."
+            )
+
+        if data.tzinfo is None:
+>           raise ErroPipeline(
+                f"Registro {indice}: data_publicacao precisa informar fuso horário."
+            )
+E           src.processamento.pipeline.ErroPipeline: Registro 1: data_publicacao precisa informar fuso horário.
+
+.qa-pr44-pr45/cenario-a/src/processamento/pipeline.py:36: ErroPipeline
+
+The above exception was the direct cause of the following exception:
+
+    def test_pipeline_aceita_data_calendario_prevista_no_contrato():
+        r=reg(); r['data_publicacao']='2026-10-01'
+>       docs=PipelineClassificacao(classificador=ClassificadorSaida()).processar_registros([r])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py:114:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.qa-pr44-pr45/cenario-a/src/processamento/pipeline.py:223: in processar_registros
+    resultados.extend(self._processar_lote(lote, indice_inicial))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.processamento.pipeline.PipelineClassificacao object at 0x7ff5d5bd8750>
+registros = [{'id_origem': 'syn', 'fonte': 'sintetica', 'texto_original': 'Texto', 'data_publicacao': '2026-10-01'}]
+indice_inicial = 1
+
+    def _processar_lote(
+        self, registros: list[dict[str, Any]], indice_inicial: int
+    ) -> list[dict[str, Any]]:
+        textos = []
+        for deslocamento, registro in enumerate(registros):
+            indice = indice_inicial + deslocamento
+            if not isinstance(registro, dict):
+                raise ErroPipeline(f"Registro {indice}: esperado um dicionário.")
+            texto = registro.get("texto_original")
+            if not isinstance(texto, str) or not texto.strip():
+                raise ErroPipeline(
+                    f"Registro {indice}: texto_original ausente ou vazio."
+                )
+            metadados = registro.get("metadados")
+            if metadados is not None and not isinstance(metadados, dict):
+                raise ErroPipeline(
+                    f"Registro {indice}: metadados precisam ser um dicion?rio."
+                )
+
+            textos.append(texto)
+
+        try:
+            previsoes = self.classificador.prever_com_probabilidades(textos)
+        except Exception as erro:
+            raise ErroPipeline(
+                f"Falha ao classificar o lote iniciado no registro {indice_inicial}."
+            ) from erro
+
+        if not isinstance(previsoes, list) or len(previsoes) != len(registros):
+            raise ErroPipeline(
+                "O classificador retornou quantidade de previsões diferente "
+                "da quantidade de registros."
+            )
+
+        resultados = []
+        nome_modelo = self.classificador.nome_modelo
+
+        for deslocamento, (registro, previsao) in enumerate(
+            zip(registros, previsoes)
+        ):
+            indice = indice_inicial + deslocamento
+
+            if not isinstance(previsao, dict):
+                raise ErroPipeline(
+                    f"Registro {indice}: previsão retornada em formato inválido."
+                )
+
+            if "sentimento" not in previsao or "probabilidades" not in previsao:
+                raise ErroPipeline(
+                    f"Registro {indice}: previsão sem sentimento ou probabilidades."
+                )
+
+            probabilidades = previsao["probabilidades"]
+            if not isinstance(probabilidades, dict):
+                raise ErroPipeline(
+                    f"Registro {indice}: probabilidades em formato inválido."
+                )
+
+            if set(probabilidades) != set(ROTULOS):
+                raise ErroPipeline(
+                    f"Registro {indice}: probabilidades devem conter "
+                    "positivo, negativo e neutro."
+                )
+
+            for rotulo in ROTULOS:
+                valor = probabilidades[rotulo]
+                if isinstance(valor, bool) or not isinstance(valor, (int, float)):
+                    raise ErroPipeline(
+                        f"Registro {indice}: probabilidade inv?lida para {rotulo}."
+                    )
+                try:
+                    finito = math.isfinite(float(valor))
+                except (OverflowError, TypeError, ValueError):
+                    finito = False
+                if not finito or not 0 <= valor <= 1:
+                    raise ErroPipeline(
+                        f"Registro {indice}: probabilidade fora do intervalo [0, 1]."
+                    )
+
+            if not math.isclose(
+                sum(probabilidades.values()), 1.0, rel_tol=0.0, abs_tol=1e-3
+            ):
+                raise ErroPipeline(
+                    f"Registro {indice}: soma das probabilidades deve ser 1."
+                )
+
+            try:
+                sentimento = converter_rotulo_para_sentia(
+                    previsao["sentimento"]
+                )
+                rotulo_padronizado = converter_rotulo_para_sentia(
+                    registro.get("rotulo_padronizado")
+                )
+                data_publicacao = _normalizar_data_publicacao(
+                    registro.get("data_publicacao"), indice
+                )
+            except ValueError as erro:
+>               raise ErroPipeline(str(erro)) from erro
+E               src.processamento.pipeline.ErroPipeline: Registro 1: data_publicacao precisa informar fuso horário.
+
+.qa-pr44-pr45/cenario-a/src/processamento/pipeline.py:168: ErroPipeline
+- generated xml file: <REPO>/.qa-pr44-pr45/evidencias/adicionais-a.xml -
+=========================== short test summary info ============================
+FAILED .qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_pipeline_rejeita_identificacao_obrigatoria_invalida[None-id_origem]
+FAILED .qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_pipeline_rejeita_identificacao_obrigatoria_invalida[None-fonte]
+FAILED .qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_pipeline_rejeita_identificacao_obrigatoria_invalida[-id_origem]
+FAILED .qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_pipeline_rejeita_identificacao_obrigatoria_invalida[-fonte]
+FAILED .qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_pipeline_rejeita_sentimento_ausente[None]
+FAILED .qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_pipeline_rejeita_sentimento_ausente[]
+FAILED .qa-pr44-pr45/cenario-a/tests/test_integracao_conjunta.py::test_pipeline_aceita_data_calendario_prevista_no_contrato
+========================= 7 failed, 3 passed in 1.22s ==========================

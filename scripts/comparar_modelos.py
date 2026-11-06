@@ -12,6 +12,7 @@ import unicodedata
 
 import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit
+from src.processamento.aquisicao.csv_importer import iterar_dataset_csv
 
 from src.processamento.classificacao import baseline
 from src.processamento.classificacao.avaliacao import avaliar
@@ -19,10 +20,27 @@ from src.processamento.classificacao.bertweet import ClassificadorBertweet
 from src.processamento.classificacao.rotulos import normalizar_rotulo
 
 
-def ler(caminho: str, coluna_rotulo: str = "sentimento"):
-    df = pd.read_csv(caminho).dropna(subset=["texto", coluna_rotulo])
-    textos = df["texto"].astype(str).tolist()
-    rotulos = [normalizar_rotulo(s) for s in df[coluna_rotulo]]
+def ler(caminho: str) -> tuple[list[str], list[str]]:
+    textos = []
+    rotulos = []
+
+    # Reutiliza o importador oficial, que reconhece SentIA e BPSAD
+    # O modo estrito para a leitura se houver um registro inválido.
+    for registro in iterar_dataset_csv(caminho, modo_estrito=True):
+        rotulo = registro["rotulo_padronizado"]
+
+        # A aquisição aceita dados sem rótulo, mas treino e avaliação
+        # precisam de uma resposta conhecida para cada texto.
+        if rotulo is None:
+            raise ValueError(
+                f"{caminho}: registro {registro['id_origem']} sem rótulo; "
+                "treino e avaliação exigem todos os registros rotulados"
+            )
+
+        # Extrai os campos do contrato retornado pelo importador
+        textos.append(registro["texto_original"])
+        rotulos.append(normalizar_rotulo(rotulo))
+
     return textos, rotulos
 
 
@@ -32,9 +50,8 @@ def normalizar_texto(texto: str) -> str:
 
 
 def dividir_tweetsentbr(caminho: str, semente: int = 42):
-    df = pd.read_csv(caminho).dropna(subset=["texto", "rotulo"]).copy()
-    df["texto"] = df["texto"].astype(str)
-    df["rotulo"] = df["rotulo"].map(normalizar_rotulo)
+    textos, rotulos = ler(caminho)
+    df = pd.DataFrame({"texto": textos, "rotulo": rotulos})
     df["_grupo"] = df["texto"].map(normalizar_texto)
 
     # Grupos com rótulos conflitantes não entram na avaliação.
@@ -51,7 +68,7 @@ def dividir_tweetsentbr(caminho: str, semente: int = 42):
     teste = df.iloc[indices_teste]
 
     print("\n=== Preparação do TweetSentBR ===")
-    print(f"Registros originais: {pd.read_csv(caminho).shape[0]}")
+    print(f"Registros originais: {len(textos)}")
     print(f"Grupos com rótulos conflitantes excluídos: {len(grupos_conflitantes)}")
     print(f"Registros utilizáveis: {len(df)}")
     print(f"Treino: {len(treino)} | Teste: {len(teste)}")
@@ -91,16 +108,16 @@ def main() -> None:
         x_treino, y_treino = ler(args.treino)
         x_teste, y_teste = ler(args.teste)
 
-    t = time.time()
+    t = time.perf_counter()
     modelo = baseline.criar_baseline().fit(x_treino, y_treino)
     previsto = modelo.predict(x_teste).tolist()
-    mostrar("Baseline TF-IDF + LogReg", avaliar(y_teste, previsto), time.time() - t)
+    mostrar("Baseline TF-IDF + LogReg", avaliar(y_teste, previsto), time.perf_counter() - t)
     baseline.salvar(modelo, args.saida_baseline)
 
     if not args.sem_bertweet:
-        t = time.time()
+        t = time.perf_counter()
         previsto = ClassificadorBertweet().prever(x_teste)
-        mostrar("BERTweet-PT (pysentimiento)", avaliar(y_teste, previsto), time.time() - t)
+        mostrar("BERTweet-PT (pysentimiento)", avaliar(y_teste, previsto), time.perf_counter() - t)
 
 
 if __name__ == "__main__":

@@ -70,3 +70,44 @@ def test_baseline_treina_e_preve_somente_rotulos_validos(tmp_path):
     assert set(pred) <= {"positivo", "negativo", "neutro"}
     baseline.salvar(modelo, tmp_path / "m.pkl")
     assert baseline.carregar(tmp_path / "m.pkl").predict(["otimo"]).shape == (1,)
+
+
+@pytest.mark.parametrize("entrada", [
+    {},
+    {"texto": "Adorei o atendimento!"},
+])
+def test_bertweet_rejeita_dicionarios_antes_da_inferencia(entrada):
+    from unittest.mock import Mock
+
+    # Permite verificar se o analisador chegou a ser chamado.
+    analisador = Mock()
+    classificador = ClassificadorBertweet(analisador=analisador)
+
+    # Dicionários devem ser rejeitados, inclusive quando estão vazios.
+    with pytest.raises(TypeError, match="dicionário"):
+        classificador.prever(entrada)
+
+    # A entrada inválida não deve chegar ao modelo.
+    analisador.predict.assert_not_called()
+
+
+def test_bertweet_configura_modelo_e_tamanho_do_lote(monkeypatch):
+    import sys
+    from unittest.mock import Mock
+
+    from src.processamento.classificacao.bertweet import NOME_MODELO
+
+    # Substitui o carregamento real pra não acabar baixando o modelo durante o teste
+    criar_analisador = Mock(return_value=AnalisadorFalso())
+    modulo_simulado = SimpleNamespace(create_analyzer=criar_analisador)
+    monkeypatch.setitem(sys.modules, "pysentimiento", modulo_simulado)
+
+    ClassificadorBertweet(tamanho_lote=7)
+
+    # Confere os parâmetros enviados à biblioteca ao criar o analisador
+    criar_analisador.assert_called_once_with(
+        task="sentiment",
+        lang="pt",
+        model_name=NOME_MODELO,
+        batch_size=7,
+    )

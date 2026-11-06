@@ -1,0 +1,8 @@
+Cinco conflitos reais em ambas as ordens:
+requirements.txt: manter joblib>=1.3,<2 de #45 e ML opcional em requirements-ml.txt, sem obrigar Torch/PySentimiento na suíte leve.
+bertweet.py: preservar Mapping, parâmetros explícitos model_name e batch_size de #45; inferência/lotes do #44 já equivalentes ao restante.
+avaliacao.py: preservar validação de coleções, tamanhos, tipos e normalização de #45; manter métricas e ordem das classes usadas pelo #44.
+test_classificacao.py: preservar a união dos testes, equivalente aos testes de #45 (inclui os 9 originais de #44 e mais 3).
+comparar_modelos.py: combinar ler() de #45 com normalizar_texto(), divisão por grupos e CLI --dataset de #44; dividir_tweetsentbr também lê via importador oficial e não dropna silencioso; usar perf_counter.
+rotulos.py e baseline.py são idênticos e não conflitaram.
+Pipeline, documentação #44, requirements-ml e testes de avaliação/leitura #45 preservados.

@@ -1,3 +1,5 @@
+> Atualização de 06/11/2026: o pipeline CSV está implementado e a homologação conjunta com as correções de validação está registrada em [QA dos PRs #44 e #45](qa/pr44-pr45/relatorio.md). Os números e pendências das seções abaixo são históricos da entrega inicial, não o estado atual da integração.
+
 # Classificação de sentimentos
 
 ## Componente e uso
