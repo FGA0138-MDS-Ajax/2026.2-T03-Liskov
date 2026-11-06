@@ -1,0 +1,11 @@
+Auto-merging requirements.txt
+CONFLICT (content): Merge conflict in requirements.txt
+Auto-merging scripts/comparar_modelos.py
+CONFLICT (add/add): Merge conflict in scripts/comparar_modelos.py
+Auto-merging src/processamento/classificacao/avaliacao.py
+CONFLICT (add/add): Merge conflict in src/processamento/classificacao/avaliacao.py
+Auto-merging src/processamento/classificacao/bertweet.py
+CONFLICT (add/add): Merge conflict in src/processamento/classificacao/bertweet.py
+Auto-merging tests/test_classificacao.py
+CONFLICT (add/add): Merge conflict in tests/test_classificacao.py
+Automatic merge failed; fix conflicts and then commit the result.

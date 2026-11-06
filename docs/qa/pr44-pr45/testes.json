@@ -1,0 +1,470 @@
+{
+  "runs": {
+    "pr44": [
+      {
+        "suite": "completa",
+        "returncode": 0,
+        "tests": 172,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 172
+      },
+      {
+        "suite": "classificacao",
+        "returncode": 0,
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 9
+      },
+      {
+        "suite": "avaliacao",
+        "status": "ARQUIVO AUSENTE"
+      },
+      {
+        "suite": "pipeline",
+        "returncode": 0,
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 18
+      },
+      {
+        "suite": "comparar",
+        "status": "ARQUIVO AUSENTE"
+      },
+      {
+        "suite": "cobertura",
+        "returncode": 0,
+        "tests": 172,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 172
+      }
+    ],
+    "pr45": [
+      {
+        "suite": "completa",
+        "returncode": 0,
+        "tests": 178,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 178
+      },
+      {
+        "suite": "classificacao",
+        "returncode": 0,
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 12
+      },
+      {
+        "suite": "avaliacao",
+        "returncode": 0,
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 16
+      },
+      {
+        "suite": "pipeline",
+        "status": "ARQUIVO AUSENTE"
+      },
+      {
+        "suite": "comparar",
+        "returncode": 0,
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 5
+      },
+      {
+        "suite": "cobertura",
+        "returncode": 0,
+        "tests": 178,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 178
+      }
+    ],
+    "conjunto-a": [
+      {
+        "suite": "completa",
+        "returncode": 0,
+        "tests": 196,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 196
+      },
+      {
+        "suite": "classificacao",
+        "returncode": 0,
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 12
+      },
+      {
+        "suite": "avaliacao",
+        "returncode": 0,
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 16
+      },
+      {
+        "suite": "pipeline",
+        "returncode": 0,
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 18
+      },
+      {
+        "suite": "comparar",
+        "returncode": 0,
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 5
+      },
+      {
+        "suite": "cobertura",
+        "returncode": 0,
+        "tests": 196,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 196
+      }
+    ],
+    "conjunto-b": [
+      {
+        "suite": "completa",
+        "returncode": 0,
+        "tests": 196,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 196
+      },
+      {
+        "suite": "classificacao",
+        "returncode": 0,
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 12
+      },
+      {
+        "suite": "avaliacao",
+        "returncode": 0,
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 16
+      },
+      {
+        "suite": "pipeline",
+        "returncode": 0,
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 18
+      },
+      {
+        "suite": "comparar",
+        "returncode": 0,
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 5
+      },
+      {
+        "suite": "cobertura",
+        "returncode": 0,
+        "tests": 196,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 196
+      }
+    ],
+    "corrigido-a": [
+      {
+        "suite": "completa",
+        "returncode": 0,
+        "tests": 206,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 206
+      },
+      {
+        "suite": "classificacao",
+        "returncode": 0,
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 12
+      },
+      {
+        "suite": "avaliacao",
+        "returncode": 0,
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 16
+      },
+      {
+        "suite": "pipeline",
+        "returncode": 0,
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 18
+      },
+      {
+        "suite": "comparar",
+        "returncode": 0,
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 5
+      },
+      {
+        "suite": "cobertura",
+        "returncode": 0,
+        "tests": 206,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 206
+      }
+    ],
+    "corrigido-b": [
+      {
+        "suite": "completa",
+        "returncode": 0,
+        "tests": 206,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 206
+      },
+      {
+        "suite": "classificacao",
+        "returncode": 0,
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 12
+      },
+      {
+        "suite": "avaliacao",
+        "returncode": 0,
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 16
+      },
+      {
+        "suite": "pipeline",
+        "returncode": 0,
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 18
+      },
+      {
+        "suite": "comparar",
+        "returncode": 0,
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 5
+      },
+      {
+        "suite": "cobertura",
+        "returncode": 0,
+        "tests": 206,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 206
+      }
+    ]
+  },
+  "coverage": {
+    "pr44": {
+      "total": 93.46,
+      "modules": {
+        "src/__init__.py": 100.0,
+        "src/apresentacao/__init__.py": 100.0,
+        "src/apresentacao/app.py": 0.0,
+        "src/dados/__init__.py": 100.0,
+        "src/processamento/__init__.py": 100.0,
+        "src/processamento/aquisicao/__init__.py": 100.0,
+        "src/processamento/aquisicao/auditoria_datasets.py": 98.35,
+        "src/processamento/aquisicao/bpsad_adapter.py": 92.63,
+        "src/processamento/aquisicao/csv_importer.py": 97.81,
+        "src/processamento/aquisicao/tweetsentbr.py": 100.0,
+        "src/processamento/classificacao/__init__.py": 100.0,
+        "src/processamento/classificacao/avaliacao.py": 0.0,
+        "src/processamento/classificacao/baseline.py": 100.0,
+        "src/processamento/classificacao/bertweet.py": 86.96,
+        "src/processamento/classificacao/rotulos.py": 100.0,
+        "src/processamento/pipeline.py": 86.55,
+        "src/processamento/preprocessamento/__init__.py": 100.0,
+        "src/servico/__init__.py": 100.0,
+        "src/servico/main.py": 100.0
+      }
+    },
+    "pr45": {
+      "total": 96.33,
+      "modules": {
+        "src/__init__.py": 100.0,
+        "src/apresentacao/__init__.py": 100.0,
+        "src/apresentacao/app.py": 0.0,
+        "src/dados/__init__.py": 100.0,
+        "src/processamento/__init__.py": 100.0,
+        "src/processamento/aquisicao/__init__.py": 100.0,
+        "src/processamento/aquisicao/auditoria_datasets.py": 98.35,
+        "src/processamento/aquisicao/bpsad_adapter.py": 92.63,
+        "src/processamento/aquisicao/csv_importer.py": 97.81,
+        "src/processamento/aquisicao/tweetsentbr.py": 100.0,
+        "src/processamento/classificacao/__init__.py": 100.0,
+        "src/processamento/classificacao/avaliacao.py": 100.0,
+        "src/processamento/classificacao/baseline.py": 100.0,
+        "src/processamento/classificacao/bertweet.py": 91.67,
+        "src/processamento/classificacao/rotulos.py": 100.0,
+        "src/processamento/preprocessamento/__init__.py": 100.0,
+        "src/servico/__init__.py": 100.0,
+        "src/servico/main.py": 100.0
+      }
+    },
+    "conjunto-a": {
+      "total": 94.65,
+      "modules": {
+        "src/__init__.py": 100.0,
+        "src/apresentacao/__init__.py": 100.0,
+        "src/apresentacao/app.py": 0.0,
+        "src/dados/__init__.py": 100.0,
+        "src/processamento/__init__.py": 100.0,
+        "src/processamento/aquisicao/__init__.py": 100.0,
+        "src/processamento/aquisicao/auditoria_datasets.py": 98.35,
+        "src/processamento/aquisicao/bpsad_adapter.py": 92.63,
+        "src/processamento/aquisicao/csv_importer.py": 97.81,
+        "src/processamento/aquisicao/tweetsentbr.py": 100.0,
+        "src/processamento/classificacao/__init__.py": 100.0,
+        "src/processamento/classificacao/avaliacao.py": 100.0,
+        "src/processamento/classificacao/baseline.py": 100.0,
+        "src/processamento/classificacao/bertweet.py": 91.67,
+        "src/processamento/classificacao/rotulos.py": 100.0,
+        "src/processamento/pipeline.py": 86.55,
+        "src/processamento/preprocessamento/__init__.py": 100.0,
+        "src/servico/__init__.py": 100.0,
+        "src/servico/main.py": 100.0
+      }
+    },
+    "conjunto-b": {
+      "total": 94.65,
+      "modules": {
+        "src/__init__.py": 100.0,
+        "src/apresentacao/__init__.py": 100.0,
+        "src/apresentacao/app.py": 0.0,
+        "src/dados/__init__.py": 100.0,
+        "src/processamento/__init__.py": 100.0,
+        "src/processamento/aquisicao/__init__.py": 100.0,
+        "src/processamento/aquisicao/auditoria_datasets.py": 98.35,
+        "src/processamento/aquisicao/bpsad_adapter.py": 92.63,
+        "src/processamento/aquisicao/csv_importer.py": 97.81,
+        "src/processamento/aquisicao/tweetsentbr.py": 100.0,
+        "src/processamento/classificacao/__init__.py": 100.0,
+        "src/processamento/classificacao/avaliacao.py": 100.0,
+        "src/processamento/classificacao/baseline.py": 100.0,
+        "src/processamento/classificacao/bertweet.py": 91.67,
+        "src/processamento/classificacao/rotulos.py": 100.0,
+        "src/processamento/pipeline.py": 86.55,
+        "src/processamento/preprocessamento/__init__.py": 100.0,
+        "src/servico/__init__.py": 100.0,
+        "src/servico/main.py": 100.0
+      }
+    },
+    "corrigido-a": {
+      "total": 94.45,
+      "modules": {
+        "src/__init__.py": 100.0,
+        "src/apresentacao/__init__.py": 100.0,
+        "src/apresentacao/app.py": 0.0,
+        "src/dados/__init__.py": 100.0,
+        "src/processamento/__init__.py": 100.0,
+        "src/processamento/aquisicao/__init__.py": 100.0,
+        "src/processamento/aquisicao/auditoria_datasets.py": 98.35,
+        "src/processamento/aquisicao/bpsad_adapter.py": 92.63,
+        "src/processamento/aquisicao/csv_importer.py": 97.81,
+        "src/processamento/aquisicao/tweetsentbr.py": 100.0,
+        "src/processamento/classificacao/__init__.py": 100.0,
+        "src/processamento/classificacao/avaliacao.py": 100.0,
+        "src/processamento/classificacao/baseline.py": 100.0,
+        "src/processamento/classificacao/bertweet.py": 91.67,
+        "src/processamento/classificacao/rotulos.py": 100.0,
+        "src/processamento/pipeline.py": 86.26,
+        "src/processamento/preprocessamento/__init__.py": 100.0,
+        "src/servico/__init__.py": 100.0,
+        "src/servico/main.py": 100.0
+      }
+    },
+    "corrigido-b": {
+      "total": 94.45,
+      "modules": {
+        "src/__init__.py": 100.0,
+        "src/apresentacao/__init__.py": 100.0,
+        "src/apresentacao/app.py": 0.0,
+        "src/dados/__init__.py": 100.0,
+        "src/processamento/__init__.py": 100.0,
+        "src/processamento/aquisicao/__init__.py": 100.0,
+        "src/processamento/aquisicao/auditoria_datasets.py": 98.35,
+        "src/processamento/aquisicao/bpsad_adapter.py": 92.63,
+        "src/processamento/aquisicao/csv_importer.py": 97.81,
+        "src/processamento/aquisicao/tweetsentbr.py": 100.0,
+        "src/processamento/classificacao/__init__.py": 100.0,
+        "src/processamento/classificacao/avaliacao.py": 100.0,
+        "src/processamento/classificacao/baseline.py": 100.0,
+        "src/processamento/classificacao/bertweet.py": 91.67,
+        "src/processamento/classificacao/rotulos.py": 100.0,
+        "src/processamento/pipeline.py": 86.26,
+        "src/processamento/preprocessamento/__init__.py": 100.0,
+        "src/servico/__init__.py": 100.0,
+        "src/servico/main.py": 100.0
+      }
+    }
+  }
+}
