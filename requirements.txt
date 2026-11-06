@@ -7,3 +7,4 @@ scikit-learn
 pandas
 requests
 python-dotenv
+joblib>=1.3,<2
