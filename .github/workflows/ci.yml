@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # A versão do Python vem de .python-version.
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
-          python-version: "3.11"
-          cache: pip
-      - run: pip install -r requirements-dev.txt
-      - run: pytest --cov=src
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run pytest --cov=src
