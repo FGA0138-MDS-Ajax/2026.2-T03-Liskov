@@ -34,6 +34,12 @@ contrariando a meta de resposta em até 2 segundos e a regra de filtrar no banco
 Somente em `/analises`: `pagina` (a partir de 1) e `tamanho`. O backend define o limite
 máximo e uma ordenação determinística (issue #23).
 
+`pagina` e `tamanho` devem ser inteiros positivos; `total` é inteiro não negativo.
+Booleanos, números fracionários e números em strings são rejeitados, sem conversão.
+`itens` é uma lista com no máximo `tamanho` registros, respeitando o total restante
+a partir de `(pagina - 1) * tamanho`. Uma página além do fim pode retornar lista vazia.
+Ainda não há limite máximo de tamanho aprovado; o cliente não inventa esse limite.
+
 ## Respostas propostas
 
 `GET /analises`: coleção vazia retorna 200 com `itens: []`, sem erro.
@@ -60,6 +66,13 @@ máximo e uma ordenação determinística (issue #23).
 Os campos seguem `docs/banco/esquema-mongodb.md`. `data_publicacao` pode ser nula:
 datas nunca são inventadas.
 
+O cliente valida os tipos em tempo de execução: `id_origem` é string não vazia,
+`fonte` e `texto_original` são strings, `sentimento` é uma das três classes e
+`modelo.nome` é string não vazia. Strings apenas com espaços não servem como ID ou
+nome de modelo. Datas devem ser strings ISO 8601 com horário e fuso; offsets válidos
+são normalizados para UTC. Ausência ou `null` em `data_publicacao` representa data
+desconhecida; string vazia e datetime sem fuso são rejeitados.
+
 `GET /analises/resumo`:
 
 ```json
@@ -71,8 +84,17 @@ datas nunca são inventadas.
 ```
 
 `sem_data_publicacao` conta os registros deixados de fora do filtro de período por não
-terem data. Sem filtro de período, vale 0. O painel usa esse número para avisar o
-usuário, como recomenda o esquema (seção 4.7).
+terem data. Sem filtro de período, vale 0. O painel usará esse número para avisar o
+usuário quando os filtros forem implementados, como recomenda o esquema (seção 4.7).
+Esse aviso ainda não é exibido pelo dashboard atual.
+
+`total` conta somente os registros que atendem aos filtros e deve ser igual à soma
+das contagens das três classes em `por_sentimento`. Essas contagens e
+`sem_data_publicacao` são inteiros não negativos, sem booleanos ou coerção de strings.
+`por_sentimento` contém exatamente `positivo`, `neutro` e `negativo`.
+Os excluídos sem data não entram no total filtrado e podem superar esse total.
+Sem filtro de período, `sem_data_publicacao` deve ser 0; quando omitido, assume 0
+por compatibilidade com o contrato inicial. Respostas inválidas geram `ErroFonteDados`.
 
 ## Erros
 

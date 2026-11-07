@@ -42,6 +42,8 @@ class Analise:
 
 @dataclass(frozen=True)
 class PaginaAnalises:
+    """Índices positivos, total não negativo; itens limitados à página solicitada."""
+
     itens: list[Analise]
     pagina: int
     tamanho: int
@@ -50,7 +52,7 @@ class PaginaAnalises:
 
 @dataclass(frozen=True)
 class ResumoAnalises:
-    """Totais calculados sobre todos os registros que atendem aos filtros."""
+    """Total filtrado igual à soma das três classes; excluídos não compõem o total."""
 
     total: int
     por_sentimento: dict[Sentimento, int]
