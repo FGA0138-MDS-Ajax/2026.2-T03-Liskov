@@ -6,7 +6,7 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 from src.apresentacao.componentes import MENSAGEM_DADOS_DE_EXEMPLO
-from src.apresentacao.fontes.mock import FonteMockComErro
+from src.apresentacao.fontes.mock import ANALISES_DE_EXEMPLO, FonteMockComErro
 
 APP = str(Path(__file__).resolve().parents[1] / "src" / "apresentacao" / "app.py")
 
@@ -31,6 +31,16 @@ def test_modo_mock_carrega_e_identifica_os_dados_de_exemplo(monkeypatch):
     assert not app.exception
     assert app.title[0].value == "SentIA"
     assert MENSAGEM_DADOS_DE_EXEMPLO in avisos(app)
+
+
+def test_indicadores_refletem_os_dados_e_percentuais_somam_100(monkeypatch):
+    app = executar_app(monkeypatch)
+    valores = [metrica.value for metrica in app.metric]
+    assert valores[0] == str(len(ANALISES_DE_EXEMPLO))
+    assert sum(int(valor.rstrip("%")) for valor in valores[1:]) == 100
+    rotulos = " ".join(metrica.label for metrica in app.metric)
+    for rotulo in ("Analisados", "Positivo", "Neutro", "Negativo"):
+        assert rotulo in rotulos
 
 
 def test_sem_dados_mostra_estado_vazio_sem_percentuais_enganosos(monkeypatch):
