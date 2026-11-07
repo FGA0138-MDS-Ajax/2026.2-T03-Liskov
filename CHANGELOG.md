@@ -6,6 +6,13 @@ versões publicadas; outras frentes também podem registrar suas entregas aqui.
 
 ## [Não lançado]
 
+### Corrigido
+
+- Cliente HTTP rejeita tipos, contagens, paginação e datas incompatíveis com a
+  proposta de contrato, sem derrubar a tela nem converter valores incorretos.
+- Timeout da API exige número finito positivo; configuração inválida mostra
+  mensagem na interface. Aviso de registros sem data é documentado como futuro.
+
 ### Alterado
 
 - Dependências migradas de `requirements*.txt` para `pyproject.toml` e `uv.lock`. A instalação
