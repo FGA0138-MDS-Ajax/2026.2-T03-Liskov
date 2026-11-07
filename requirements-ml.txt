@@ -1,6 +1,0 @@
-# Inclui as dependências gerais do projeto.
--r requirements.txt
-
-# Dependências adicionais para executar o BERTweet real.
-pysentimiento==0.7.3
-torch>=2.2,<3

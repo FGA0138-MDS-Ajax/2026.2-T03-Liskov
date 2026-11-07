@@ -4,16 +4,17 @@ on:
   push:
     branches: [main, developer]
   pull_request:
-    branches: [main, developer]
+    branches: [main, developer, feat/frontend-fundacao, feature/config-mongodb-pymongo]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # A versão do Python vem de .python-version.
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
-          python-version: "3.11"
-          cache: pip
-      - run: pip install -r requirements-dev.txt
-      - run: pytest --cov=src
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run ruff check src/apresentacao tests/test_painel_*.py
+      - run: uv run pytest --cov=src

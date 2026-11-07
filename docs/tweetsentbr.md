@@ -30,9 +30,8 @@ Datasets/
 ### 3.1. Preparação do Ambiente
 
 ```bash
-python3 -m venv .venv
+uv sync --locked
 source .venv/bin/activate
-pip install -r requirements.txt
 ```
 
 ### 3.2. Aquisição Automatizada do Corpus Inicial (Issue #1 — RF02/US02)

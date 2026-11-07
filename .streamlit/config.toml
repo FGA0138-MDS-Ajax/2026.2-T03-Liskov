@@ -1,0 +1,17 @@
+# Tema provisório: os wireframes do SentIA ainda são de baixa fidelidade.
+[theme]
+base = "light"
+primaryColor = "#3B5BA5"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F2F2F2"
+textColor = "#1F2933"
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
+
+# Evita a pergunta de e-mail da primeira execução. O navegador não abre sozinho.
+[server]
+headless = true
