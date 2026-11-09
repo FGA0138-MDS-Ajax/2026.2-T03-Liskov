@@ -13,12 +13,11 @@ Esta suíte implementa os testes automatizados da **Sprint 1** referentes à **I
 
 ## 1. Instalação das Dependências
 
-Recomenda-se utilizar um ambiente virtual Python (`.venv`) na raiz do repositório:
+Instale o [uv](https://docs.astral.sh/uv/getting-started/installation/) e sincronize o ambiente na raiz do repositório:
 
 ```bash
-python3 -m venv .venv
+uv sync --locked
 source .venv/bin/activate
-pip install -r requirements.txt
 ```
 
 ---

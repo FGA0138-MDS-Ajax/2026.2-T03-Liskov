@@ -4,14 +4,17 @@ on:
   push:
     branches: [main, developer]
   pull_request:
-    branches: [main, developer, feat/integrar-classificador]
+    branches: [main, developer, feat/frontend-fundacao, feature/config-mongodb-pymongo, xfetch, feat/integrar-classificador]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # A versão do Python vem de .python-version.
       - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
       - run: uv sync --locked
       - run: uv lock --check
       - run: uv run ruff check --isolated --select F,E9 src tests scripts amostrar_bpsad.py
