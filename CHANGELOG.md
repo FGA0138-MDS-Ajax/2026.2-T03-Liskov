@@ -15,11 +15,21 @@ versões publicadas; outras frentes também podem registrar suas entregas aqui.
 
 ### Alterado
 
+
 - Dependências migradas de `requirements*.txt` para `pyproject.toml` e `uv.lock`. A instalação
   agora usa `uv sync --locked`, com Python 3.11 definido em `.python-version`.
 
 ### Adicionado
 
+- Filtros de período e de sentimento no dashboard, com botão "Limpar" e aviso de quantos
+  textos sem data ficaram fora do período, **com dados de exemplo** (#14).
+- Login do Administrador: sem login, o menu mostra só "Entrar" e as ferramentas de
+  administração ficam ocultas (#59).
+- Importação de dataset CSV pelo painel, com relatório de registros importados e descartados
+  (#60), e início e acompanhamento de coleta e análise (#61). Ambos usam **dados de exemplo**
+  até a API oferecer as rotas.
+- Proposta de contrato para login, importação e coleta, com cliente HTTP correspondente (#58).
+- Wireframes do dashboard na documentação, com o que já foi implementado de cada um (#14).
 - Base do painel Streamlit com navegação entre Dashboard e Administração; a Administração
   ainda é só um aviso de área não implementada (#13).
 - Indicadores de total e percentual por sentimento no dashboard, **com dados de exemplo**
