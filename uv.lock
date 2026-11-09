@@ -6,10 +6,10 @@ resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'emscripten'",
     "python_full_version >= '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
-    "python_full_version < '3.12' and sys_platform == 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
-    "python_full_version < '3.12' and sys_platform == 'emscripten'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.12' and sys_platform == 'win32'",
+    "python_full_version < '3.12' and sys_platform == 'emscripten'",
     "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 
@@ -3454,6 +3454,9 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
 ]
+experimentos = [
+    { name = "psutil" },
+]
 ml = [
     { name = "pysentimiento" },
     { name = "torch" },
@@ -3480,6 +3483,7 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff", specifier = "==0.17.4" },
 ]
+experimentos = [{ name = "psutil", specifier = ">=6,<8" }]
 ml = [
     { name = "pysentimiento", specifier = "==0.7.3" },
     { name = "torch", specifier = ">=2.2,<3" },

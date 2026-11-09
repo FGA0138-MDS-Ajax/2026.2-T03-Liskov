@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, developer]
   pull_request:
-    branches: [main, developer, feat/frontend-fundacao, feature/config-mongodb-pymongo, xfetch]
+    branches: [main, developer, feat/frontend-fundacao, feature/config-mongodb-pymongo, xfetch, feat/integrar-classificador]
 
 jobs:
   test:
@@ -16,5 +16,6 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --locked
-      - run: uv run ruff check src/apresentacao tests/test_painel_*.py
-      - run: uv run pytest --cov=src
+      - run: uv lock --check
+      - run: uv run ruff check --isolated --select F,E9 src tests scripts amostrar_bpsad.py
+      - run: uv run pytest -ra --cov=src
