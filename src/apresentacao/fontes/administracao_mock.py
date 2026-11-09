@@ -57,24 +57,29 @@ class AdministracaoMock:
         except UnicodeDecodeError as erro:
             raise ErroFonteDados("O arquivo precisa estar codificado em UTF-8.") from erro
 
-        leitor = csv.DictReader(io.StringIO(texto))
-        colunas = leitor.fieldnames or []
-        coluna_texto = next((c for c in COLUNAS_TEXTO if c in colunas), None)
-        if coluna_texto is None or COLUNA_FONTE not in colunas:
-            raise ErroFonteDados(
-                "O CSV precisa das colunas `texto` (ou `texto_original`) e `fonte`."
-            )
+        try:
+            leitor = csv.DictReader(io.StringIO(texto), strict=True)
+            colunas = leitor.fieldnames or []
+            coluna_texto = next((c for c in COLUNAS_TEXTO if c in colunas), None)
+            if coluna_texto is None or COLUNA_FONTE not in colunas:
+                raise ErroFonteDados(
+                    "O CSV precisa das colunas `texto` (ou `texto_original`) e `fonte`."
+                )
 
-        lidos = importados = 0
-        descartes: dict[str, int] = {}
-        for linha in leitor:
-            lidos += 1
-            if not (linha.get(coluna_texto) or "").strip():
-                descartes["texto_vazio"] = descartes.get("texto_vazio", 0) + 1
-            elif not (linha.get(COLUNA_FONTE) or "").strip():
-                descartes["fonte_vazia"] = descartes.get("fonte_vazia", 0) + 1
-            else:
-                importados += 1
+            lidos = importados = 0
+            descartes: dict[str, int] = {}
+            for linha in leitor:
+                lidos += 1
+                if not (linha.get(coluna_texto) or "").strip():
+                    descartes["texto_vazio"] = descartes.get("texto_vazio", 0) + 1
+                elif not (linha.get(COLUNA_FONTE) or "").strip():
+                    descartes["fonte_vazia"] = descartes.get("fonte_vazia", 0) + 1
+                else:
+                    importados += 1
+        except csv.Error as erro:
+            raise ErroFonteDados(
+                "O CSV está malformado ou contém um campo maior que o limite de leitura."
+            ) from erro
         if importados == 0:
             raise ErroFonteDados("O arquivo não tem registros válidos para importar.")
 
