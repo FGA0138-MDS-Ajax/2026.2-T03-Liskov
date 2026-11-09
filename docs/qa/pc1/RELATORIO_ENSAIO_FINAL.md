@@ -179,3 +179,16 @@ PC1 para transformar este ensaio em homologação acadêmica.
 
 [Validação detalhada](VALIDACAO_FRONTEND_CLICIA.md) ·
 [Roteiro de 5–8 minutos](ROTEIRO_PC1_ATUALIZADO.md).
+
+## Entregas para revisão
+
+- [PR #71](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/71) →
+  `feat/painel-frontend`: correções de CSV, Limpar, rótulos e CI.
+- [PR #72](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/72) →
+  `chore/pc1-estabilizacao-organizacao`: três documentos, capturas, logs, roteiro
+  de navegador e fixture sintética. Não incorpora #70 à reserva A.
+- `test/pc1-integracao-frontend-atualizado`: composição experimental preparada
+  para demonstração, com as correções e os relatórios, sem PR de merge oficial.
+
+Todos os commits novos utilizam a identidade Git configurada, Figueirin. Os heads
+dos PRs #69/#70/#64/#65 foram reconferidos ao final e permaneceram nos SHAs da tabela.
