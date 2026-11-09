@@ -1,7 +1,7 @@
 # Matriz de Rastreabilidade — PC1
 
 Data de referência: **09/11/2026**
-Base validada: integração de `origin/developer` (`b09afb7`, com PR #65 integrado) + PR #69 + PR #70 + PR #71 + PR #72 (**522 testes aprovados, 0 falhas, 94% de cobertura em `src/`**).
+Base validada: integração de `origin/developer` (`66c22ce`, com PRs #65 e #64 integrados) + PR #69 + PR #70 + PR #71 + PR #72 (**538 testes aprovados, 0 falhas, 94% de cobertura em `src/`**).
 
 | Issue / Estado GitHub | Requisito / US | Funcionalidade | Implementação principal | Testes automatizados | Estado técnico no PC1 | Pendência para próximas entregas |
 |---|---|---|---|---|---|---|
@@ -41,4 +41,4 @@ Base validada: integração de `origin/developer` (`b09afb7`, com PR #65 integra
 | [#70](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/70) | `feat/painel-frontend` → `developer` | Filtros do dashboard, administração com login/importação/coleta em mock, cliente HTTP e wireframes | **OPEN** (pronto para merge na `developer` após #71) |
 | [#69](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/69) | `chore/pc1-estabilizacao-organizacao` → `developer` | Preparação técnica do PC1 (`scripts/demonstrar_pipeline.py`, `.env.example`, `Makefile`, CI, template de PR) | **OPEN** (sincronizado com `developer` `b09afb7`, sem evidências brutas) |
 | [#72](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/72) | `chore/pc1-ensaio-relatorios` → `developer` | Consolidação enxuta do `README.md`, roteiro PC1, arquitetura, contratos, matriz de rastreabilidade e `STATUS_FINAL.md` | **OPEN** (redirecionado para `developer`, sem arquivos binários/logs) |
-| [#64](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/64) | `feat/integrar-classificador` → `developer` | Experimentos exploratórios BPSAD e testes extras de preservação BERTweet (inclui #67) | **OPEN** (fora do caminho crítico do PC1; requer rebase/merge com `developer` antes de integrar) |
+| [#64](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/64) | `feat/integrar-classificador` → `developer` | Experimentos exploratórios BPSAD e testes extras de preservação BERTweet (inclui #67) | **MERGED** na `developer` (`66c22ce`) |

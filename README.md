@@ -37,7 +37,7 @@ Software (MDS), UnB/FGA, 2026.2.
 - Rotas reais de análises, resumo, filtros e administração no FastAPI (#19, #21, #23–#25, #58).
 - Integração ponta a ponta entre painel, API, classificador e banco (#22, #26, #27).
 - Gráficos de distribuição, resumo textual estatístico e nuvem de palavras no dashboard (#28–#30).
-- Atualização e homologação do PR #64 (experimentos exploratórios BPSAD).
+- Reprodução independente em corpus completo dos experimentos exploratórios BPSAD ([`docs/experimentos_bpsad.md`](docs/experimentos_bpsad.md), integrados pelo PR #64).
 
 ## Arquitetura
 
