@@ -19,5 +19,5 @@ jobs:
       - run: uv lock --check
       - run: uv run ruff check src/apresentacao tests/test_painel_*.py
       # Incremental: erros de sintaxe e nomes/imports em todas as camadas.
-      - run: uv run ruff check --isolated --select F,E9 src tests scripts test_mongo.py
+      - run: uv run ruff check --isolated --select F,E9 src tests scripts test_mongo.py amostrar_bpsad.py
       - run: uv run pytest -ra --cov=src --cov-report=term-missing
