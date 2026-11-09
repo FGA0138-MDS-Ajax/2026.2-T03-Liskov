@@ -111,3 +111,45 @@ def test_bertweet_configura_modelo_e_tamanho_do_lote(monkeypatch):
         model_name=NOME_MODELO,
         batch_size=7,
     )
+
+
+def test_bertweet_preserva_negacoes_antes_da_inferencia():
+    from unittest.mock import Mock
+
+    textos = [
+        "n\u00e3o gostei do atendimento",
+        "nunca mais compro nesse lugar",
+        "n\u00e3o \u00e9 ruim, mas poderia melhorar",
+    ]
+    resultado = SimpleNamespace(
+        output="NEG",
+        probas={"POS": 0.05, "NEG": 0.9, "NEU": 0.05},
+    )
+    analisador = Mock()
+    analisador.predict.return_value = [resultado] * len(textos)
+
+    classificador = ClassificadorBertweet(analisador=analisador)
+    classificador.prever(textos)
+
+    analisador.predict.assert_called_once_with(textos)
+
+
+def test_bertweet_preserva_urls_mencoes_emojis_pontuacao_e_acentos():
+    from unittest.mock import Mock
+
+    textos = [
+        "Adorei!!! https://exemplo.com",
+        "@usuario, voc\u00ea N\u00c3O gostou? \U0001f621",
+        "Que experi\u00eancia incr\u00edvel, p\u00e9ssima n\u00e3o foi! \U0001f60a",
+    ]
+    resultado = SimpleNamespace(
+        output="POS",
+        probas={"POS": 0.9, "NEG": 0.05, "NEU": 0.05},
+    )
+    analisador = Mock()
+    analisador.predict.return_value = [resultado] * len(textos)
+
+    classificador = ClassificadorBertweet(analisador=analisador)
+    classificador.prever(textos)
+
+    analisador.predict.assert_called_once_with(textos)
