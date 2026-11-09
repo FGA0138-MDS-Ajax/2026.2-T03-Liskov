@@ -1,10 +1,7 @@
 # Frontend do SentIA
 
-Referência: integração PC1 `bfaf7da`, 09/11/2026, com o frontend #70 (`61926fe`) e a correção de ensaio `bcd75e7`.
-O PR continua aberto para `developer`; as novas telas não estão naquela branch.
-
-Painel em **Streamlit** (`src/apresentacao/`). Em modo `mock`, usa fontes locais;
-em modo `api`, usa clientes HTTP. Nunca importa banco ou processamento;
+Painel em **Streamlit** (`src/apresentacao/`), conforme o Documento de Arquitetura. A
+interface acessa o sistema **somente pela API** e nunca importa banco ou processamento;
 `tests/test_painel_arquitetura.py` verifica essa regra.
 
 - Contrato com o backend: [CONTRATO-API.md](CONTRATO-API.md)
@@ -44,10 +41,11 @@ make check   # lint e testes, como na CI
 make         # lista todos os comandos
 ```
 
-Comandos diretos (para preparar o ambiente sem make, veja o [README principal](../../README.md#instalação)):
+Sem `make` (por exemplo, no Windows):
 
 ```bash
 uv sync --locked
+cp .env.frontend.example .env                 # Windows: copy .env.frontend.example .env
 uv run streamlit run src/apresentacao/app.py  # depois acesse http://localhost:8501
 ```
 
@@ -65,7 +63,7 @@ dois** e não use `pip install` neste projeto.
 | Adicionar dependência de desenvolvimento | `uv add --group dev pacote` |
 | Remover dependência | `uv remove pacote` |
 | Atualizar uma versão no `uv.lock` | `uv lock --upgrade-package pacote` |
-| Instalar também o BERTweet real (download grande) | `uv sync --locked --group ml` ou `make setup-ml` |
+| Instalar também o BERTweet real (download grande) | `uv sync --group ml` ou `make setup-ml` |
 
 ## Modos de dados
 
@@ -119,7 +117,7 @@ sem conflito.
 - **Código e textos em português**, como no restante do projeto; PEP 8 e type hints.
 - **Telas não acessam dados diretamente:** recebem uma `FonteAnalises`. Erros chegam como
   `ErroFonteDados` e são exibidos com `estado_erro`.
-- **Filtros são aplicados pela fonte de dados**, nunca nas telas. A remissão herdada à Arquitetura 2.4.1 não foi conferida no documento completo.
+- **Filtros são aplicados pela fonte de dados**, nunca nas telas (Arquitetura 2.4.1).
 - **Cálculos ficam em `transformacoes.py`**, com testes.
 - **Estado:** use `st.session_state` só quando precisar manter algo entre interações.
 - **Formulários:** use `st.form` para agrupar campos enviados por um botão, como "Aplicar
@@ -158,47 +156,4 @@ O [CHANGELOG.md](../../CHANGELOG.md) é mantido manualmente, sem ferramenta de r
 
 Crie branches a partir de `developer` (`feat/...`, `fix/...`, `docs/...`) e abra o PR para
 `developer`. Uma tarefa só está pronta com testes aprovados, CI sem falhas,
-PR revisado, aceite da PO e documentação atualizada, conforme a DoD das issues.
-O Documento de Visão completo ainda precisa ser disponibilizado. Para esta revisão
-documental, a base é a integração PC1 selecionada, não a developer.
-
-## Interface implementada versus backend efetivamente implementado
-
-| Operação | Interface #70 nesta referência | Backend em `src/servico/main.py` |
-|---|---|---|
-| Dashboard e indicadores | Mock com total/percentuais e filtros aplicáveis | Sem `/analises` ou `/analises/resumo` |
-| Filtro de período | Publicação, limites inclusivos, abertos; datas desconhecidas excluídas com aviso | #24 pendente; escolha definitiva da data/fuso requer aceite |
-| Login e administração | Fluxo de exemplo; credenciais fictícias | Sem autenticação, autorização ou emissão de token |
-| Importação | Lê bytes UTF-8/CSV e conta válidos/descartes no mock | Sem `POST /datasets` e sem persistência |
-| Coleta | Inicia estado de exemplo e conclui ao atualizar | Sem rotas de coleta e sem inferência iniciada pelo painel |
-| Sessão/logout | Sessão em `st.session_state`; expiração e retorno ao login | Sem sessão/revogação no servidor |
-| Saúde | Pode ser consultada separadamente | `GET /health` implementado |
-
-O menu mostra Dashboard e Entrar sem sessão; depois do login, Administração
-substitui Entrar no mesmo caminho `/administracao`. A sessão mock dura uma hora.
-Sair limpa sessão/coleta locais mesmo se o logout HTTP falhar. `st.session_state`
-é estado da sessão Streamlit no servidor, não armazenamento persistente do navegador.
-
-**Importação e coleta de exemplo não persistem nem classificam dados reais.**
-O parser administrativo é simplificado e não chama o importador do processamento.
-`dataset_exemplo` é uma fonte fixa; uma coleta concluída não analisa o arquivo
-recém-enviado nem atualiza os indicadores do dashboard.
-
-Estados tratados: período invertido mantém os filtros anteriores; Limpar restaura
-a seleção; sem resultados mostra estado vazio; configuração inválida, timeout,
-rede, 404 e contrato inválido mostram mensagens. Credenciais inválidas não liberam
-administração; sessão expirada volta ao login. No modo API, o backend atual retorna
-404 nas rotas propostas e o painel não apresenta mocks como resposta real.
-
-Testes existentes: [filtros](../../tests/test_painel_filtros.py),
-[administração](../../tests/test_painel_administracao.py),
-[UI](../../tests/test_painel_ui.py), [fonte mock](../../tests/test_painel_fonte_mock.py),
-[cliente HTTP](../../tests/test_painel_fonte_api.py),
-[configuração](../../tests/test_painel_config.py),
-[transformações](../../tests/test_painel_transformacoes.py) e
-[arquitetura](../../tests/test_painel_arquitetura.py). O cabeçalho do teste de administração no #70 original citava
-`tests/test_api_administracao.py`, ausente. A correção de ensaio `eb071a0` removeu
-a referência; os testes existentes continuam sendo mock, sem integração administrativa.
-
-Resultados, escopo de AppTest e limites visuais no
-[relatório de validação](../qa/pc1/VALIDACAO_FRONTEND_CLICIA.md).
+PR revisado, aceite da PO e documentação atualizada (Documento de Visão, seção 3).

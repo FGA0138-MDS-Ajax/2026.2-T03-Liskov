@@ -1,9 +1,4 @@
-# Suíte de testes do SentIA
-
-Referência: integração PC1 `bfaf7da`, 09/11/2026. Esta suíte inclui dados, ML,
-pipeline, conexão, API básica e frontend. O detalhamento de aquisição abaixo é
-o registro da entrega da issue #4; contagens locais não substituem o
-[ensaio atual por SHA/data](../docs/qa/pc1/RELATORIO_ENSAIO_FINAL.md).
+# Suíte de Testes — Aquisição, Importação e Auditoria de Dados (Issue #4)
 
 Esta suíte implementa os testes automatizados da **Sprint 1** referentes à **Issue #4** (*[Testes] Validar aquisição e importação de dados*), validando os requisitos:
 
@@ -95,7 +90,7 @@ tests/
 
 ### 4.2. Importação de Dados CSV e BPSAD (`tests/test_importacao.py` — 20 casos; `tests/test_csv_importer.py` — 96 casos)
 
-Cobre o contrato Python implementado para a issue #2, sem certificar aceite RF01/US01:
+Cobre integralmente o contrato da Issue #2 (RF01/US01):
 - Normalização de rótulos para `POS`, `NEG` e `NEU` em `normalizar_rotulo()` e conversão explícita via `converter_rotulo_para_sentia()`.
 - Preservação de `id_origem` original ou geração determinística baseada em SHA-256 e posição por fonte.
 - Suporte a datasets não rotulados (`rotulo_original = None`, `rotulo_padronizado = None`) sem criar o campo `sentimento`.
@@ -108,9 +103,7 @@ Valida o cálculo de hash SHA-256, codificação, contagem por classe, detecçã
 
 ---
 
-## 5. Contrato Python implementado (Issues #1, #2, #3, #4, #11 e #19)
-
-Testes de contrato não comprovam homologação pela PO ou conclusão da issue #19.
+## 5. Contrato Homologado (Issues #1, #2, #3, #4, #11 e #19)
 
 1. **Módulo `src.processamento.aquisicao`:**
    - **Aquisição (Issue #1):** `adquirir_dados`, `carregar_tweetsentbr`, `iterar_tweetsentbr`, `iterar_dados_aquisicao`, `resolver_caminho_tweetsentbr`, `CAMINHO_PADRAO_TWEETSENTBR`.
@@ -125,32 +118,3 @@ Testes de contrato não comprovam homologação pela PO ou conclusão da issue #
    - `"data_publicacao"`: `str | None`.
    - `"metadados"`: `dict[str, str]` opcional quando houver colunas extras preenchidas.
    - O campo `"sentimento"` **não** é criado na aquisição/importação (reservado à saída do classificador ML).
-
-## 6. Outras suítes e alcance atual
-
-| Frente | Arquivos existentes | O que comprovam |
-|---|---|---|
-| Classificação e pipeline | `test_classificacao.py`, `test_pipeline.py`, `test_avaliacao.py`, `test_comparar_modelos.py`, `test_integracao_conjunta.py` | Contratos, preservação, datas, validações e baseline sintético; sem medir acurácia independente do modelo real |
-| MongoDB | `test_database.py` | Ciclo de conexão e falhas simuladas; sem CRUD nem nova conexão Atlas |
-| API | `test_api.py` | `/health`; sem testes de administração real |
-| Frontend | `test_painel_*.py` | Configuração, fronteira de camadas, fontes, transformações, filtros, UI e administração simulada |
-
-`test_painel_administracao.py` testa clientes HTTP com respostas simuladas e
-fluxos Streamlit AppTest. `test_api_administracao.py` não existe nesta referência.
-`test_xfetch.py` e `test_experimentos_bpsad.py` pertencem aos PRs #65/#64 e não
-podem ser invocados neste checkout. O arquivo histórico
-`docs/qa/pc1/evidencias/test_integracao_prs.py` só se aplica à antiga integração
-que contém XFetch; não faz parte de `testpaths=tests` nem deve ser acrescentado
-à suíte desta referência.
-
-```bash
-uv run --offline pytest -v -ra --cov=src --cov-report=term-missing
-make lint
-uv lock --check
-```
-
-Os números de casos nas seções 4.1–4.3 são inventário da entrega anterior. O
-resultado atual é o do log com SHA/data, inclusive falhas/skips quando houver.
-A suíte não acessa serviços externos; alguns testes auditam o arquivo legado
-TweetSentBR já versionado, sem imprimir ou publicar novos textos reais.
-AppTest não certifica aparência/responsividade, usabilidade ou aceite da PO.

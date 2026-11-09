@@ -1,20 +1,10 @@
+> Atualização de 06/11/2026: o pipeline CSV está implementado e a homologação conjunta com as correções de validação está registrada em [QA dos PRs #44 e #45](qa/pr44-pr45/relatorio.md). Os números e pendências das seções abaixo são históricos da entrega inicial, não o estado atual da integração.
+
 # Classificação de sentimentos
 
-Referência: integração PC1 `bfaf7da`, 09/11/2026. O adaptador BERTweet, o baseline
-e o pipeline estão implementados. A validação atual é de contrato com analisador
-simulado; inferência real e acurácia independente não foram reproduzidas nesta revisão.
+## Componente e uso
 
-## BERTweet
-
-Implementação: [`bertweet.py`](../src/processamento/classificacao/bertweet.py).
-Modelo declarado: `pysentimiento/bertweet-pt-sentiment`; revisão exata do checkpoint
-ainda não fixada. O wrapper PySentimiento normaliza a saída para as três classes.
-
-Para preparar ML real, fora do roteiro offline:
-
-```bash
-uv sync --locked --group ml
-```
+O classificador está em `src/processamento/classificacao/bertweet.py`.
 
 ```python
 from src.processamento.classificacao.bertweet import ClassificadorBertweet
@@ -23,63 +13,67 @@ classificador = ClassificadorBertweet()
 resultados = classificador.prever_com_probabilidades(
     ["Adorei o atendimento!", "A entrega atrasou muito."]
 )
+print(resultados)
 ```
 
-Reutilize a instância para evitar recarregar o modelo. A primeira criação pode
-baixar pesos; não os publique no Git. O exemplo real acima não foi executado
-nesta auditoria. Nos testes e na demo, o analisador é injetado e simulado.
+Reutilizar a instância para evitar carregar o modelo a cada chamada.
+A primeira inicialização baixa os arquivos do modelo para o cache do
+Hugging Face. Os pesos não devem ser versionados no Git.
 
-A entrada aceita string ou coleção de strings não vazias, preservando ordem.
-Coleção vazia no classificador retorna lista vazia; no pipeline, nenhuma entrada
-é erro. Tipos inválidos, tamanho de lote não inteiro positivo e saída inesperada
-são recusados. A saída é lista de dicionários com `sentimento` e `probabilidades`
-para `positivo`, `negativo` e `neutro`.
+Modelo declarado: `pysentimiento/bertweet-pt-sentiment`.
+A revisão exata do checkpoint ainda precisa ser fixada.
 
-## Pipeline e contratos
+## Entrada e saída
 
-[`PipelineClassificacao`](../src/processamento/pipeline.py) recebe registros dos
-importadores, classifica em lotes e devolve documentos Python preparados para
-serialização BSON. Preserva texto, IDs, fonte e anotações humanas. Acrescenta
-previsão, probabilidades, modelo e `data_processamento` UTC; converte publicação
-quando informada. **Não grava no MongoDB e não expõe endpoint FastAPI.**
-Detalhes: [contratos de dados](contratos-dados.md) e [esquema](banco/esquema-mongodb.md).
+Aceita uma string ou uma coleção de strings não vazias.
+Coleção vazia retorna lista vazia. Tipos inválidos e textos vazios
+são rejeitados. O tamanho do lote deve ser inteiro positivo.
 
-A via BERTweet não aplica limpeza clássica, remoção de stopwords, stemming nem
-TF-IDF externamente. Negações, URLs, menções, emojis e acentuação são preservados
-na fronteira do analisador. As normalizações internas do tokenizador não foram
-auditadas integralmente. #5–#8 e T04–T07 requerem homologação formal da mudança
-em relação ao planejamento original; esta decisão técnica não encerra esses requisitos.
+A saída preserva a ordem e contém `sentimento` e `probabilidades`
+para as classes `positivo`, `negativo` e `neutro`.
 
-## Baseline e avaliação
+## Preparação textual — issues #5 a #8
 
-O baseline em [`baseline.py`](../src/processamento/classificacao/baseline.py) usa
-TF-IDF + regressão logística. O vetorizador é ajustado apenas no treino. O
-[`script de comparação`](../scripts/comparar_modelos.py) e os testes separam
-anotações humanas de previsões e tratam duplicatas/conflitos.
+O classificador encaminha os textos ao analisador PySentimiento.
+Não aplica externamente remoção de stopwords, stemming ou TF-IDF.
 
-```bash
-uv run python -m scripts.comparar_modelos --help
-uv run pytest tests/test_classificacao.py tests/test_pipeline.py tests/test_avaliacao.py tests/test_comparar_modelos.py -v -ra
-uv run python -m scripts.demonstrar_pipeline
-```
+Preservar palavras como "não" mantém informações de negação.
+Dispensar stemming externo preserva as palavras para o tokenizador.
+O detalhamento das normalizações internas da biblioteca permanece pendente.
 
-A demo usa fixture sintética e analisador constante; não mede desempenho do modelo.
-`rotulo_original` é anotação da fonte; `rotulo_padronizado`, sua conversão;
-`sentimento`, previsão. Probabilidade não é acurácia. O TweetSentBR local não tem
-split/IDs originais necessários para atestar independência em relação ao ajuste
-do checkpoint. BPSAD de outro domínio também exige auditoria de proveniência.
-Os [experimentos do PR #64](experimentos_bpsad.md) não estão neste SHA.
+O baseline TF-IDF com regressão logística está separado em `baseline.py`.
+Seu vetorizador deve ser ajustado somente no conjunto de treino.
 
-## Evidências e histórico
+A revisão dos requisitos originais depende de aceite da PO.
 
-Resultados atuais por SHA/data: [ensaio PC1](qa/pc1/RELATORIO_ENSAIO_FINAL.md).
-A [homologação de 06/11/2026](qa/pr44-pr45/relatorio.md) preserva logs e uma
-[inferência real histórica](qa/pr44-pr45/inferencia-real.json); não é avaliação
-independente nem nova inferência nesta tarefa. O registro inicial de 126 testes,
-14 skips e exemplos em Windows/Python 3.13.5 não identificava SHA/data suficientes
-para ser usado como resultado atual; permanece consultável na
-[versão anterior do documento](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/ca25e1223564f55b2465f9de87672cfae878df07/docs/classificacao.md).
+## Evidências de execução
 
-Pendências: fixar revisão do checkpoint, reproduzir comparação independente (#17),
-registrar ambiente/hash/partições, latência e consumo controlados, detalhar
-normalizações internas, integrar API/banco e obter revisão/aceite ML/PO.
+Ambiente local: Windows e Python 3.13.5.
+
+Após a integração dos arquivos:
+- 126 testes aprovados.
+- 14 testes de aquisição pulados por ausência de funções compatíveis
+  com o contrato procurado pelos testes (#1/RF02).
+- Nenhum teste falhou.
+
+Antes da mudança de pasta, o modelo real produziu:
+
+| Texto | Sentimento | Probabilidade da classe |
+| --- | --- | --- |
+| Adorei o atendimento! | positivo | 0.992056 |
+| A entrega atrasou muito. | negativo | 0.932464 |
+| O produto chegou hoje. | neutro | 0.878978 |
+
+Essa demonstração confirma carregamento e inferência.
+Não representa medição de acurácia ou avaliação independente.
+
+## Pendências
+
+- Avaliação independente e comparação com baseline (#17).
+- Pipeline de registros com IDs, fonte e metadados (#9).
+- Fixação da revisão do modelo e das versões das dependências.
+- Medições de inicialização, latência e consumo.
+- Complementação dos testes de falhas e preservação textual.
+- Revisão por outro integrante, verificação da CI e aceite da PO.
+
+Esta entrega é parcial e não encerra automaticamente as issues na qual fiz referência.

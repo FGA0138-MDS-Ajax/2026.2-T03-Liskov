@@ -1,44 +1,31 @@
-# Arquitetura observada no PC1
+# Arquitetura Observada no PC1
 
-Referência: 09/11/2026, integração `bfaf7da`. Este é um retrato técnico do código;
-não substitui o Documento de Arquitetura acadêmico, ainda indisponível.
+Retrato técnico das quatro camadas do **SentIA** na integração do PC1 (`developer` com PR #65 integrado + PRs #69, #70 e #71).
 
 ```mermaid
 flowchart LR
-    UI[Streamlit] --> MOCK[Fontes mock]
-    UI --> HTTP[Clientes HTTP propostos]
-    HTTP -. rotas pendentes .-> API[FastAPI: GET /health]
-    CSV[CSV / TweetSentBR / BPSAD] --> PIPE[PipelineClassificacao]
-    PIPE --> ML[Adaptador BERTweet]
-    ML --> DOC[Documentos Python / BSON]
-    DOC -. persistência pendente .-> DB[MongoDB]
-    API -. consultas pendentes .-> DB
+    UI["Streamlit (src/apresentacao)"] --> MOCK["Fontes Mock (Dashboard e Admin)"]
+    UI --> HTTP["Clientes HTTP (Contrato Proposto)"]
+    HTTP -. "rotas de negócio pendentes" .-> API["FastAPI: GET /health (src/servico)"]
+    AQ["CSV / TweetSentBR / BPSAD / XFetch"] --> PIPE["PipelineClassificacao (src/processamento)"]
+    PIPE --> ML["ClassificadorBertweet / Baseline"]
+    ML --> DOC["Documentos Python / BSON"]
+    DOC -. "repositório CRUD pendente" .-> DB["MongoDB (src/dados)"]
+    API -. "consultas pendentes" .-> DB
 ```
 
-| Responsabilidade | Código | Validação / limite |
+## Camadas e Responsabilidades
+
+| Camada | Módulos principais | Estado no PC1 |
 |---|---|---|
-| Entrada, navegação e sessão | `src/apresentacao/app.py`, `paginas/administracao.py` | AppTest; sessão local de exemplo |
-| Fontes e contratos da apresentação | `src/apresentacao/contrato.py`, `fontes/` | Mock e HTTP simulado; API não fornece as rotas |
-| Serviço | `src/servico/main.py` | `/health` e OpenAPI; sem orquestração |
-| Aquisição | `src/processamento/aquisicao/` | Importadores locais, validação e auditoria |
-| Pipeline | `src/processamento/pipeline.py` | Preserva identidade/texto, acrescenta previsão e datas UTC |
-| Modelo | `src/processamento/classificacao/bertweet.py` | Analisador injetável; ML real opcional |
-| Baseline | `src/processamento/classificacao/baseline.py` | TF-IDF ajustado só no treino |
-| Conexão | `src/dados/database.py`, `test_mongo.py` | Ciclo conectar/ping/fechar, testado sem servidor |
+| **Apresentação** | `src/apresentacao/app.py`, `paginas/dashboard.py`, `paginas/administracao.py`, `secoes/filtros.py`, `secoes/indicadores.py`, `fontes/` | Funcional em modo `mock` (indicadores, filtros de período/sentimento, login, upload CSV e coleta simulada). Clientes HTTP (`fontes/api.py` e `fontes/administracao_api.py`) prontos e testados com respostas simuladas |
+| **Serviço (API)** | `src/servico/main.py` | Rota `GET /health` operacional. Rotas de análises, resumo e administração propostas em [`docs/frontend/CONTRATO-API.md`](frontend/CONTRATO-API.md) ainda pendentes no backend |
+| **Processamento (Aquisição)** | `src/processamento/aquisicao/csv_importer.py`, `tweetsentbr.py`, `bpsad_adapter.py`, `xfetch.py`, `auditoria_datasets.py` | Funcional e coberto por testes unitários e de integração. `xfetch.py` (PR #65) integrado à `developer`, operando com paginação limitada e proteção de metadados |
+| **Processamento (ML e Pipeline)** | `src/processamento/classificacao/bertweet.py`, `baseline.py`, `avaliacao.py`, `rotulos.py`, `src/processamento/pipeline.py` | Funcional. `ClassificadorBertweet` preserva o texto bruto (sem stemming ou remoção externa de stopwords) e `PipelineClassificacao` gera documentos BSON válidos em lotes |
+| **Dados (MongoDB)** | `src/dados/database.py`, `docs/banco/esquema-mongodb.md` | Gerenciamento explícito de conexão (`conectar_banco`, `fechar_conexao`) testado com mocks. Persistência CRUD e criação automática de índices permanecem para a issue #20 |
 
-O frontend depende de interfaces de fonte, sem importar processamento ou banco.
-No modo mock não faz chamadas à API. O teste
-[`test_painel_arquitetura.py`](../tests/test_painel_arquitetura.py) verifica a
-separação de imports. Contratos não implicam endpoints implementados.
+## Fronteiras Arquiteturais Verificadas
 
-O pipeline produz documentos em memória; o script demonstrativo só verifica
-serialização BSON. Não há repositório CRUD, índices criados automaticamente nem
-consulta MongoDB integrada ao serviço. A API não carrega o classificador.
-
-XFetch (#65) e experimentos BPSAD (#64) não pertencem ao SHA de referência.
-A [pesquisa híbrida](pesquisa_hibrida_mongodb_xfetch.md) descreve evolução proposta.
-Autenticação real, expiração/revogação no servidor e autorização de rotas dependem
-de #58. Esconder o menu no mock não constitui controle de acesso do backend.
-
-Decisões pendentes: [fontes acadêmicas](fontes-academicas.md),
-[contratos](contratos-dados.md) e [matriz](qa/pc1/MATRIZ_RASTREABILIDADE.md).
+- O pacote `src/apresentacao/` não importa `src/processamento/` nem `src/dados/` diretamente; essa restrição é validada automaticamente por [`tests/test_painel_arquitetura.py`](../tests/test_painel_arquitetura.py).
+- O pipeline produz documentos em memória compatíveis com BSON (`scripts/demonstrar_pipeline.py`), mantendo o desacoplamento entre a inferência de ML e a camada de persistência.
+- A proposta de evolução para busca híbrida está documentada em [`docs/pesquisa_hibrida_mongodb_xfetch.md`](pesquisa_hibrida_mongodb_xfetch.md) como arquitetura futura.

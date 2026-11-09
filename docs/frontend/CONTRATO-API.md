@@ -1,15 +1,9 @@
 # Contrato entre o painel e a API
 
-**Referência: integração PC1 `bfaf7da`, frontend #70 em `61926fe` mais correção `bcd75e7`, 09/11/2026.**
-O #70 está aberto para developer.
-
-**Situação:** o backend oferece somente `GET /health`. As rotas de
+**Situação em 09/11/2026:** o backend oferece somente `GET /health`. As rotas de
 análises e de administração abaixo **ainda não existem**. Este documento é uma
 **proposta do frontend** para as issues #19, #21, #23, #24, #25 e #58, e pode mudar
 quando o contrato for aprovado.
-
-A OpenAPI automática (`/docs`, `/redoc`, `/openapi.json`) não representa novas
-rotas funcionais de análise/administração.
 
 No código, a proposta é consumida por `src/apresentacao/fontes/api.py` (análises) e
 `fontes/administracao_api.py` (administração). Enquanto o backend não evolui, as telas
@@ -22,20 +16,18 @@ respostas simuladas **não comprovam integração**.
 | Rota | Situação | Origem |
 |---|---|---|
 | `GET /health` | **Existe** | `src/servico/main.py` |
-| `GET /analises` | Não existe | Proposta; remissão herdada à Arquitetura 2.4.2 não conferida |
+| `GET /analises` | Não existe | Nome e filtros: Arquitetura 2.4.2. Paginação e corpo: proposta |
 | `GET /analises/resumo` | Não existe | **Proposta.** O esquema (seção 4.7) prevê a contagem por sentimento, mas não define a rota |
 | `POST /auth/login` | Não existe | **Proposta** (login do Administrador, issue #58) |
 | `POST /auth/logout` | Não existe | **Proposta** |
-| `POST /datasets` | Não existe | **Proposta**; remissão arquitetural herdada não conferida |
+| `POST /datasets` | Não existe | Nome: Arquitetura 2.4.2. Corpo: **proposta** |
 | `GET /coletas/fontes` | Não existe | **Proposta** |
-| `POST /coletas` | Não existe | **Proposta**; remissão arquitetural herdada não conferida |
+| `POST /coletas` | Não existe | Nome: Arquitetura 2.4.2. Corpo: **proposta** |
 | `GET /coletas/{id}` | Não existe | **Proposta** |
 
 **Por que `/analises/resumo`?** Indicadores, gráfico e resumo precisam de totais sobre
 todos os registros filtrados. Calculá-los no painel exigiria baixar todas as páginas,
-aumentando o custo de transferência. A meta herdada de até 2 segundos e sua
-forma de medição precisam ser confirmadas no Documento de Arquitetura/GQM; não
-foram medidas nesta revisão.
+contrariando a meta de resposta em até 2 segundos e a regra de filtrar no banco.
 
 ## Filtros (propostos para as duas rotas de leitura)
 
@@ -122,12 +114,9 @@ por compatibilidade com o contrato inicial. Respostas inválidas geram `ErroFont
 
 ## Administração
 
-A proposta de **login e senha** está registrada na [issue #58](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/issues/58).
-Ainda não há autenticação implementada no backend desta referência. As rotas
-propostas de administração deverão exigir o cabeçalho `Authorization: Bearer <token>`. O painel mantém o token em `st.session_state`, estado no servidor associado à
-sessão Streamlit; não é armazenamento persistente do navegador. Não há persistência
-implementada de credenciais; a alegação de limpeza da senha do widget não foi
-validada nesta revisão.
+O Administrador entra com **login e senha** (decisão da Product Owner de 07/11/2026). As
+rotas de administração exigem o cabeçalho `Authorization: Bearer <token>`. O painel guarda o
+token só na sessão do navegador (`st.session_state`) e nunca guarda a senha.
 
 ```mermaid
 sequenceDiagram
@@ -161,7 +150,7 @@ senha com hash e pode limitar tentativas com **429**.
 
 ### `POST /auth/logout`
 
-Deverá invalidar o token e responder **204** quando implementado. O painel encerra a sessão local mesmo se essa chamada
+Invalida o token. Responde **204**. O painel encerra a sessão local mesmo se essa chamada
 falhar.
 
 ### `POST /datasets`
@@ -182,10 +171,9 @@ Resposta **201**:
 }
 ```
 
-`registros_lidos` deve ser igual a importados + descartados. Na proposta futura, a importação gravará textos e o Administrador escolherá
-o dataset em "Coleta e análise" para classificá-los. O dataset deverá aparecer
-em `GET /coletas/fontes`. **Hoje o mock só contabiliza o CSV, usa fonte fixa e
-não grava nem classifica; o backend não implementa essa operação.**
+`registros_lidos` deve ser igual a importados + descartados. A importação só grava os textos;
+para classificá-los, o Administrador escolhe o dataset em "Coleta e análise". Por isso, o
+dataset importado deve aparecer em `GET /coletas/fontes`.
 
 ### `GET /coletas/fontes`
 
@@ -234,7 +222,7 @@ Erros de conexão, tempo esgotado, 404 e respostas fora do contrato seguem a tab
 1. Qual data o filtro de período usa (alinhamento da equipe; issue #24).
 2. Fuso horário usado para interpretar `inicio` e `fim` (issue #24).
 3. Dados para o gráfico "Evolução no período", se for mantido (alinhamento da equipe).
-4. Confirmar responsáveis e aceite das issues #21, #23, #24, #25 e #58 no planejamento.
+4. Responsável pelo backend: as issues #21, #23, #24, #25 e #58 estão sem responsável.
 5. Formato do token (JWT ou opaco), tempo de expiração e limite de tentativas de login.
 6. Tamanho máximo do CSV aceito por `POST /datasets`.
 7. Quais fontes externas a coleta oferece além do TweetSentBR (depende da decisão sobre a
@@ -245,19 +233,3 @@ Erros de conexão, tempo esgotado, 404 e respostas fora do contrato seguem a tab
 1. O backend publica as rotas e o contrato é aprovado na issue #19.
 2. Ajustar `fontes/api.py` e `tests/test_painel_fonte_api.py` se o contrato mudar.
 3. Definir `SENTIA_FONTE_DADOS=api` e `SENTIA_API_URL`. As telas não mudam.
-
-## Fronteira com dados e verificação
-
-`sentimento` é previsão, enquanto `rotulo_original` e `rotulo_padronizado` são
-anotações da fonte. O CSV pode chamar uma anotação de `sentimento`; o importador
-a converte em rótulo humano, sem criar previsão. Probabilidades e datas seguem
-os [contratos de dados](../contratos-dados.md).
-
-O cliente existe em `fontes/api.py` e `fontes/administracao_api.py`; isso comprova
-preparação para o contrato, não disponibilidade da rota.
-[tests/test_painel_fonte_api.py](../../tests/test_painel_fonte_api.py) e
-[tests/test_painel_administracao.py](../../tests/test_painel_administracao.py)
-usam respostas HTTP simuladas. [tests/test_api.py](../../tests/test_api.py)
-cobre o `/health` real via TestClient. `tests/test_api_administracao.py` não
-existe nesta referência. Conferir rotas em `uv run python -c
-"from src.servico.main import app; print(list(app.openapi()['paths']))"`.

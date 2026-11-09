@@ -1,6 +1,0 @@
-.env já existe; nada foi alterado.
-uv run ruff check src/apresentacao tests/test_painel_*.py
-All checks passed!
-uv run ruff check --isolated --select F,E9 src tests scripts test_mongo.py
-All checks passed!
-Resolved 139 packages in 6ms

@@ -1,59 +1,41 @@
 # Changelog
 
-Mudanças disponíveis na referência selecionada do SentIA. **Sem release publicada.**
-`[Não lançado]` não inventa uma versão de produto; `0.0.0` no manifesto é um
-valor técnico. Convenção: [guia do frontend](docs/frontend/README.md#changelog).
+Mudanças relevantes do SentIA. O processo está descrito em
+[docs/frontend/README.md](docs/frontend/README.md#changelog). O projeto ainda não possui
+versões publicadas; outras frentes também podem registrar suas entregas aqui.
 
 ## [Não lançado]
 
-Corte documental: **09/11/2026**, integração experimental `bfaf7da` (#69 + #70 +
-correção #71). Os PRs permanecem abertos; estas entradas indicam presença nessa
-integração, **não merge em developer/main**. A revisão documental deriva desse
-SHA em `docs-pc1-documentacao-consolidada`.
+### Corrigido
 
-### Adicionado
-
-- Base Streamlit com navegação, indicadores de total/percentuais e estados
-  normal, vazio e erro, usando dados de exemplo identificados (#13/#14).
-- Filtros de publicação e sentimento, Aplicar/Limpar e aviso de textos sem data,
-  na fonte mock (#14; PR #70).
-- Login, sessão/expiração/logout e menu de administração de exemplo (#59).
-  Upload CSV contabiliza linhas/descartes (#60); coleta tem acompanhamento
-  fictício (#61). Não persistem nem classificam dados reais (PR #70).
-- Clientes HTTP para propostas de análises/resumo e administração (#19/#58),
-  sem rotas correspondentes no backend atual. Wireframes preservados com status.
-- Preparação offline PC1: demo CSV sintético → analisador simulado → BSON,
-  exemplo de ambiente unificado, template de PR e evidências por SHA (PR #69).
-- Índice documental, retrato da arquitetura, contratos de dados, inventário de
-  fontes acadêmicas, matriz de rastreabilidade, status das entregas, resumo de
-  apresentação e auditoria da documentação nesta revisão.
+- Cliente HTTP rejeita tipos, contagens, paginação e datas incompatíveis com a
+  proposta de contrato, sem derrubar a tela nem converter valores incorretos.
+- Timeout da API exige número finito positivo; configuração inválida mostra
+  mensagem na interface. Aviso de registros sem data é documentado como futuro.
 
 ### Alterado
 
-- Dependências gerenciadas em `pyproject.toml` e `uv.lock`, execução validada com
-  Python 3.11; substituem requirements da base anterior (PR #48).
-- Makefile e CI com instalação locked, lock check, lint do frontend, verificação
-  incremental `F,E9` geral e pytest com cobertura; comandos e limites documentados.
-- README e guias técnicos alinhados à integração PC1; relatórios antigos
-  identificados como históricos. Novo frontend referenciado por #70.
 
-### Corrigido
+- Dependências migradas de `requirements*.txt` para `pyproject.toml` e `uv.lock`. A instalação
+  agora usa `uv sync --locked`, com Python 3.11 definido em `.python-version`.
 
-- Cliente de análises rejeita tipos, contagens, paginação e datas incompatíveis
-  com a proposta; timeout exige número finito positivo e erros não quebram a UI.
-- Mock administrativo converte erros de leitura CSV em mensagem compreensível,
-  inclusive CSV malformado/campo acima do limite. Regressões isolam o limite
-  global do leitor CSV (PR #71, `eb071a0`/`e40acf3`).
-- Limpar restaura também os valores visíveis dos filtros no navegador (`bcd75e7`).
-- Botões dos filtros preservam rótulos em tablet; cabeçalho de testes deixa de
-  citar arquivo de integração administrativa inexistente (PR #71).
-- Documentação distingue anotações humanas/previsão e atribui ao pipeline a
-  conversão de datas/rótulos e a criação de `data_processamento`.
+### Adicionado
 
-## Fora da referência selecionada
-
-PR #64 (experimentos BPSAD) e #65 (XFetch) continuam abertos e ausentes de
-`bfaf7da`. Correções #67/#68 foram incorporadas às branches desses PRs, mas não
-à referência desta documentação. Não são registradas como funcionalidades
-integradas aqui. #66 foi fechado sem merge e substituído por #70; seu backend
-administrativo não compõe o produto desta referência.
+- Filtros de período e de sentimento no dashboard, com botão "Limpar" e aviso de quantos
+  textos sem data ficaram fora do período, **com dados de exemplo** (#14).
+- Login do Administrador: sem login, o menu mostra só "Entrar" e as ferramentas de
+  administração ficam ocultas (#59).
+- Importação de dataset CSV pelo painel, com relatório de registros importados e descartados
+  (#60), e início e acompanhamento de coleta e análise (#61). Ambos usam **dados de exemplo**
+  até a API oferecer as rotas.
+- Proposta de contrato para login, importação e coleta, com cliente HTTP correspondente (#58).
+- Wireframes do dashboard na documentação, com o que já foi implementado de cada um (#14).
+- Base do painel Streamlit com navegação entre Dashboard e Administração; a Administração
+  ainda é só um aviso de área não implementada (#13).
+- Indicadores de total e percentual por sentimento no dashboard, **com dados de exemplo**
+  identificados na tela (#14).
+- Mensagens de estado vazio e de erro quando não há dados ou a fonte falha.
+- Cliente HTTP para o contrato **proposto** da API. Ainda sem integração com o backend, que
+  não oferece as rotas de análises (#19).
+- Lint e testes do frontend na CI.
+- Makefile com atalhos para instalar, executar e validar o projeto.

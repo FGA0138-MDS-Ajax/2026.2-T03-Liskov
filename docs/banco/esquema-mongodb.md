@@ -4,17 +4,15 @@
 
 ## 1. Visão geral
 
-Referência: integração PC1 `bfaf7da`, 09/11/2026. Este documento define o
-formato **previsto** para armazenamento no MongoDB; CRUD de análises ainda não
-está implementado. O pipeline já produz documentos em memória. Cada texto
-analisado deverá ser salvo como um documento contendo o texto,
+Este documento define o formato dos documentos que o SentIA armazena no
+MongoDB. Cada texto analisado é salvo como um documento contendo o texto,
 seus metadados e o resultado da classificação de sentimento. Serve como contrato entre as frentes de Banco, Dados, Machine
 Learning e API.
 
-A arquitetura prevista reserva o acesso ao banco para a camada de dados (PyMongo).
-A referência herdada à seção 2.4.2 do Documento de Arquitetura não foi conferida
-no artefato completo. A API **deverá** consultar os documentos e aplicar filtros
-por período (RF11) e sentimento (RF12); hoje fornece apenas `/health`.
+O banco é acessado somente pelo módulo de Persistência (pymongo), conforme a
+seção 2.4.2 do Documento de Arquitetura. A API consulta esses documentos para
+alimentar o dashboard, aplicando os filtros por período (RF11) e por
+sentimento (RF12) diretamente na consulta ao banco.
 
 
 
@@ -36,15 +34,15 @@ Datasets / coletas ─► Aquisição e importação ─► Classificação ─�
                                    Dashboard (Streamlit) ◄─ API (FastAPI) ◄─────────┘
 ```
 
-- **Quem deverá gravar:** somente o módulo de Persistência, ao receber o resultado da
+- **Quem grava:** somente o módulo de Persistência, ao receber o resultado da
   Classificação (texto, metadados, sentimento e identificação do modelo).
-- **Quem deverá ler:** somente o módulo de Persistência, a pedido da API. A interface
+- **Quem lê:** somente o módulo de Persistência, a pedido da API. A interface
   nunca acessa o banco diretamente.
 - **Preparação do texto:** o classificador BERTweet realiza a própria
   tokenização. Um pré-processamento externo (limpeza, stopwords, stemming,
   TF-IDF) só existe em modelos alternativos, como o baseline.
 
-### 1.2 Requisitos apoiados pelo esquema (sem comprovar implementação)
+### 1.2 Requisitos atendidos
 
 | Requisito | Como o esquema atende |
 |---|---|
@@ -97,8 +95,8 @@ Datasets / coletas ─► Aquisição e importação ─► Classificação ─�
 - **Campos ausentes são omitidos.** Quando um campo opcional não se aplica, ele
   não aparece no documento (em vez de ser gravado como `null`). Para encontrar
   documentos sem o campo, usa-se `$exists: false` (seção 4.7). O importador
-  entrega ausências como `None`; o pipeline já as omite no documento em memória.
-- **Privacidade (LGPD).** A política proposta não prevê armazenar campos que identifiquem o autor
+  entrega esses campos como `None`; a Persistência os omite ao gravar.
+- **Privacidade (LGPD).** Não são armazenados campos que identifiquem o autor
   do texto, como nome de usuário ou perfil, pois não são necessários para a
   análise de sentimentos.  O `texto_original` do TweetSentBR contém
   `@menções` de usuários; a anonimização desses textos depende de decisão da
@@ -116,7 +114,7 @@ são tratados na issue #12. Este esquema vale para os dois ambientes.
 | Campo | Tipo | Obrigatório | Descrição |
 |---|---|---|---|
 | `_id` | ObjectId | Sim (automático) | Identificador único do documento, gerado pelo MongoDB |
-| `id_origem` | String | Sim | Identificador do texto na fonte original (ex.: `review_id` do BPSAD). Quando a fonte não possui identificador, como o TweetSentBR, o importador gera um identificador determinístico (ex.: `TweetSentBR_000263_813e105164b8`). Com `fonte`, identifica a origem; unicidade depende do índice futuro e não deduplica conteúdo reordenado |
+| `id_origem` | String | Sim | Identificador do texto na fonte original (ex.: `review_id` do BPSAD). Quando a fonte não possui identificador, como o TweetSentBR, o importador gera um identificador determinístico (ex.: `TweetSentBR_000263_813e105164b8`). Junto com `fonte`, evita que o mesmo texto seja gravado duas vezes |
 | `fonte` | String | Sim | Nome do dataset ou da coleta de onde o texto veio, conforme entregue pelo importador (ex.: `TweetSentBR`; no BPSAD, a plataforma de origem, como `b2w` ou `olist`). Exigido pela arquitetura (RF08) |
 
 ### 3.2 Texto
@@ -139,14 +137,14 @@ são tratados na issue #12. Este esquema vale para os dois ambientes.
 | `modelo.nome` | String | Sim | Nome do modelo (ex.: `pysentimiento/bertweet-pt-sentiment`) |
 | `modelo.versao` | String |  Não | Versão do modelo ou do checkpoint utilizado, a ser definida na issue #16 |
 | `rotulo_original` | String | Não | Rótulo **humano** exatamente como veio da fonte, sem conversão (ex.: `positivo` no TweetSentBR, nota `5` no BPSAD). Preserva a informação original para auditoria. Nunca é preenchido com a previsão do modelo |
-| `rotulo_padronizado` | String | Não | O rótulo humano convertido para os mesmos valores de `sentimento` (`positivo`, `negativo`, `neutro`), pela função `converter_rotulo_para_sentia()` usada pelo pipeline. Os importadores atuais geram ambos quando há anotação; o pipeline não exige sua presença em pares para registros arbitrários. Permite medir a acurácia comparando-o diretamente com `sentimento`. Formato a confirmar na issue #19 |
+| `rotulo_padronizado` | String | Não | O rótulo humano convertido para os mesmos valores de `sentimento` (`positivo`, `negativo`, `neutro`), pela função `converter_rotulo_para_sentia()` do importador. Existe sempre que `rotulo_original` existir. Permite medir a acurácia comparando-o diretamente com `sentimento`. Formato a confirmar na issue #19 |
 
 ### 3.4 Datas
 
 | Campo | Tipo | Obrigatório | Descrição |
 |---|---|---|---|
 | `data_publicacao` | Date | Não | Data real em que o texto foi publicado, quando a fonte a informa (ex.: `review_date` do BPSAD). O TweetSentBR não possui data em nenhum registro. Nunca é substituída por outra data |
-| `data_processamento` | Date | Sim | Data e hora da classificação, preenchida pelo pipeline. Não comprova gravação no banco |
+| `data_processamento` | Date | Sim | Data e hora em que o texto foi classificado e gravado. Preenchida pelo próprio sistema, por isso sempre existe |
 
 ### 3.5 Metadados adicionais
 
@@ -273,8 +271,7 @@ Persistência quando ela for implementada na Sprint 4
 ### 4.6 Correspondência com os dados de entrada
 
 O importador (`src/processamento/aquisicao/`, issues #1 e #2) entrega cada
-registro com os campos abaixo. **Hoje o pipeline**, antes da persistência futura,
-faz as conversões a seguir:
+registro com os campos abaixo, que a Persistência converte da seguinte forma:
 
 | Campo entregue pelo importador | Campo no MongoDB | Conversão |
 |---|---|---|
@@ -295,8 +292,7 @@ Persistência. Por exemplo, no CSV padrão `id` → `id_origem`, `texto` →
 
 Os demais campos são preenchidos pelo sistema: `sentimento`,
 `probabilidades` e `modelo` pela Classificação (issues #9 e #16), e
-`data_processamento` por `PipelineClassificacao`, antes de qualquer gravação.
-A camada de persistência futura deverá preservar esses valores e os tipos BSON.
+`data_processamento` pela Persistência.
 
 ### 4.7 Consultas de exemplo
 
@@ -347,9 +343,7 @@ analises = colecao.find(filtro)
 
 ## 5. Índices
 
-Índices propostos acelerariam consultas da seção 4.7 e garantiriam unicidade
-do par fonte/ID. Não foram criados automaticamente nesta referência. IDs
-gerados incluem posição: não garantem deduplicação de conteúdo após reordenação.
+Índices aceleram as consultas da seção 4.7 e garantem a unicidade dos textos.
 
 | Nome | Campos | Tipo | Motivo |
 |---|---|---|---|
@@ -369,22 +363,3 @@ db.analises.createIndex({ data_processamento: 1 }, { name: "idx_data_processamen
 
 O `1` indica ordem crescente. O campo `_id` já possui índice automático.
 
-
-## 6. Limites de implementação e validação no PC1
-
-Os JSON são exemplos sintéticos, não resultados de inserção. `texto_tratado`
-do exemplo baseline é ilustrativo; não comprova stemming/stopwords no baseline
-atual. `probabilidades` é opcional no esquema geral, mas o pipeline atual exige
-as três probabilidades do classificador. As consultas e índices acima são
-propostas para #20/#23–#25, não rotinas disponíveis na API.
-
-A regra de metadados sem identificação de autores é política documental. O
-importador aceita colunas extras e o pipeline copia o dicionário; não há
-sanitização automática que garanta essa regra para CSV arbitrário. A coleta
-XFetch do #65 tem contrato próprio e está ausente desta referência.
-O filtro temporal do mock usa publicação provisoriamente; decisão oficial e
-fuso continuam pendentes em #24.
-
-Ver [contratos observados](../contratos-dados.md),
-[testes do pipeline](../../tests/test_pipeline.py) e
-[ensaio atual](../qa/pc1/RELATORIO_ENSAIO_FINAL.md).

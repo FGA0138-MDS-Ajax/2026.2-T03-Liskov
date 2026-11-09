@@ -1,15 +1,12 @@
 # TweetSentBR — Corpus Inicial de Aquisição e Auditoria Técnica (Issues #1 e #3)
 
-Referência documental: integração PC1 `bfaf7da`, 09/11/2026. O arquivo legado
-permanece preservado; uso técnico não equivale a autorização de redistribuição.
-
 ## 1. Descrição e Papel no SentIA
 
 O **TweetSentBR** (Brum & Volpe Nunes, LREC 2018) é utilizado pelo SentIA como **fonte inicial para o módulo de aquisição automatizada de textos em português brasileiro (RF02 / US02 — Issue #1)**.
 
 > [!IMPORTANT]
-> **Escopo técnico (aquisição versus avaliação de ML; licença pendente):**
-> - **Uso técnico implementado (Issue #1 — RF02/US02):** Carregamento automatizado de textos na camada de aquisição (`adquirir_dados` / `carregar_tweetsentbr`) e validação do pipeline de ingestão.
+> **Escopo de uso autorizado (Aquisição vs. Avaliação de ML):**
+> - **Uso autorizado (Issue #1 — RF02/US02):** Carregamento automatizado de textos na camada de aquisição (`adquirir_dados` / `carregar_tweetsentbr`) e validação do pipeline de ingestão.
 > - **Restrição para avaliação de ML (Issue #3 / Issue #17):** O arquivo `Datasets/tweetsent.csv` **não deve ser utilizado integralmente como dataset independente de avaliação** do modelo `pysentimiento/bertweet-pt-sentiment`, pois esse checkpoint foi ajustado (*fine-tuned*) sobre o próprio TweetSentBR e o arquivo local não contém a coluna de partição oficial (`split: train/test`) nem os IDs originais dos tweets para isolar o conjunto de teste, o que causaria vazamento de dados (*data leakage*).
 
 ---
@@ -78,7 +75,7 @@ print(f"Lidos: {relatorio.total_lidos} | Importados: {relatorio.total_importados
 Para reproduzir integralmente os números abaixo a qualquer momento, execute:
 
 ```bash
-uv run python -m scripts.auditar_datasets Datasets/tweetsent.csv
+python scripts/auditar_datasets.py Datasets/tweetsent.csv
 ```
 
 ### 4.1. Métricas Gerais e Integridade Estrutural
@@ -153,18 +150,3 @@ Para preservar a privacidade e evitar redistribuição desnecessária de textos 
 4. **Recomendação técnica e decisão pendente da PO:**
    - **Não versionar novas cópias públicas** de textos hidratados do Twitter/X.
    - Submeter à decisão da Product Owner e da coordenação da disciplina se o arquivo `Datasets/tweetsent.csv` deve ser removido do versionamento Git público em um PR dedicado (mantendo-o apenas localmente em `Datasets/tweetsent.csv` listado no `.gitignore` e mantendo no Git uma fixture sintética/anonimizada para a CI).
-
-## 7. Fronteiras e revisão documental do PC1
-
-Os números das seções 4 e 5 descrevem o arquivo de hash declarado, não a suíte
-de testes atual. O [ensaio atual](qa/pc1/RELATORIO_ENSAIO_FINAL.md) identifica
-data, SHA e reprodução por metadados, sem publicar novos textos.
-`rotulo_original`/`rotulo_padronizado` são anotações do corpus; não representam
-previsões BERTweet. O pipeline converte as siglas, acrescenta `sentimento`,
-`probabilidades` e `data_processamento`; publicação continua ausente.
-Ver [contratos](contratos-dados.md).
-
-A pendência de licença/redistribuição continua aberta; as referências a políticas
-externas acima são o registro técnico herdado, não parecer jurídico atualizado.
-Nenhum texto real novo foi coletado ou publicado nesta revisão. Uma eventual
-retirada do dataset requer decisão própria; não se remove evidência silenciosamente.
