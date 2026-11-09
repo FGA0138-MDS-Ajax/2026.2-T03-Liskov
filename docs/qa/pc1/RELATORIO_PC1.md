@@ -1,5 +1,13 @@
 # Relatório PC1 — SentIA
 
+> **Registro histórico preservado — auditoria de 09/11/2026 anterior ao #70.**
+> Os resultados abaixo referem-se aos SHAs identificados no texto (base `c6fc535`,
+> preparação `b9d8326`, integração antiga `480ecf1`), não ao cenário principal atual.
+> #66 foi fechado sem merge e substituído por #70; o backend administrativo
+> descrito no #66 não integra esta referência. O estado atual, com #70 + correção
+> de ensaio #71 em `bfaf7da`, está no [ensaio](RELATORIO_ENSAIO_FINAL.md), no
+> [status](STATUS_ENTREGAS.md) e no [roteiro atualizado](ROTEIRO_DEMONSTRACAO.md).
+
 Data: 09/11/2026. Base auditada: `c6fc53561055178085edcbc123fc86166edf89fa`
 (`origin/developer`). As correções propostas estão em branches próprias; nenhuma
 integração oficial foi realizada. Consulte o relatório final para SHAs e PRs novos.

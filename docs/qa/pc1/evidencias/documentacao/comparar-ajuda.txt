@@ -1,0 +1,11 @@
+usage: comparar_modelos.py [-h] [--treino TREINO] [--teste TESTE]
+                           [--dataset DATASET]
+                           [--saida-baseline SAIDA_BASELINE] [--sem-bertweet]
+
+options:
+  -h, --help            show this help message and exit
+  --treino TREINO
+  --teste TESTE
+  --dataset DATASET     TweetSentBR com colunas texto e rotulo
+  --saida-baseline SAIDA_BASELINE
+  --sem-bertweet

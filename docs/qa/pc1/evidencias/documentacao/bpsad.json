@@ -1,0 +1,56 @@
+{
+  "caminho": "/tmp/sentia-docs-pc1/tests/fixtures/bpsad_sample.csv",
+  "nome_arquivo": "bpsad_sample.csv",
+  "tamanho_bytes": 685,
+  "sha256": "f90022c79fd16f2d9d235c68abc85a3b19966d5189117ae971562f9bce018a7b",
+  "codificacao": "UTF-8",
+  "colunas": [
+    "review_id",
+    "review_text",
+    "rating",
+    "dataset",
+    "review_date",
+    "category"
+  ],
+  "possui_coluna_id_original": true,
+  "possui_coluna_data": true,
+  "possui_coluna_split": false,
+  "total_lidos": 5,
+  "total_importados": 5,
+  "total_descartados": 0,
+  "descartes_por_motivo": {},
+  "contagem_por_classe": {
+    "POS": 2,
+    "NEU": 1,
+    "NEG": 2
+  },
+  "proporcao_por_classe": {
+    "POS": 40.0,
+    "NEU": 20.0,
+    "NEG": 40.0
+  },
+  "contagem_rotulo_original": {
+    "5": 1,
+    "4": 1,
+    "3": 1,
+    "2": 1,
+    "1": 1
+  },
+  "datas_preenchidas": 5,
+  "duplicatas_exatas": {
+    "textos_unicos": 5,
+    "grupos_duplicados": 0,
+    "ocorrencias_excedentes": 0,
+    "registros_envolvidos": 0,
+    "grupos_conflitantes": 0,
+    "conflitos": []
+  },
+  "duplicatas_normalizadas": {
+    "textos_unicos": 5,
+    "grupos_duplicados": 0,
+    "ocorrencias_excedentes": 0,
+    "registros_envolvidos": 0,
+    "grupos_conflitantes": 0,
+    "conflitos": []
+  }
+}

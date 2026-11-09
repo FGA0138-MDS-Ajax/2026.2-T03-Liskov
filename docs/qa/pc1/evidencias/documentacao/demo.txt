@@ -1,0 +1,98 @@
+ANALISADOR SIMULADO. Sem inferência real ou gravação MongoDB.
+[
+  {
+    "id_origem": "tw_001",
+    "fonte": "TweetSentBR",
+    "texto_original": "A programação da conferência foi ótima e trouxe inovação ao país!",
+    "sentimento": "neutro",
+    "probabilidades": {
+      "positivo": 0.1,
+      "negativo": 0.1,
+      "neutro": 0.8
+    },
+    "modelo": {
+      "nome": "pysentimiento/bertweet-pt-sentiment",
+      "versao": "SIMULADO-PC1"
+    },
+    "data_processamento": "2026-11-09 20:34:51.643347+00:00",
+    "rotulo_original": "positivo",
+    "rotulo_padronizado": "positivo",
+    "data_publicacao": "2026-10-01 00:00:00+00:00"
+  },
+  {
+    "id_origem": "tw_002",
+    "fonte": "TweetSentBR",
+    "texto_original": "Péssimo serviço de atenção ao usuário, não recomendo de jeito nenhum.",
+    "sentimento": "neutro",
+    "probabilidades": {
+      "positivo": 0.1,
+      "negativo": 0.1,
+      "neutro": 0.8
+    },
+    "modelo": {
+      "nome": "pysentimiento/bertweet-pt-sentiment",
+      "versao": "SIMULADO-PC1"
+    },
+    "data_processamento": "2026-11-09 20:34:51.643360+00:00",
+    "rotulo_original": "negativo",
+    "rotulo_padronizado": "negativo",
+    "data_publicacao": "2026-10-02 00:00:00+00:00"
+  },
+  {
+    "id_origem": "tw_003",
+    "fonte": "TweetSentBR",
+    "texto_original": "O relatório técnico sobre inteligência artificial foi publicado hoje.",
+    "sentimento": "neutro",
+    "probabilidades": {
+      "positivo": 0.1,
+      "negativo": 0.1,
+      "neutro": 0.8
+    },
+    "modelo": {
+      "nome": "pysentimiento/bertweet-pt-sentiment",
+      "versao": "SIMULADO-PC1"
+    },
+    "data_processamento": "2026-11-09 20:34:51.643366+00:00",
+    "rotulo_original": "neutro",
+    "rotulo_padronizado": "neutro",
+    "data_publicacao": "2026-10-03 00:00:00+00:00"
+  },
+  {
+    "id_origem": "tw_004",
+    "fonte": "TweetSentBR",
+    "texto_original": "A seleção brasileira venceu a partida com atuação incrível da equipe.",
+    "sentimento": "neutro",
+    "probabilidades": {
+      "positivo": 0.1,
+      "negativo": 0.1,
+      "neutro": 0.8
+    },
+    "modelo": {
+      "nome": "pysentimiento/bertweet-pt-sentiment",
+      "versao": "SIMULADO-PC1"
+    },
+    "data_processamento": "2026-11-09 20:34:51.643372+00:00",
+    "rotulo_original": "positivo",
+    "rotulo_padronizado": "positivo",
+    "data_publicacao": "2026-10-04 00:00:00+00:00"
+  },
+  {
+    "id_origem": "tw_005",
+    "fonte": "TweetSentBR",
+    "texto_original": "O sistema permaneceu indisponível durante a manutenção programada.",
+    "sentimento": "neutro",
+    "probabilidades": {
+      "positivo": 0.1,
+      "negativo": 0.1,
+      "neutro": 0.8
+    },
+    "modelo": {
+      "nome": "pysentimiento/bertweet-pt-sentiment",
+      "versao": "SIMULADO-PC1"
+    },
+    "data_processamento": "2026-11-09 20:34:51.643376+00:00",
+    "rotulo_original": "negativo",
+    "rotulo_padronizado": "negativo"
+  }
+]
+5 registros importados, classificados por mock e serializados em BSON.

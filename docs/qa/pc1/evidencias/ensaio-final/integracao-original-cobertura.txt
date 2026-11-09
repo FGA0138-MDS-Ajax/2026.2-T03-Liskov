@@ -1,0 +1,81 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.18, pytest-9.2.0, pluggy-1.7.0
+rootdir: /tmp/sentia-ensaio/integracao
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.16.0, cov-7.1.0
+collected 458 items
+
+tests/test_api.py .                                                      [  0%]
+tests/test_aquisicao.py .........................                        [  5%]
+tests/test_auditoria_datasets.py ...                                     [  6%]
+tests/test_avaliacao.py ................                                 [  9%]
+tests/test_classificacao.py ............                                 [ 12%]
+tests/test_comparar_modelos.py .....                                     [ 13%]
+tests/test_csv_importer.py ............................................. [ 23%]
+...................................................                      [ 34%]
+tests/test_database.py ...................................               [ 42%]
+tests/test_importacao.py ....................                            [ 46%]
+tests/test_integracao_conjunta.py ..........                             [ 48%]
+tests/test_painel_administracao.py ..................................... [ 56%]
+.....                                                                    [ 57%]
+tests/test_painel_arquitetura.py ..................                      [ 61%]
+tests/test_painel_config.py ............                                 [ 64%]
+tests/test_painel_filtros.py .................                           [ 68%]
+tests/test_painel_fonte_api.py ......................................... [ 77%]
+...................................................                      [ 88%]
+tests/test_painel_fonte_mock.py .......                                  [ 89%]
+tests/test_painel_transformacoes.py ...........                          [ 92%]
+tests/test_painel_ui.py ..................                               [ 96%]
+tests/test_pipeline.py ..................                                [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.11/site-packages/fastapi/testclient.py:1
+  /tmp/sentia-ensaio/integracao/.venv/lib/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.11.18-final-0 _______________
+
+Name                                                Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------------------
+src/__init__.py                                         0      0   100%
+src/apresentacao/__init__.py                            0      0   100%
+src/apresentacao/app.py                                20      1    95%   9
+src/apresentacao/componentes.py                        10      0   100%
+src/apresentacao/config.py                             27      1    96%   33
+src/apresentacao/contrato.py                           63      0   100%
+src/apresentacao/fontes/__init__.py                    20      0   100%
+src/apresentacao/fontes/administracao_api.py          105     12    89%   49, 103, 109, 116-117, 170-182
+src/apresentacao/fontes/administracao_mock.py          75      6    92%   105, 130, 135, 138, 141, 144
+src/apresentacao/fontes/api.py                        103      0   100%
+src/apresentacao/fontes/mock.py                        30      1    97%   115
+src/apresentacao/paginas/__init__.py                    0      0   100%
+src/apresentacao/paginas/administracao.py             141     34    76%   104-105, 114-115, 132-154, 167-171, 173-174, 185-189, 200-204, 217
+src/apresentacao/paginas/dashboard.py                  25      0   100%
+src/apresentacao/secoes/__init__.py                     0      0   100%
+src/apresentacao/secoes/filtros.py                     38      0   100%
+src/apresentacao/secoes/indicadores.py                 14      0   100%
+src/apresentacao/tema.py                                9      0   100%
+src/apresentacao/transformacoes.py                     38      0   100%
+src/dados/__init__.py                                   0      0   100%
+src/dados/database.py                                  42      0   100%
+src/processamento/__init__.py                           0      0   100%
+src/processamento/aquisicao/__init__.py                 5      0   100%
+src/processamento/aquisicao/auditoria_datasets.py     121      2    98%   110, 273
+src/processamento/aquisicao/bpsad_adapter.py           95      7    93%   65, 70, 105, 108, 153, 282, 288
+src/processamento/aquisicao/csv_importer.py           183      4    98%   204, 212, 215, 509
+src/processamento/aquisicao/tweetsentbr.py             59      0   100%
+src/processamento/classificacao/__init__.py             0      0   100%
+src/processamento/classificacao/avaliacao.py           21      0   100%
+src/processamento/classificacao/baseline.py            21      0   100%
+src/processamento/classificacao/bertweet.py            48      4    92%   29, 56-57, 85
+src/processamento/classificacao/rotulos.py             10      0   100%
+src/processamento/pipeline.py                         131     18    86%   22, 29-30, 34-39, 61, 63, 77, 86, 106-107, 126, 131, 137, 155-156, 209
+src/processamento/preprocessamento/__init__.py          0      0   100%
+src/servico/__init__.py                                 0      0   100%
+src/servico/main.py                                     5      0   100%
+---------------------------------------------------------------------------------
+TOTAL                                                1459     90    94%
+======================= 458 passed, 1 warning in 14.76s ========================

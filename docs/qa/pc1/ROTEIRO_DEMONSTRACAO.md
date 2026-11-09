@@ -1,32 +1,50 @@
-# Roteiro de demonstração — PC1, 09/11/2026
+# Roteiro validado de demonstração — PC1
 
-Duração sugerida: 5–8 minutos. Executar na raiz da entrega A ou da worktree
-experimental já preparada. A entrega A funciona sem integrar os PRs #64/#65.
+Data: **09/11/2026**. Duração sugerida: 5–8 minutos, sem constituir regra da disciplina.
+Cenário principal: **B**, integração `test/pc1-integracao-frontend-atualizado`,
+SHA `bfaf7da4437493f5ee9b44022d4979623b232add` (#69 + frontend #70 + correção
+#71). A branch `docs/pc1-documentacao-consolidada` mantém o mesmo código e acrescenta
+esta documentação. Não confundir com `developer`, ainda em `c6fc535` no corte.
+
+Contingência **A**: `chore/pc1-estabilizacao-organizacao`, SHA
+`b9d832669e7f49b7a09ef8ad0be6e55959d4c135`, em `/tmp/sentia-pc1/base` neste
+computador. Nela não há filtros/login/administração novos do #70.
+O roteiro anterior está preservado no [histórico Git](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/b9d832669e7f49b7a09ef8ad0be6e55959d4c135/docs/qa/pc1/ROTEIRO_DEMONSTRACAO.md).
 
 ## 1. Preparar antes da apresentação
 
+Na raiz do cenário escolhido:
+
 ```bash
+git rev-parse HEAD
 uv sync --locked
 make env
-uv run pytest -v -ra
-uv run python -m scripts.demonstrar_pipeline
+uv run --offline python -m scripts.demonstrar_pipeline
+uv run --offline pytest -v -ra --cov=src --cov-report=term-missing
 ```
 
-Não instalar o grupo ML. Não configurar Atlas ou chave XFetch. A instalação inicial
-exige internet; depois do sync, os comandos abaixo usam dependências locais.
-`make env` preserva um `.env` existente. Não compartilhar seu conteúdo na tela.
-
-Neste computador a entrega está em `/tmp/sentia-pc1/base` e o uv foi instalado em
-`/tmp/sentia-pc1/tooling/bin/uv`. Se o comando uv não estiver no PATH:
+Preparar dependências antes; offline exige cache/ambiente já instalado. Não é
+necessário instalar grupo ML ou configurar serviços externos. `make env`
+preserva `.env` existente; não mostrar conteúdo privado durante a apresentação.
+Se uv não estiver no PATH neste computador:
 
 ```bash
 export PATH=/tmp/sentia-pc1/tooling/bin:$PATH
 export UV_CACHE_DIR=/tmp/sentia-pc1/cache
 export UV_PYTHON_INSTALL_DIR=/tmp/sentia-pc1/python
-cd /tmp/sentia-pc1/base
 ```
 
-## 2. Mostrar o painel
+## 2. Apresentar o produto e as fronteiras
+
+“O SentIA busca consolidar sentimentos de textos em português, especialmente
+publicações sobre temas em redes sociais. Este incremento mostra aquisição,
+contratos de classificação e interface com dados de exemplo. A integração real
+com banco e endpoints completos ainda é próxima entrega.”
+
+Mostrar a [arquitetura observada](../../arquitetura.md). São dois fluxos
+independentes nesta versão: painel mock e pipeline demonstrativo.
+
+## 3. Cenário principal B — dashboard e administração simulada
 
 Terminal A:
 
@@ -34,15 +52,32 @@ Terminal A:
 SENTIA_FONTE_DADOS=mock SENTIA_MOCK_CENARIO=normal uv run --offline streamlit run src/apresentacao/app.py --browser.gatherUsageStats=false
 ```
 
-Abrir `http://localhost:8501`. Mostrar aviso de **dados fictícios**, total analisado
-e percentuais positivo/neutro/negativo. Navegar para Administração e explicar o
-placeholder. Não apresentar autenticação, gráficos/filtros futuros ou coleta como
-entregues. O painel mock independe do servidor FastAPI.
+Abra `http://localhost:8501`. Mostrar o aviso Dados de exemplo e a ressalva sobre
+previsão. Sem filtros, a fonte fixa tem **17 registros**, 8 positivos, 4 neutros e
+5 negativos; percentuais inteiros **47%, 24%, 29%**. Isso não é resultado de
+inferência executada na apresentação.
 
-Opcional: encerrar com Ctrl+C e repetir trocando `SENTIA_MOCK_CENARIO` por `vazio`
-ou `erro`, demonstrando as mensagens sem exceção.
+1. Selecionar Negativo e aplicar: total 5, classe negativa 100%.
+2. Aplicar agosto/2026: somente registros publicados no período; aviso sobre
+   registros sem data. Com sentimento Negativo, total 1 e aviso de 1 excluído
+   sem data. Limpar restaura o conjunto completo.
+3. Mostrar Entrar; usar `admin` / `senha-de-exemplo` (credenciais fictícias).
+4. Em Administração, enviar `tests/fixtures/dataset_valido.csv`: cinco válidos.
+   Se necessário, usar fixture inválida/vazia para demonstrar mensagem de erro.
+5. Em Coleta e análise, iniciar uma fonte de exemplo e clicar Atualizar situação.
+   O mock conclui com a contagem fixa de 17, sem usar o CSV recém-enviado.
+6. Sair: menu volta para Entrar. Sessão expirada também retorna ao login.
 
-## 3. Mostrar a API
+Dizer explicitamente: **login, coleta e importação são fluxos simulados; não há
+persistência ou classificação real pelo painel, nem atualização dos indicadores
+com o CSV importado**. Gráfico, listagem, resumo textual e busca temática ainda
+não aparecem nesta versão.
+
+Estados opcionais: interromper com Ctrl+C e reiniciar com
+`SENTIA_MOCK_CENARIO=vazio` ou `erro`. No modo `api`, rotas ausentes geram erro,
+sem substituir a resposta por mocks. [Validação](VALIDACAO_FRONTEND_CLICIA.md).
+
+## 4. API básica
 
 Terminal B:
 
@@ -54,50 +89,52 @@ Terminal C:
 
 ```bash
 curl --fail http://127.0.0.1:8000/health
+uv run --offline python -c "from src.servico.main import app; print(list(app.openapi()['paths']))"
 ```
 
-Esperado: `{"status":"ok"}`. Esse endpoint confirma apenas o serviço em execução.
-O cliente HTTP do painel ainda depende de endpoints futuros de análises/resumo.
+Esperado: `{"status":"ok"}` e `['/health']`. A documentação OpenAPI automática
+não implica endpoints de análise/administração. Não demonstrar backend do #66.
 
-## 4. Importação e pipeline offline
+## 5. Pipeline independente
 
 ```bash
 uv run --offline python -m scripts.demonstrar_pipeline
 ```
 
-O script lê `tests/fixtures/dataset_valido.csv`, importa cinco registros sintéticos,
-usa `ClassificadorBertweet` com **analisador simulado constante** e imprime o
-resultado estruturado. Mostrar `texto_original`, `id_origem`, `fonte`, rótulo
-humano separado da previsão, probabilidades e datas UTC. O script verifica
-serialização BSON; não grava nem consulta MongoDB e não mede acurácia real.
+Cinco registros sintéticos → analisador simulado constante → documentos BSON.
+Mostrar texto/ID/fonte preservados, rótulo humano separado de `sentimento`,
+probabilidades e datas UTC. `data_processamento` é criada pelo pipeline;
+`data_publicacao` vem da fonte. BSON serializável não significa MongoDB gravado.
+O analisador simulado não mede acurácia BERTweet.
 
-## 5. Testes e decisões arquiteturais
+## 6. Testes e resultados reais
 
-```bash
-uv run --offline pytest -v -ra
-uv run --offline pytest --cov=src --cov-report=term-missing
-make lint
-```
+Exibir [ensaio atual](RELATORIO_ENSAIO_FINAL.md) e [matriz](MATRIZ_RASTREABILIDADE.md):
+09/11/2026, código `bfaf7da`, **461 aprovados, 0 falhas/skips, cobertura `src` 94%**.
+Lint e lock verificados. O valor de 394 testes/96% pertence à base histórica
+`c6fc535`/`b9d8326`; 471/96% pertence à integração antiga `480ecf1` com outras
+entregas. Não misturar contagens. Mocks e testes locais não são métricas GQM.
 
-Base auditada: 394 testes aprovados, nenhum ignorado e 96% de cobertura.
-Resultados das branches corrigidas estão no relatório final; não misturar contagens.
-Explicar separação entre aquisição, processamento, serviço, dados e apresentação;
-texto preservado antes do BERTweet e baseline clássico separado.
+## 7. Próximas entregas e limites
 
-## 6. Encerrar com o estado real
+Revisar/aceitar #69/#70/#71; contrato #19; MongoDB #20; endpoints #21/#23–#25;
+autenticação real #58; dashboard integrado/listagem/gráficos/resumo #27–#29;
+avaliação reproduzível #17; homologar #64/#65 e decisões de licença/privacidade.
+Pesquisa híbrida é proposta. Não afirmar aceite acadêmico, avaliação independente
+ou serviço externo homologado sem evidência.
 
-Em desenvolvimento: persistência, consultas/filtros/autenticação na API,
-importação/coleta pelo painel, gráficos completos e integração de resultados reais.
-Busca híbrida é proposta. Métricas BPSAD do autor não foram reproduzidas aqui.
-Pesos BERTweet e API externa não foram exercitados ao vivo nesta auditoria.
+## Contingência A
 
-## Alternativa de contingência
+Se a integração B não estiver disponível, usar a base `b9d8326` preparada.
+Os comandos de painel, `/health`, pipeline e suíte são os mesmos, mas mostrar
+somente indicadores mock e navegação. A Administração é placeholder; não apresentar
+login, filtros, upload ou coleta. A evidência histórica da base registra 394
+aprovados/96%, em 09/11/2026, sem atribuir esse número ao cenário B.
 
-Se o uv não estiver no PATH mas a `.venv` estiver pronta, usar
-`.venv/bin/python -m streamlit run src/apresentacao/app.py`,
-`.venv/bin/python -m uvicorn src.servico.main:app` e
-`.venv/bin/python -m scripts.demonstrar_pipeline`.
-Se a porta estiver ocupada, usar `--server.port 8502` ou `--port 8001` e ajustar URL.
-Sem ambiente preparado ou rede para instalar dependências, apresentar as evidências
-salvas em `docs/qa/pc1/evidencias/` e o código; declarar que não é execução ao vivo.
-Não afirmar que um ambiente sem dependências executa a aplicação.
+Se faltar uv mas a `.venv` correspondente estiver preparada, substituir `uv run
+--offline` por `.venv/bin/python -m` para Streamlit/Uvicorn e por
+`.venv/bin/python -m scripts.demonstrar_pipeline` para a demo. Para testes,
+`.venv/bin/python -m pytest -v -ra`.
+Porta ocupada: `--server.port 8502` / `--port 8001`, ajustando as URLs.
+Sem ambiente preparado, mostrar [evidências preservadas](evidencias/README.md),
+identificando reprodução gravada/documental. Não afirmar execução ao vivo.

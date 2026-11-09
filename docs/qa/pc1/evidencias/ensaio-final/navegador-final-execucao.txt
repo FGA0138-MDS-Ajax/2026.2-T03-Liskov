@@ -1,0 +1,1 @@
+{"checks": 16, "resultado": "aprovado", "evidencias": "/tmp/sentia-ensaio/evidencias/navegador"}

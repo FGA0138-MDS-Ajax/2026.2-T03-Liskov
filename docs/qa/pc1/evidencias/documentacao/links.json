@@ -1,0 +1,11 @@
+{
+  "data": "2026-11-09",
+  "referencia_codigo": "bfaf7da4437493f5ee9b44022d4979623b232add",
+  "arquivos_markdown": 31,
+  "links_locais": 299,
+  "ancoras": 3,
+  "urls_github_unicas": 65,
+  "urls_externas_unicas": 70,
+  "erros": [],
+  "escopo_externo": "PRs/issues conferidos no inventario GitHub; blobs fixos conferidos por objeto Git. URLs Figma/fornecedores e runs historicos nao foram revalidados por HTTP."
+}
