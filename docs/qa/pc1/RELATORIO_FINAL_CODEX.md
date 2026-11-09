@@ -20,7 +20,8 @@ passou em **471 testes, 0 falhas, 0 skips, 96% de cobertura**. Parecer de contra
 
 Sem nova inferência real BERTweet, consulta XFetch, conexão Atlas ou reprodução das
 métricas BPSAD. Persistência de análises, endpoints completos e fluxo real até o
-dashboard continuam pendentes. Critérios oficiais do PC1 não foram disponibilizados
+dashboard continuam pendentes. A entrega A está no PR #69, com CI verde no commit de documentação/evidências.
+Critérios oficiais do PC1 não foram disponibilizados
 nos materiais localizados; não são inventados neste relatório.
 
 ## B. Alterações realizadas
@@ -165,13 +166,13 @@ Evidências: [base](evidencias/base-pytest.txt), [cobertura](evidencias/base-cob
 | PR #65 original `63f3ce5` | SUCCESS na consulta inicial | [run 42569749460](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/42569749460) |
 | Correção #67 `1cd636e` | SUCCESS | [run 42681909047](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/42681909047) |
 | Correção #68 `4507aac` | SUCCESS | [run 42681914171](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/42681914171) |
-| Entrega A | Publicação/check final registrados na seção G | Consultar PR da entrega |
+| Entrega A `33b656f` | SUCCESS | [run 42682766618](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/42682766618) |
 
 ## G. PRs e commits
 
 | Entrega | Branch própria | Commit de implementação | Publicação / destino |
 |---|---|---|---|
-| A | `chore/pc1-estabilizacao-organizacao` | `8806bfa` + documentação final | PR para developer, a registrar após publicação |
+| A | `chore/pc1-estabilizacao-organizacao` | `8806bfa` (preparação), `33b656f` (relatórios/evidências) + registro final documental | [PR #69](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/69) → `developer` |
 | B | `fix/pr64-pc1-reprodutibilidade` | `1cd636e791529f987175355e2f10dbaeac264b2a` | [PR #67](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/67) → `feat/integrar-classificador` |
 | C | `fix/pr65-pc1-aquisicao` | `4507aaca269e32873ad52b1f48ae431c56cdb971` | [PR #68](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/68) → `xfetch` |
 | Experimental | `test/pc1-integracao` | `c368b1d`, `480ecf1ff03d69518e7771c4278772ac44e9a3b2` | Local, sem PR de merge |
@@ -185,6 +186,14 @@ nenhum crédito foi atribuído a um integrante indevidamente.
 O conector GitHub recusou a criação de PRs com 403 por permissão da integração;
 a publicação prosseguiu com o gh autenticado do ambiente. Não houve merges,
 force push, reescrita de histórico ou alterações de branches dos colegas.
+Na atualização final, developer/main permaneceram nos SHAs auditados. O PR #66
+(`feat/painel-filtros-admin`, `dcc1f3f`, 29 arquivos) apareceu durante a execução.
+Foram consultados seus metadados: propõe filtros, login e administração; não está
+integrado e não foi submetido à revisão integral reservada a #64/#65 nesta tarefa.
+Sua homologação fica pendente; não atribuir suas funcionalidades à base auditada.
+Não havia sessões de documentos conectadas; não foram encontrados outros
+artefatos acadêmicos por esse meio.
+
 Diferenças remanescentes incluem implementações futuras e conflitos históricos
 já documentados; revisar estes conflitos quando os PRs originais forem integrados.
 
@@ -236,7 +245,7 @@ aceite dos critérios da PO. Nenhum review foi submetido em nome de um integrant
 
 | Prioridade | Próximo trabalho | Momento / aceite |
 |---|---|---|
-| P1 | Revisar #67/#68, atualizar PRs originais e resolver uv/workflow em developer | Após revisão humana; sem merge automático |
+| P1 | Revisar #67/#68, atualizar PRs originais e resolver uv/workflow em developer; revisar separadamente o novo #66 | Após revisão humana; sem merge automático |
 | P1 | Homologar requisitos/contrato único e documentação Visão/Arquitetura/GQM | Equipe e PO; localizar documentos oficiais e critérios PC1 |
 | P1 | Decidir redistribuição/licença de `Datasets/tweetsent.csv` | PO/equipe; arquivo preservado |
 | P1 | Confirmar custos, termos e privacidade da coleta; teste real XFetch autorizado | Depois do PC1, sem usar chave alheia automaticamente |

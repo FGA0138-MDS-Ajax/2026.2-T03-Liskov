@@ -12,6 +12,10 @@ O diretório local não rastreado `docs/auditorias/` foi preservado integralment
 PR #64: aberto, head `0e19b6b`, dois commits, três arquivos; sem revisão submetida.
 PR #65: aberto, head `63f3ce5`, um commit, quatro arquivos; sem revisão submetida.
 Ambos tinham check `test` verde na consulta inicial.
+Na consulta final surgiu o PR #66 (`dcc1f3f`, filtros/administração), ainda aberto
+e não integrado. Seu inventário foi registrado, mas a revisão integral nesta
+auditoria foi dos PRs #64/#65, conforme escopo solicitado. A developer permaneceu
+em `c6fc535` na última atualização remota.
 
 ## Funcionalidades e limites
 
@@ -76,3 +80,6 @@ revisadas antes de qualquer merge.
 - Integração experimental `480ecf1`: **471 passed, 0 failed, 0 skipped**, 96%.
 - Contratos conjuntos **COMPATÍVEIS**, somente no escopo offline testado.
   [Resoluções e limites](evidencias/integracao-resolucoes.md).
+
+Entrega A: [PR #69](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/69),
+CI [success em 33b656f](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/42682766618).
