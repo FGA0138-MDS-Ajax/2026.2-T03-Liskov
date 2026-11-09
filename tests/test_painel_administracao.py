@@ -1,9 +1,11 @@
 """Administração com login (T01 a T03), no modo de exemplo e com respostas HTTP simuladas.
 
-Estes testes verificam as telas e o tratamento de erros do cliente. A integração com
-as rotas reais está em tests/test_api_administracao.py.
+Estes testes verificam as telas e o tratamento de erros do cliente com mocks.
+As rotas administrativas ainda são uma proposta; não há teste de integração
+com backend administrativo nesta entrega (ver docs/frontend/CONTRATO-API.md).
 """
 
+import csv
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -369,3 +371,23 @@ def test_sessao_expirada_volta_ao_login_com_aviso(ambiente):
     app.run()
     assert app.subheader[0].value == "Entrar como administrador"
     assert "sessão expirou" in app.warning[0].value
+
+
+@pytest.mark.parametrize(
+    "conteudo",
+    [
+        b'texto,fonte\n"aspas sem fechamento,sintetica\n',
+        ("texto,fonte\n" + "a" * 150_000 + ",sintetica\n").encode(),
+    ],
+    ids=["csv-malformado", "campo-acima-do-limite"],
+)
+def test_mock_trata_erros_do_leitor_csv_com_mensagem_para_interface(conteudo):
+    # O importador de produção pode ampliar o limite global em outros testes.
+    # Reproduz o limite padrão do processo Streamlit e restaura o estado depois.
+    limite_anterior = csv.field_size_limit()
+    try:
+        csv.field_size_limit(131_072)
+        with pytest.raises(ErroFonteDados, match="CSV.*malformado"):
+            AdministracaoMock().importar_dataset(sessao_valida(), "sintetico.csv", conteudo)
+    finally:
+        csv.field_size_limit(limite_anterior)
