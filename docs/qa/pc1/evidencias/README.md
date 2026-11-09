@@ -2,7 +2,10 @@
 
 Todas as coleções são de **09/11/2026**, salvo a pasta histórica `../../pr44-pr45/`
 (homologação de 06/11 identificada no próprio relatório). Logs antigos permanecem
-intactos; erros/skips/tentativas intermediárias não foram apagados.
+intactos na origem; erros/skips/tentativas intermediárias não foram apagados.
+Na cópia incorporada, espaços ao final de linhas de `limpar-falha-browser.txt` e
+`regressao-csv-antes.txt` foram normalizados para passar no diff check, sem alterar
+mensagens ou resultados. Os arquivos originais do ensaio permanecem preservados.
 
 | Coleção | Referência | Como interpretar |
 |---|---|---|

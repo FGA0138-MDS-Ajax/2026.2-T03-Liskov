@@ -35,11 +35,11 @@ conteudo = b'texto,fonte\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
         with pytest.raises(ErroFonteDados, match="CSV.*malformado"):
 >           AdministracaoMock().importar_dataset(sessao_valida(), "sintetico.csv", conteudo)
 
-tests/test_painel_administracao.py:385: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_painel_administracao.py:385:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 src/apresentacao/fontes/administracao_mock.py:70: in importar_dataset
     for linha in leitor:
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = <csv.DictReader object at 0x7ff1766685d0>
 

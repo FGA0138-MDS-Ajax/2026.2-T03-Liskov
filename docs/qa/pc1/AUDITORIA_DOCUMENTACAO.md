@@ -95,7 +95,9 @@ dependentes do corpus BPSAD completo. Nenhuma variável privada foi exibida.
 
 O sandbox bloqueou TestClient/bind e consultas GitHub; as verificações necessárias
 foram repetidas com autorização fora dele. Tentativa bloqueada não foi registrada
-como aprovação. Não foram escritos novos testes no repositório nesta tarefa.
+como aprovação. Não foram escritos novos testes no repositório nesta tarefa. As cópias de dois
+logs do ensaio tiveram apenas espaços finais normalizados; mensagens, falhas e
+resultados foram preservados, assim como os originais na worktree de origem.
 
 ## Contradições e pendências de aceite
 

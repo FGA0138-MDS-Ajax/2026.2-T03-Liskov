@@ -14,7 +14,7 @@ Traceback (most recent call last):
   File "/tmp/sentia-ensaio/browser-env/lib/python3.11/site-packages/playwright/_impl/_assertions.py", line 60, in _record_soft_or_raise
     raise error
 AssertionError: Locator expected to have text '5'
-Actual value: 17 
+Actual value: 17
 Call log:
   - Expect "to_have_text" get_by_test_id("stMetricValue").first with timeout 5000ms
   - waiting for get_by_test_id("stMetricValue").first
