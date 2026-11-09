@@ -19,6 +19,8 @@ dependencies = [
 ]
 
 [dependency-groups]
+# Medição de memória somente nos experimentos; não instalado por padrão.
+experimentos = ["psutil>=6,<8"]
 dev = [
     "pytest",
     "pytest-cov",
