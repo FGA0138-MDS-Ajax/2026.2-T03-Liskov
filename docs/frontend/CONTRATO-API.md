@@ -1,13 +1,16 @@
 # Contrato entre o painel e a API
 
-**Situação em 07/11/2026:** o backend oferece somente `GET /health`. As rotas de
-análises abaixo **ainda não existem**. Este documento é uma **proposta do frontend**
-para as issues #19, #21, #23, #24 e #25, e pode mudar quando o contrato for aprovado.
+**Situação em 09/11/2026:** o backend oferece `GET /health` e as rotas de
+**administração** (login, importação e coleta), em `src/servico/administracao.py`. As rotas
+de **análises** ainda **não existem**. Este documento é uma **proposta do frontend** para as
+issues #19, #21, #23, #24, #25 e #58, e pode mudar quando o contrato for aprovado.
 
-No código, a proposta é consumida por `src/apresentacao/fontes/api.py`. Enquanto o
-backend não evolui, as telas usam `fontes/mock.py`, que implementa a mesma interface
-(`FonteAnalises`, em `contrato.py`). Testes com respostas simuladas **não comprovam
-integração**.
+No código, o contrato é consumido por `src/apresentacao/fontes/api.py` (análises) e
+`fontes/administracao_api.py` (administração). No modo `mock`, as telas usam
+`fontes/mock.py` e `fontes/administracao_mock.py`, que implementam as mesmas interfaces
+(`FonteAnalises` e `FonteAdministracao`, em `contrato.py`). As rotas de administração são
+testadas com o cliente do painel ligado à API real (`tests/test_api_administracao.py`); as de
+análises, só com respostas simuladas, o que **não comprova integração**.
 
 ## Rotas
 
@@ -16,8 +19,12 @@ integração**.
 | `GET /health` | **Existe** | `src/servico/main.py` |
 | `GET /analises` | Não existe | Nome e filtros: Arquitetura 2.4.2. Paginação e corpo: proposta |
 | `GET /analises/resumo` | Não existe | **Proposta.** O esquema (seção 4.7) prevê a contagem por sentimento, mas não define a rota |
-| `POST /datasets` | Não existe | Nome: Arquitetura 2.4.2. Corpo: a definir |
-| `POST /coletas` | Não existe | Nome: Arquitetura 2.4.2. Corpo: a definir |
+| `POST /auth/login` | **Existe** | `src/servico/administracao.py` (login do Administrador, issue #58) |
+| `POST /auth/logout` | **Existe** | `src/servico/administracao.py` |
+| `POST /datasets` | **Existe** | Nome: Arquitetura 2.4.2. Corpo: proposta deste documento |
+| `GET /coletas/fontes` | **Existe** | Proposta deste documento |
+| `POST /coletas` | **Existe** | Nome: Arquitetura 2.4.2. Corpo: proposta deste documento |
+| `GET /coletas/{id}` | **Existe** | Proposta deste documento |
 
 **Por que `/analises/resumo`?** Indicadores, gráfico e resumo precisam de totais sobre
 todos os registros filtrados. Calculá-los no painel exigiria baixar todas as páginas,
@@ -84,9 +91,8 @@ desconhecida; string vazia e datetime sem fuso são rejeitados.
 ```
 
 `sem_data_publicacao` conta os registros deixados de fora do filtro de período por não
-terem data. Sem filtro de período, vale 0. O painel usará esse número para avisar o
-usuário quando os filtros forem implementados, como recomenda o esquema (seção 4.7).
-Esse aviso ainda não é exibido pelo dashboard atual.
+terem data. Sem filtro de período, vale 0. Quando é maior que 0, o dashboard avisa
+quantos textos ficaram de fora, como recomenda o esquema (seção 4.7).
 
 `total` conta somente os registros que atendem aos filtros e deve ser igual à soma
 das contagens das três classes em `por_sentimento`. Essas contagens e
@@ -107,12 +113,152 @@ por compatibilidade com o contrato inicial. Respostas inválidas geram `ErroFont
 | Outros códigos | A API retornou um erro inesperado (HTTP N). |
 | Corpo inválido ou fora do contrato | A resposta da API não segue o contrato. |
 
+## Administração
+
+O Administrador entra com **login e senha** (decisão da Product Owner de 07/11/2026). As
+rotas de administração exigem o cabeçalho `Authorization: Bearer <token>`. O painel guarda o
+token só na sessão do navegador (`st.session_state`) e nunca guarda a senha.
+
+### Configuração da API
+
+| Variável | Obrigatória | Uso |
+|---|---|---|
+| `SENTIA_ADMIN_USUARIO` | Sim | Nome de usuário do Administrador |
+| `SENTIA_ADMIN_SENHA_HASH` | Sim | Hash scrypt da senha, gerado com `make hash-senha`. A senha nunca fica no repositório |
+| `SENTIA_SESSAO_MINUTOS` | Não (60) | Duração da sessão |
+| `SENTIA_LIMITE_CSV_MB` | Não (10) | Tamanho máximo do CSV em `POST /datasets` |
+| `SENTIA_LIMITE_COLETA` | Não (1000) | Quantos textos do TweetSentBR cada coleta lê |
+
+Sem usuário e hash configurados, `POST /auth/login` responde **503** e ninguém entra.
+
+**Limitações atuais:**
+
+- Até a persistência no MongoDB (#20), datasets importados, coletas e análises ficam **na
+  memória da API** e se perdem quando ela reinicia. O mesmo vale para as sessões.
+- A análise usa o BERTweet do pipeline. Sem `make setup-ml`, a coleta termina como `falhou`,
+  com a mensagem "O classificador de sentimentos não está instalado neste servidor."
+- O token é opaco (não é JWT) e vale só para o processo da API que o emitiu.
+- Depois de 5 falhas de login seguidas do mesmo endereço e usuário, novas tentativas recebem
+  **429** por 5 minutos.
+
+```mermaid
+sequenceDiagram
+    actor A as Administrador
+    participant P as Painel
+    participant API
+    A->>P: usuário e senha
+    P->>API: POST /auth/login
+    API-->>P: token e expiração
+    A->>P: envia CSV
+    P->>API: POST /datasets (Bearer)
+    API-->>P: relatório de importação
+    A->>P: inicia coleta e análise
+    P->>API: POST /coletas (Bearer)
+    API-->>P: 202 e id da coleta
+    P->>API: GET /coletas/{id} (Bearer)
+    API-->>P: situação e contagens
+```
+
+### `POST /auth/login`
+
+Corpo: `{"usuario": "admin", "senha": "..."}`. Resposta 200:
+
+```json
+{ "token": "eyJ...", "usuario": "admin", "expira_em": "2026-11-30T18:00:00Z" }
+```
+
+`token` e `usuario` são strings não vazias. `expira_em` é ISO 8601 com fuso. Credencial
+errada retorna **401** com mensagem genérica, sem dizer qual campo errou. A API deve guardar a
+senha com hash e pode limitar tentativas com **429**.
+
+### `POST /auth/logout`
+
+Invalida o token. Responde **204**. Sem token válido, responde 401. O painel encerra a sessão local mesmo se essa chamada
+falhar.
+
+### `POST /datasets`
+
+Envio `multipart/form-data` com o campo `arquivo` (CSV em UTF-8). As colunas seguem o
+importador do backend (`src/processamento/aquisicao/csv_importer.py`): `texto` ou
+`texto_original` e `fonte` são obrigatórias; `id`, `sentimento` e `data` são opcionais.
+Resposta **201**:
+
+```json
+{
+  "id_dataset": "ds_20261107_01",
+  "nome_arquivo": "comentarios.csv",
+  "registros_lidos": 120,
+  "registros_importados": 117,
+  "registros_descartados": 3,
+  "descartes_por_motivo": { "texto_vazio": 2, "colunas_excedentes": 1 }
+}
+```
+
+`registros_lidos` deve ser igual a importados + descartados. Arquivo sem extensão `.csv`
+recebe **415**; acima do limite, **413**; CSV sem as colunas obrigatórias, vazio, fora de
+UTF-8 ou sem nenhum registro válido, **422** com a `mensagem` do importador. A importação só grava os textos;
+para classificá-los, o Administrador escolhe o dataset em "Coleta e análise". Por isso, o
+dataset importado deve aparecer em `GET /coletas/fontes`.
+
+### `GET /coletas/fontes`
+
+Lista o que pode ser coletado e analisado: o TweetSentBR (quando `Datasets/tweetsent.csv`
+existe no servidor) e os datasets importados.
+
+```json
+{ "fontes": [ { "id": "tweetsentbr", "nome": "TweetSentBR" } ] }
+```
+
+### `POST /coletas` e `GET /coletas/{id}`
+
+`POST /coletas` recebe `{"fonte": "tweetsentbr"}`, inicia a coleta e a análise em segundo
+plano e responde **202** com a coleta. `GET /coletas/{id}` devolve a situação atual. O painel
+consulta quando o Administrador clica em "Atualizar situação".
+
+```json
+{
+  "id": "col_42",
+  "fonte": "tweetsentbr",
+  "situacao": "em_andamento",
+  "textos_coletados": 800,
+  "textos_analisados": 350,
+  "mensagem": null
+}
+```
+
+Fonte fora da lista recebe **422**. Coleta desconhecida recebe **404** com
+`{"mensagem": "Coleta não encontrada."}`, por exemplo depois que a API reinicia.
+
+`situacao` é `pendente`, `em_andamento`, `concluida` ou `falhou`. `textos_analisados` nunca
+supera `textos_coletados`. Em `falhou`, `mensagem` explica o problema em linguagem simples.
+
+### Erros da administração
+
+| Situação | Mensagem exibida no painel |
+|---|---|
+| 401 no login | Usuário ou senha inválidos. |
+| 401 em rota protegida | Sua sessão expirou. Entre novamente. (volta ao login) |
+| 403 | Este usuário não tem permissão de administrador. |
+| 400, 415 ou 422 | O campo `mensagem` do corpo, se for um texto de até 300 caracteres; senão, uma mensagem padrão |
+| 404 ou 503 | O campo `mensagem` do corpo, se houver; senão, a mensagem da tabela de [erros](#erros) |
+| 413 | O arquivo é maior que o limite aceito pela API. |
+| 429 | Muitas tentativas. Aguarde um pouco e tente de novo. |
+
+Erros de conexão, tempo esgotado, 404 e respostas fora do contrato seguem a tabela de
+[erros](#erros).
+
 ## Pontos em aberto
 
-1. Qual data o filtro de período usa (decisão pendente; issue #24).
+1. Qual data o filtro de período usa (alinhamento da equipe; issue #24).
 2. Fuso horário usado para interpretar `inicio` e `fim` (issue #24).
-3. Dados para o gráfico "Evolução no período", se for mantido (decisão pendente da PO).
-4. Responsável pelo backend: as issues #21, #23, #24 e #25 estão sem responsável.
+3. Dados para o gráfico "Evolução no período", se for mantido (alinhamento da equipe).
+4. Responsável pelo backend de análises: as issues #21, #23, #24 e #25 estão sem responsável.
+5. Token opaco e sessões em memória atendem a uma única instância da API. Se a hospedagem usar
+   mais de uma instância, as sessões precisam ir para o banco.
+6. O limite padrão do CSV (10 MB) e da coleta (1000 textos) é provisório; ajustar quando a
+   hospedagem for escolhida.
+7. Quais fontes externas a coleta oferece além do TweetSentBR (depende da decisão sobre a
+   busca por palavra-chave).
 
 ## Como trocar o mock pela API
 
