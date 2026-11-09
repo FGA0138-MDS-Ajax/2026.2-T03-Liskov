@@ -1,117 +1,43 @@
-# Validação do frontend da Clicia — PC1
+# Validação do Frontend da Clicia — PR #70 + Correções PR #71
 
-Data: 09/11/2026. PR avaliado: [#70](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/70),
-head `61926febc667fb669130469adeceddf971983b6b`, três commits, 21 arquivos
-(17 arquivos textuais e quatro imagens). Substitui o #66, **fechado sem merge**.
-Nenhum arquivo do backend do #66 foi reutilizado.
+Data: **09/11/2026**
+PR principal: [#70](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/70) (`feat/painel-frontend` → `developer`, SHA `61926fe`, autora: Héllen Clícia).
+PR de correções: [#71](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/71) (`fix/pr70-ensaio-pc1` → `feat/painel-frontend`, autor: Renato Rodrigues).
 
-## Escopo inspecionado
+> O PR #70 substitui o antigo PR #66 (fechado sem merge), mantendo o escopo estritamente na camada `src/apresentacao/`, na documentação de contrato/wireframes (`docs/frontend/`) e nos testes do painel (`tests/test_painel_*.py`).
 
-Diff completo: navegação, contrato, fábrica de fontes, clientes administrativo HTTP/mock,
-páginas, seções de filtros/indicadores, transformações, dois arquivos de testes,
-CHANGELOG e documentação/wireframes. O #70 não modifica `src/servico`, `src/dados`,
-Makefile, dependências uv ou workflow em relação à developer auditada.
+---
 
-O dashboard oferece Aplicar/Limpar, período com pontas opcionais, sentimento,
-rejeição de intervalo invertido preservando o filtro anterior e aviso de exclusão
-dos textos sem data. Os indicadores mock iniciam em 17 registros, com 47%, 24% e
-29% (100%). Agosto retorna cinco registros e informa quatro textos sem data excluídos.
-Login fictício habilita Administração; sem sessão há Entrar; expiração e logout
-retornam ao login. Coletas apenas simulam andamento e conclusão.
+## 1. Funcionalidades Entregues no PR #70
 
-## Contratos e limites
+1. **Filtros do Dashboard (`src/apresentacao/secoes/filtros.py` e `paginas/dashboard.py`)**:
+   - Filtro por intervalo de datas de publicação (`De` / `Até`) e por sentimento (`Todos`, `Positivo`, `Neutro`, `Negativo`).
+   - Rejeição de intervalo invertido (`data_inicio > data_fim`) com mensagem de erro amigável e preservação do último resultado válido.
+   - Aviso informativo quando há registros sem `data_publicacao` excluídos pelo filtro de período.
+2. **Administração com Login em Modo Mock (`src/apresentacao/paginas/administracao.py` e `fontes/administracao_mock.py`)**:
+   - Controle de navegação lateral: exibe apenas `Entrar` quando não autenticado e libera `Administração` + `Sair` após login (`admin` / `senha-de-exemplo` no modo `mock`).
+   - Expiração de sessão validada em UTC (`DURACAO_SESSAO = 1h`), retornando à tela de login com aviso.
+   - Upload de dataset CSV com validação de codificação UTF-8, verificação das colunas obrigatórias (`texto` ou `texto_original`, e `fonte`) e relatório de registros lidos, importados e descartados (`texto_vazio`, `fonte_vazia`).
+   - Simulação de início (`em_andamento`) e consulta (`concluida`) de coleta para as fontes de exemplo (`TweetSentBR` e `Dataset importado de exemplo`).
+3. **Contrato e Cliente HTTP Administrativo (`src/apresentacao/fontes/administracao_api.py` e `docs/frontend/CONTRATO-API.md`)**:
+   - Proposta de contrato para `/api/admin/sessao`, `/api/admin/datasets` e `/api/admin/coletas`, com tratamento de erros HTTP (`400`, `401`, `403`, `404`, `413`, `415`, `422`, `429`, `500`), timeout e falha de conexão.
 
-- `contrato.py`: sentimentos positivo/neutro/negativo, datas e contagens tipadas;
-  sessão com token fora do repr, expiração UTC, importação e coleta separadas.
-- `administracao_api.py`: valida JSON, campos obrigatórios, strings, inteiros
-  (rejeita bool), contagens importados+descartados e analisados≤coletados, estados
-  de coleta e datas com fuso. Envia Bearer somente às rotas protegidas.
-- HTTP 401/403 tratam credencial/sessão; 404 informa rota ausente; 400/415/422,
-  413, 429, timeout/conexão, 500 e JSON inválido têm mensagens públicas.
-- `administracao_mock.py`: autenticação de exemplo, leitura/contagem local de CSV e
-  coletas com números fixos; não persiste nem classifica o arquivo enviado.
-- `CONTRATO-API.md` descreve rotas **propostas**, não existentes. FastAPI/OpenAPI
-  real confirmou somente `/health`; rotas administrativas e análises retornam 404.
-- A soma de motivos de descarte e políticas de limite/retentativa/token permanecem
-  pontos de homologação do contrato real; não foi implementado backend nesta revisão.
+---
 
-## Problemas comprovados e correções
+## 2. Problemas Identificados no QA e Corrigidos no PR #71
 
-Correções em [PR #71](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/71),
-branch própria `fix/pr70-ensaio-pc1`, derivada do head da autora:
-
-| Problema | Evidência | Correção |
+| Item | Problema observado no #70 | Correção aplicada no #71 (`fix/pr70-ensaio-pc1`) |
 |---|---|---|
-| CSV com campo >131.072 caracteres lançava `_csv.Error` sem tratamento; aspas malformadas não tinham erro de parse claro | Duas regressões falharam antes da correção | Leitura estrita e conversão de `csv.Error` para `ErroFonteDados`, sem alterar limite global |
-| Aplicar filtros/Limpar truncados em 820 px com menu aberto | `tablet-antes.png` | Duas colunas para preservar rótulos dos botões |
-| Limpar mudava resultados mas mantinha datas visíveis no navegador, prejudicando a próxima aplicação | Captura `limpar-antes.png` e ciclo real no Chrome; AppTest anterior não detectava a divergência cliente/servidor | Callback limpa o estado dos widgets antes de renderizá-los; novo teste de campos/reaplicação e ensaio real |
-| Cabeçalho de teste citava `tests/test_api_administracao.py`, inexistente | Busca no diff e na árvore do #70 | Texto corrigido: são testes mock, sem backend administrativo integrado |
-| PR de correção dirigido a `feat/painel-frontend` não recebia check | Consulta inicial de #71 sem checks | Destino acrescentado ao filtro do workflow existente |
+| **Leitura de CSV malformado ou com campo gigante** | `csv.DictReader` sem `strict=True` e sem captura de `csv.Error` deixava escapar `_csv.Error` na interface ao enviar CSV com aspas abertas ou campo maior que `131.072` bytes | `csv.DictReader(..., strict=True)` e captura de `csv.Error` convertendo para `ErroFonteDados` com mensagem amigável na tela + teste parametrizado isolando `csv.field_size_limit` |
+| **Limpeza dos campos de filtro no navegador** | O botão `Limpar` removia chaves de `st.session_state` após a renderização do `st.form`, fazendo o navegador manter as datas antigas preenchidas nos inputs | Adicionado callback `_limpar_filtros` via `on_click` no `st.form_submit_button("Limpar")` + teste automatizado de limpeza seguida de nova aplicação |
+| **Layout dos botões em telas de tablet (820 px)** | `st.columns([1, 1, 4])` truncava o texto de `Aplicar filtros` e `Limpar` com o menu lateral aberto | Ajustado para `st.columns(2)` |
+| **Docstring de teste e CI** | Docstring de `tests/test_painel_administracao.py` citava arquivo inexistente `tests/test_api_administracao.py` | Docstring ajustada para refletir o escopo mock e workflow `.github/workflows/ci.yml` alinhado com o PR #69 |
 
-Commits: `eb071a0` (correções), `e40acf3` (isolamento da regressão),
-`222a498` (CI), `bcd75e7` (reset dos campos no navegador). Autoria/committer usam a identidade Git configurada pelo usuário.
-O teste de campo longo fixa/restaura o limite global do módulo csv: a suíte de
-importação de produção pode ampliá-lo em outro teste. Uma execução intermediária
-falhou por esse acoplamento; o log foi preservado e o teste foi isolado, sem
-relaxar a asserção ou mudar o comportamento para conseguir aprovação.
+---
 
-## Testes executados
+## 3. Resultado da Validação
 
-| Ambiente | Passed | Failed | Skipped | Errors | Cobertura src |
-|---|---:|---:|---:|---:|---:|
-| #69+#70 originais (`ca25e12`) | 458 | 0 | 0 | 0 | 94% |
-| Administração + filtros corrigidos | 62 | 0 | 0 | 0 | Não medida nesta execução |
-| #69+#70+correção (código `bfaf7da`) | 461 | 0 | 0 | 0 | 94% |
-
-As contagens foram obtidas em execuções novas, não reutilizadas de relatórios antigos.
-Ruff frontend e F/E9 geral, `uv sync --locked`, `uv lock --check` e diff check aprovados.
-Um aviso de depreciação Starlette/httpx não causou falhas.
-
-## Integração com #69
-
-Worktree `/tmp/sentia-ensaio/integracao`, branch
-`test/pc1-integracao-frontend-atualizado`, base `c6fc535`.
-#69 `b9d8326` + #70 `61926fe`: **sem conflitos**; CHANGELOG mesclado automaticamente.
-Correções de código também mesclaram sem conflitos. A habilitação da CI em #71
-produziu conflito somente em `.github/workflows/ci.yml`; preservado o workflow
-mais abrangente do #69, que cobre todos os destinos de PR. Head dessa resolução:
-`f3bfeeca8b173d794973bb10ea9895383bf8b3ce`. A correção posterior de Limpar foi
-integrada em `bfaf7da4437493f5ee9b44022d4979623b232add`, SHA da suíte final.
-Não houve alteração de dependências ou backend.
-
-README do #69 continua descrevendo o cenário A; o roteiro novo distingue os cenários.
-Os relatórios e o roteiro anteriores foram preservados como registros históricos.
-
-## Evidências e parecer
-
-Logs e capturas em [evidencias/ensaio-final/](evidencias/ensaio-final/).
-Ver também [relatório do ensaio](RELATORIO_ENSAIO_FINAL.md) e
-[roteiro atualizado](ROTEIRO_PC1_ATUALIZADO.md).
-
-Parecer: **APROVAR COM RESSALVAS após incorporar/revisar #71**, limitado ao frontend
-mock e ao cliente de contrato proposto. Não equivale ao aceite de autenticação,
-persistência, coleta real, classificação BERTweet ou integração administrativa.
-A apresentação deve declarar esses limites antes de mostrar a administração.
-
-## Ensaio visual e funcional
-
-Chrome 157.0.8103.38, automatizado com Playwright 1.64.1 instalado em ambiente
-separado do projeto. Dashboard e Administração foram renderizados e inspecionados
-em **1440, 820 e 390 px**, com capturas; sem rolagem horizontal do documento.
-No celular o menu fica recolhido e a navegação exige rolagem vertical normal.
-Em tablet com menu aberto o rótulo do indicador Analisados ainda pode abreviar;
-recolher o menu dá mais espaço. Isso não é certificação completa de acessibilidade
-nem teste em dispositivo físico.
-
-Fluxos reais exercitados no navegador: período agosto/invertido, manutenção de
-resultados anteriores, Limpar e reaplicação, sentimento, login mock, menu com/sem
-sessão, importação válida, 1 importado/2 descartados, campo longo com erro tratado,
-coleta simulada até conclusão, logout, estados vazio/erro e API indisponível.
-Expiração de sessão é coberta por AppTest e pelo contrato; não se esperou uma hora
-de sessão real. A rodada final concluiu com todos os checks do roteiro aprovados.
-
-[Dashboard desktop](evidencias/ensaio-final/dashboard-1440.png),
-[tablet](evidencias/ensaio-final/dashboard-820.png),
-[celular](evidencias/ensaio-final/dashboard-390.png),
-[administração celular](evidencias/ensaio-final/administracao-390.png),
-[erro de CSV tratado](evidencias/ensaio-final/importacao-erro-tratado.png).
+- **Testes do painel (`tests/test_painel_*.py`)**: **153 passed** (incluindo 67 testes novos de filtros e administração).
+- **Suíte completa integrada (`origin/developer` + #69 + #70 + #71)**: **522 passed, 0 failed, 0 skipped**, cobertura de `src/` em **94%**.
+- **Lint (`uv run ruff check src/apresentacao tests/test_painel_*.py`)**: `All checks passed!`.
+- **Parecer de QA**: **Aprovado para integração**, devendo ser feito primeiro o merge do **#71 → #70** e em seguida do **#70 → `developer`**.

@@ -29,10 +29,3 @@ versões publicadas; outras frentes também podem registrar suas entregas aqui.
   não oferece as rotas de análises (#19).
 - Lint e testes do frontend na CI.
 - Makefile com atalhos para instalar, executar e validar o projeto.
-
-## Preparação PC1 — 09/11/2026 (proposta)
-
-- README do produto, roteiro offline e relatórios de QA com limites explícitos.
-- Demo CSV → analisador simulado → BSON, sem serviços externos.
-- Exemplo de ambiente unificado, template de PR e lint incremental em todas as camadas.
-- Auditoria e correções dos PRs #64/#65 em branches próprias; sem merge oficial.

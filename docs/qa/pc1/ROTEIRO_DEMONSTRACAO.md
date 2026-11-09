@@ -1,103 +1,113 @@
-# Roteiro de demonstração — PC1, 09/11/2026
+# Roteiro de Demonstração — PC1 (5–8 minutos)
 
-Duração sugerida: 5–8 minutos. Executar na raiz da entrega A ou da worktree
-experimental já preparada. A entrega A funciona sem integrar os PRs #64/#65.
+Data de referência: **09/11/2026**
+Branch de integração validada: `test/pc1-integracao-frontend-atualizado` (`developer` com PR #65 integrado + PRs #69, #70, #71 e #72).
 
-## 1. Preparar antes da apresentação
+---
+
+## 0. Preparação (antes de iniciar a apresentação)
+
+Na raiz do repositório:
 
 ```bash
 uv sync --locked
 make env
-uv run pytest -v -ra
-uv run python -m scripts.demonstrar_pipeline
 ```
 
-Não instalar o grupo ML. Não configurar Atlas ou chave XFetch. A instalação inicial
-exige internet; depois do sync, os comandos abaixo usam dependências locais.
-`make env` preserva um `.env` existente. Não compartilhar seu conteúdo na tela.
+> **Nota:** toda a demonstração roda 100% offline. Não é necessário subir MongoDB, configurar `XFETCH_API_KEY` nem baixar pesos reais do BERTweet durante a apresentação.
 
-Neste computador a entrega está em `/tmp/sentia-pc1/base` e o uv foi instalado em
-`/tmp/sentia-pc1/tooling/bin/uv`. Se o comando uv não estiver no PATH:
+---
+
+## 1. Abertura e Arquitetura (1 min)
+
+1. Apresentar o objetivo do **SentIA**: plataforma para análise de sentimentos em textos em português (datasets rotulados e publicações em redes sociais).
+2. Mostrar a estrutura em quatro camadas ([`docs/arquitetura.md`](../../arquitetura.md)):
+   - `src/processamento/aquisicao`: importador CSV, adaptadores TweetSentBR e BPSAD, módulo XFetch (#65) e auditoria de datasets.
+   - `src/processamento/classificacao` e `pipeline.py`: adaptador `ClassificadorBertweet`, baseline TF-IDF + Regressão Logística e geração de documentos BSON.
+   - `src/dados`: conexão explícita ao MongoDB (`database.py`) e esquema lógico (`docs/banco/esquema-mongodb.md`).
+   - `src/servico` e `src/apresentacao`: API FastAPI (`GET /health`) e painel Streamlit (Dashboard + Administração).
+3. Deixar claro o escopo do PC1: **aquisição, pipeline de classificação em lote e interface funcional com dados de exemplo estão prontos e testados; persistência no MongoDB e rotas HTTP de negócio serão conectadas na próxima entrega**.
+
+---
+
+## 2. Demonstração do Painel Streamlit: Dashboard e Filtros (2 min)
+
+Em um terminal (Terminal A):
 
 ```bash
-export PATH=/tmp/sentia-pc1/tooling/bin:$PATH
-export UV_CACHE_DIR=/tmp/sentia-pc1/cache
-export UV_PYTHON_INSTALL_DIR=/tmp/sentia-pc1/python
-cd /tmp/sentia-pc1/base
+SENTIA_FONTE_DADOS=mock SENTIA_MOCK_CENARIO=normal uv run streamlit run src/apresentacao/app.py --browser.gatherUsageStats=false
 ```
 
-## 2. Mostrar o painel
+Abrir `http://localhost:8501` no navegador:
 
-Terminal A:
+1. **Visão geral (sem filtros)**:
+   - Apontar o aviso explícito de **dados de exemplo** na tela.
+   - Mostrar os indicadores iniciais: **17 textos analisados**, **47% Positivo** (8), **24% Neutro** (4) e **29% Negativo** (5).
+2. **Filtro por sentimento**:
+   - Selecionar **Negativo** e clicar em **Aplicar filtros** → total muda para **5** (`100% Negativo`).
+3. **Filtro por período e tratamento de datas**:
+   - Preencher `De: 2026-08-01` e `Até: 2026-08-31` com sentimento **Todos** e clicar em **Aplicar filtros** → exibe **5 análises** no período e o aviso informativo de que **4 textos sem data de publicação** ficaram fora do filtro temporal.
+   - Testar validação de intervalo invertido (`De: 2026-09-01`, `Até: 2026-08-01`) → exibe mensagem de erro amigável preservando o último resultado válido.
+4. **Limpeza de filtros**:
+   - Clicar em **Limpar** → os campos de data e sentimento são restaurados no navegador e o dashboard volta aos **17 textos analisados**.
+
+---
+
+## 3. Demonstração de Login, Importação CSV e Coleta Simulada (2 min)
+
+Ainda no painel (`http://localhost:8501`):
+
+1. **Login administrativo (mock)**:
+   - Mostrar que, sem sessão ativa, o menu lateral exibe apenas **Dashboard** e **Entrar**.
+   - Clicar em **Entrar** e autenticar com:
+     - Usuário: `admin`
+     - Senha: `senha-de-exemplo`
+   - Após o login, o menu passa a exibir **Administração** e o botão **Sair**.
+2. **Importação de dataset CSV**:
+   - Na seção **Importar dataset (CSV)**, enviar o arquivo `tests/fixtures/dataset_valido.csv` e clicar em **Importar arquivo**.
+   - Mostrar o relatório exibido na tela: **5 registros lidos, 5 importados, 0 descartados**.
+   - *(Opcional)* Enviar `tests/fixtures/dataset_vazio.csv` ou `tests/fixtures/dataset_invalido.csv` para demonstrar o tratamento de erro amigável na interface.
+3. **Coleta e análise simulada**:
+   - Na seção **Coleta e análise**, selecionar a fonte **TweetSentBR**, clicar em **Iniciar coleta** (situação `Em andamento`) e em seguida clicar em **Atualizar situação** (situação `Concluída`, com **17 coletados / 17 analisados**).
+4. **Encerrar sessão**:
+   - Clicar em **Sair** no menu lateral e mostrar o retorno ao estado não autenticado.
+   - **Explicitar na fala**: login, importação e coleta operam sobre `AdministracaoMock` para validar os fluxos de tela e contratos propostos; ainda não persistem no MongoDB nem alteram o resumo fixo do dashboard.
+
+---
+
+## 4. API FastAPI e Pipeline Offline (1–2 min)
+
+Em um segundo terminal (Terminal B):
 
 ```bash
-SENTIA_FONTE_DADOS=mock SENTIA_MOCK_CENARIO=normal uv run --offline streamlit run src/apresentacao/app.py --browser.gatherUsageStats=false
+# 1. Smoke test da API FastAPI (em paralelo ou via TestClient/uvicorn)
+uv run uvicorn src.servico.main:app --host 127.0.0.1 --port 8000
 ```
 
-Abrir `http://localhost:8501`. Mostrar aviso de **dados fictícios**, total analisado
-e percentuais positivo/neutro/negativo. Navegar para Administração e explicar o
-placeholder. Não apresentar autenticação, gráficos/filtros futuros ou coleta como
-entregues. O painel mock independe do servidor FastAPI.
-
-Opcional: encerrar com Ctrl+C e repetir trocando `SENTIA_MOCK_CENARIO` por `vazio`
-ou `erro`, demonstrando as mensagens sem exceção.
-
-## 3. Mostrar a API
-
-Terminal B:
-
-```bash
-uv run --offline uvicorn src.servico.main:app --host 127.0.0.1 --port 8000
-```
-
-Terminal C:
+Em outro terminal (Terminal C):
 
 ```bash
 curl --fail http://127.0.0.1:8000/health
 ```
+- Mostrar a resposta `{"status":"ok"}`.
 
-Esperado: `{"status":"ok"}`. Esse endpoint confirma apenas o serviço em execução.
-O cliente HTTP do painel ainda depende de endpoints futuros de análises/resumo.
-
-## 4. Importação e pipeline offline
+Em seguida, executar a demonstração do pipeline offline:
 
 ```bash
-uv run --offline python -m scripts.demonstrar_pipeline
+uv run python -m scripts.demonstrar_pipeline
 ```
+- Mostrar que o script importa os **5 registros** de `tests/fixtures/dataset_valido.csv`, executa `PipelineClassificacao` com `ClassificadorBertweet` (usando analisador simulado determinístico), preserva `texto_original` e `id_origem`, separa `rotulo_padronizado` (anotação humana) de `sentimento` (previsão do modelo) e valida a serialização **BSON** de todos os documentos.
 
-O script lê `tests/fixtures/dataset_valido.csv`, importa cinco registros sintéticos,
-usa `ClassificadorBertweet` com **analisador simulado constante** e imprime o
-resultado estruturado. Mostrar `texto_original`, `id_origem`, `fonte`, rótulo
-humano separado da previsão, probabilidades e datas UTC. O script verifica
-serialização BSON; não grava nem consulta MongoDB e não mede acurácia real.
+---
 
-## 5. Testes e decisões arquiteturais
+## 5. Suíte de Testes e Qualidade (1 min)
+
+Executar ou exibir o resultado da suíte automatizada:
 
 ```bash
-uv run --offline pytest -v -ra
-uv run --offline pytest --cov=src --cov-report=term-missing
-make lint
+uv run pytest -v -ra
+uv run ruff check src/apresentacao tests/test_painel_*.py
+uv lock --check
 ```
 
-Base auditada: 394 testes aprovados, nenhum ignorado e 96% de cobertura.
-Resultados das branches corrigidas estão no relatório final; não misturar contagens.
-Explicar separação entre aquisição, processamento, serviço, dados e apresentação;
-texto preservado antes do BERTweet e baseline clássico separado.
-
-## 6. Encerrar com o estado real
-
-Em desenvolvimento: persistência, consultas/filtros/autenticação na API,
-importação/coleta pelo painel, gráficos completos e integração de resultados reais.
-Busca híbrida é proposta. Métricas BPSAD do autor não foram reproduzidas aqui.
-Pesos BERTweet e API externa não foram exercitados ao vivo nesta auditoria.
-
-## Alternativa de contingência
-
-Se o uv não estiver no PATH mas a `.venv` estiver pronta, usar
-`.venv/bin/python -m streamlit run src/apresentacao/app.py`,
-`.venv/bin/python -m uvicorn src.servico.main:app` e
-`.venv/bin/python -m scripts.demonstrar_pipeline`.
-Se a porta estiver ocupada, usar `--server.port 8502` ou `--port 8001` e ajustar URL.
-Sem ambiente preparado ou rede para instalar dependências, apresentar as evidências
-salvas em `docs/qa/pc1/evidencias/` e o código; declarar que não é execução ao vivo.
-Não afirmar que um ambiente sem dependências executa a aplicação.
+- **Resultado na branch de integração**: **522 testes aprovados (`522 passed, 0 failed, 0 skipped`)** e **94% de cobertura** em `src/`, cobrindo aquisição (CSV, TweetSentBR, BPSAD, XFetch), classificador BERTweet, baseline, pipeline BSON, banco MongoDB, API `/health` e painel Streamlit (filtros, administração e contratos HTTP).

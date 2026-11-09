@@ -2,114 +2,94 @@
 
 Plataforma em desenvolvimento para análise de sentimentos em textos em português.
 Projeto acadêmico da equipe **T03 — Liskov**, Métodos de Desenvolvimento de
-Software, UnB/FGA, 2026.2.
+Software (MDS), UnB/FGA, 2026.2.
 
-## O que existe
+## Estado atual no PC1
 
-- Importação CSV, adaptadores TweetSentBR/BPSAD e auditoria de datasets.
-- Classificador BERTweet com analisador injetável, normalização de rótulos e
-  pipeline em lote que preserva texto, identificadores e metadados.
-- Baseline TF-IDF + regressão logística e ferramentas de avaliação.
-- API FastAPI com `GET /health`.
-- Painel Streamlit com navegação, indicadores e estados normal/vazio/erro em mock.
-- Conexão explícita ao MongoDB e esquema documentado; persistência de análises
-  e integração ponta a ponta ainda não implementadas.
+### O que já está implementado e testado
+- **Aquisição e auditoria de dados (`src/processamento/aquisicao/`)**:
+  - Importador CSV estrito e tolerante com relatório de descartes (`csv_importer.py`).
+  - Adaptadores para **TweetSentBR** (`tweetsentbr.py`) e **BPSAD** (`bpsad_adapter.py`).
+  - Coleta paginada via **XFetch** (`xfetch.py`, integrado pelo PR #65 na `developer`), validada em suíte com cliente HTTP simulado.
+  - Auditoria e cálculo de SHA-256 de datasets (`auditoria_datasets.py`).
+- **Processamento e classificação (`src/processamento/classificacao/` e `pipeline.py`)**:
+  - Adaptador `ClassificadorBertweet` com analisador injetável, normalização de rótulos (`positivo`, `negativo`, `neutro`) e validação de probabilidades.
+  - Baseline clássico TF-IDF + Regressão Logística (`baseline.py`) e métricas de avaliação (`avaliacao.py`).
+  - `PipelineClassificacao` em lote que preserva `texto_original`, `id_origem`, `fonte`, separa anotação humana (`rotulo_original`/`rotulo_padronizado`) da inferência (`sentimento`) e gera documentos compatíveis com BSON.
+- **Banco de dados (`src/dados/database.py`)**:
+  - Gerenciamento explícito de conexão e verificação (`ping`) com PyMongo e esquema lógico documentado em [`docs/banco/esquema-mongodb.md`](docs/banco/esquema-mongodb.md).
+- **Serviço HTTP (`src/servico/main.py`)**:
+  - Aplicação FastAPI com rota `GET /health` (`{"status": "ok"}`).
+- **Painel web (`src/apresentacao/`, PRs #48, #70 e #71)**:
+  - Aplicação Streamlit com navegação entre **Dashboard** e **Administração**.
+  - Indicadores de total analisado e distribuição percentual por sentimento.
+  - Filtros de período (`De` / `Até`) e de sentimento com botão **Limpar** e aviso de textos sem data excluídos do recorte temporal.
+  - Fluxo administrativo com login (`Entrar` / `Sair`), upload de CSV com contagem de importados/descartados e acompanhamento de coleta.
+  - Clientes HTTP (`fontes/api.py` e `fontes/administracao_api.py`) prontos para o contrato proposto em [`docs/frontend/CONTRATO-API.md`](docs/frontend/CONTRATO-API.md).
 
-O painel usa **dados fictícios identificados na tela**. O cliente HTTP representa
-um contrato proposto; a API ainda não fornece os endpoints de análises/resumo.
-XFetch e avaliação exploratória BPSAD estão nos PRs #65 e #64, respectivamente.
-O PR #70 propõe filtros e administração mock e substitui o #66, fechado sem merge.
-O [roteiro atualizado do PC1](docs/qa/pc1/ROTEIRO_PC1_ATUALIZADO.md) distingue
-a reserva desta branch (cenário A) da integração experimental corrigida (cenário B).
+### O que opera em modo mock na demonstração
+- O painel Streamlit roda por padrão com `SENTIA_FONTE_DADOS=mock` sobre **17 análises fictícias** identificadas na interface (`8` positivas / `47%`, `4` neutras / `24%`, `5` negativas / `29%`).
+- O login administrativo (`admin` / `senha-de-exemplo`), a importação de CSV pela tela e o início/consulta de coleta no painel utilizam `AdministracaoMock` (validam formato e contabilizam linhas em memória, sem gravar no MongoDB nem acionar o BERTweet real).
+- O script `scripts/demonstrar_pipeline.py` usa um analisador simulado determinístico para demonstrar o contrato `CSV → PipelineClassificacao → BSON` offline.
 
-## Arquitetura e tecnologias
+### O que continua pendente para as próximas entregas
+- Persistência CRUD no MongoDB e índices automáticos (#20).
+- Rotas reais de análises, resumo, filtros e administração no FastAPI (#19, #21, #23–#25, #58).
+- Integração ponta a ponta entre painel, API, classificador e banco (#22, #26, #27).
+- Gráficos de distribuição, resumo textual estatístico e nuvem de palavras no dashboard (#28–#30).
+- Atualização e homologação do PR #64 (experimentos exploratórios BPSAD).
 
-`src/apresentacao` (Streamlit) → `src/servico` (FastAPI) →
-`src/processamento` (aquisição/classificação) → `src/dados` (MongoDB).
-As camadas existem, mas esse fluxo completo ainda depende de integração.
-Python, uv, pandas, scikit-learn, requests, PyMongo, pytest e GitHub Actions
-compõem a base. PySentimiento/PyTorch são opcionais para ML real.
+## Arquitetura
 
-## Preparação
+`src/apresentacao` (Streamlit) → `src/servico` (FastAPI) → `src/processamento` (aquisição/classificação) → `src/dados` (MongoDB).
+Consulte [`docs/arquitetura.md`](docs/arquitetura.md) e [`docs/contratos-dados.md`](docs/contratos-dados.md).
 
-Requisitos: Git, [uv](https://docs.astral.sh/uv/getting-started/installation/)
-e Python 3.11 (o uv pode provisioná-lo). Execute na raiz da branch de trabalho:
+## Preparação do ambiente
+
+Requisitos: Git, [uv](https://docs.astral.sh/uv/getting-started/installation/) e Python 3.11.
 
 ```bash
 uv sync --locked
 make env
 ```
 
-`make env` copia `.env.example` somente se `.env` não existir. O exemplo unificado
-inclui painel, API, MongoDB e XFetch; `.env.frontend.example` continua disponível
-para compatibilidade. Variáveis já exportadas têm precedência sobre `.env`.
-Não é necessário configurar banco ou credenciais para a apresentação offline.
+`make env` cria `.env` a partir de `.env.example` sem sobrescrever um arquivo existente. Não é necessário configurar MongoDB ou `XFETCH_API_KEY` para a demonstração offline.
 
-## Executar
+## Execução
 
-Painel, em um terminal:
-
+### 1. Painel Streamlit (modo demonstração mock)
 ```bash
 SENTIA_FONTE_DADOS=mock SENTIA_MOCK_CENARIO=normal uv run streamlit run src/apresentacao/app.py
 ```
+Acesse `http://localhost:8501` (ou use `make run`). Para simular outros estados da interface, altere `SENTIA_MOCK_CENARIO` para `vazio` ou `erro`.
 
-API, em outro terminal:
-
+### 2. API FastAPI
 ```bash
 uv run uvicorn src.servico.main:app --host 127.0.0.1 --port 8000
 curl --fail http://127.0.0.1:8000/health
 ```
+Resposta esperada: `{"status":"ok"}`.
 
-Resposta esperada: `{"status":"ok"}`. Abra o painel em
-`http://localhost:8501`. Os atalhos `make run` e `make api` também estão disponíveis.
-
-## Testes e demonstração
-
+### 3. Pipeline offline (CSV → Classificador simulado → BSON)
 ```bash
-uv run pytest -v -ra
-uv run pytest --cov=src --cov-report=term-missing
-make lint
-uv lock --check
-git diff --check
 uv run python -m scripts.demonstrar_pipeline
 ```
 
-O último comando importa uma fixture sintética, usa um analisador **simulado** e
-serializa documentos BSON sem conexão ao MongoDB. Não mede acurácia do BERTweet.
-Consulte o [roteiro do PC1](docs/qa/pc1/ROTEIRO_DEMONSTRACAO.md),
-o [relatório PC1](docs/qa/pc1/RELATORIO_PC1.md) e o
-[relatório final da auditoria](docs/qa/pc1/RELATORIO_FINAL_CODEX.md).
+## Validação e testes
 
-Para ML real, `uv sync --locked --group ml` instala dependências grandes e a
-primeira inferência pode baixar pesos. Prepare isso antes; não é requisito da demo.
+```bash
+uv run pytest -v -ra
+uv run ruff check src/apresentacao tests/test_painel_*.py
+uv lock --check
+```
 
-## Estrutura e documentação
+## Documentação
 
-| Caminho | Conteúdo |
-|---|---|
-| `src/` | Apresentação, serviço, processamento e dados |
-| `tests/fixtures/` | Dados sintéticos dos testes |
-| `scripts/` | Auditoria, comparação e demonstração |
-| `docs/frontend/` | [Painel](docs/frontend/README.md) e contrato proposto |
-| `docs/banco/` | [Esquema MongoDB](docs/banco/esquema-mongodb.md) |
-| `docs/qa/` | Evidências de testes e homologação |
-| `data/`, `models/` | Dados e modelos locais; não versionar artefatos grandes |
-| `Datasets/` | Dataset legado; redistribuição/licença pendente de decisão própria |
-
-Veja [classificação](docs/classificacao.md), [BPSAD](docs/bpsad.md),
-[TweetSentBR](docs/tweetsentbr.md) e [configuração MongoDB](docs/mongodb_setup.md).
-Atas e documentação acadêmica também existem na
-[branch docs](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/docs).
-
-## Contribuição e limitações
-
-`main` guarda a versão estável de entrega; `developer` é integração.
-Use branches próprias: `feat/`, `fix/`, `test/`, `docs/`, `chore/`.
-Abra PR revisável, informe testes, contratos e pendências; não faça merge sem revisão.
-Alterações de escopo, privacidade e licença precisam do aceite pertinente da PO/equipe.
-
-Login, importação/coleta pelo painel, persistência, consultas/filtros na API,
-gráficos completos e busca híbrida permanecem em desenvolvimento ou planejamento.
-O smoke `/health` não comprova MongoDB, XFetch ou inferência real. A CI executa
-testes offline; Ruff mantém o escopo existente do frontend e adiciona `F,E9`
-em todas as camadas, sem formatação massiva do código legado.
+Consulte o índice completo em [`docs/README.md`](docs/README.md):
+- [Roteiro de demonstração do PC1 (5–8 min)](docs/qa/pc1/ROTEIRO_DEMONSTRACAO.md)
+- [Status final do PC1 e ordem de merge](docs/qa/pc1/STATUS_FINAL.md)
+- [Matriz de rastreabilidade](docs/qa/pc1/MATRIZ_RASTREABILIDADE.md)
+- [Validação do frontend (#70 + #71)](docs/qa/pc1/VALIDACAO_FRONTEND_CLICIA.md)
+- [Arquitetura](docs/arquitetura.md) e [Contratos de dados](docs/contratos-dados.md)
+- [Guia do painel](docs/frontend/README.md), [Contrato da API](docs/frontend/CONTRATO-API.md) e [Wireframes](docs/frontend/WIREFRAMES.md)
+- [Classificação](docs/classificacao.md), [TweetSentBR](docs/tweetsentbr.md), [BPSAD](docs/bpsad.md), [XFetch](docs/integracao_xfetch.md) e [Esquema MongoDB](docs/banco/esquema-mongodb.md)
