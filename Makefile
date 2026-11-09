@@ -27,7 +27,7 @@ api: ## Inicia a API FastAPI (PORTA_API=8000)
 
 lint: ## Verifica frontend e erros Python em todas as camadas
 	uv run ruff check src/apresentacao tests/test_painel_*.py
-	uv run ruff check --isolated --select F,E9 src tests scripts test_mongo.py
+	uv run ruff check --isolated --select F,E9 .
 
 test-frontend: ## Executa somente os testes do frontend
 	uv run pytest tests/test_painel_*.py -q

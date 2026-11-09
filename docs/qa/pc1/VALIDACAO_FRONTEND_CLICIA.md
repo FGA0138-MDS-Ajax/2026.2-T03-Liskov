@@ -38,6 +38,6 @@ PR de correções: [#71](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/p
 ## 3. Resultado da Validação
 
 - **Testes do painel (`tests/test_painel_*.py`)**: **153 passed** (incluindo 67 testes novos de filtros e administração).
-- **Suíte completa integrada (`origin/developer` + #69 + #70 + #71)**: **522 passed, 0 failed, 0 skipped**, cobertura de `src/` em **94%**.
+- **Suíte completa integrada (`origin/developer` `66c22ce` + #69 + #70 + #71)**: **538 passed, 0 failed, 0 skipped**, cobertura de `src/` em **94%**.
 - **Lint (`uv run ruff check src/apresentacao tests/test_painel_*.py`)**: `All checks passed!`.
 - **Parecer de QA**: **Aprovado para integração**, devendo ser feito primeiro o merge do **#71 → #70** e em seguida do **#70 → `developer`**.

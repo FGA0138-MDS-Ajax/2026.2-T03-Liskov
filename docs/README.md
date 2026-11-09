@@ -31,6 +31,7 @@
 ## Processamento e Machine Learning
 
 - [Classificador BERTweet, baseline TF-IDF e pipeline](classificacao.md)
+- [Experimentos exploratórios BPSAD (integrado no PR #64)](experimentos_bpsad.md)
 - [Relatório de homologação dos PRs #44 e #45](qa/pr44-pr45/relatorio.md)
 
 ## Banco de Dados (MongoDB)

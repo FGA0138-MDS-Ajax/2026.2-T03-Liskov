@@ -1,7 +1,7 @@
 # Roteiro de Demonstração — PC1 (5–8 minutos)
 
 Data de referência: **09/11/2026**
-Branch de integração validada: `test/pc1-integracao-frontend-atualizado` (`developer` com PR #65 integrado + PRs #69, #70, #71 e #72).
+Branch de integração validada: `test/pc1-integracao-frontend-atualizado` (`developer` `66c22ce` com PRs #65 e #64 integrados + PRs #69, #70, #71 e #72).
 
 ---
 
@@ -110,4 +110,4 @@ uv run ruff check src/apresentacao tests/test_painel_*.py
 uv lock --check
 ```
 
-- **Resultado na branch de integração**: **522 testes aprovados (`522 passed, 0 failed, 0 skipped`)** e **94% de cobertura** em `src/`, cobrindo aquisição (CSV, TweetSentBR, BPSAD, XFetch), classificador BERTweet, baseline, pipeline BSON, banco MongoDB, API `/health` e painel Streamlit (filtros, administração e contratos HTTP).
+- **Resultado na branch de integração**: **538 testes aprovados (`538 passed, 0 failed, 0 skipped`)** e **94% de cobertura** em `src/`, cobrindo aquisição (CSV, TweetSentBR, BPSAD, XFetch), experimentos BPSAD, classificador BERTweet, baseline, pipeline BSON, banco MongoDB, API `/health` e painel Streamlit (filtros, administração e contratos HTTP).
