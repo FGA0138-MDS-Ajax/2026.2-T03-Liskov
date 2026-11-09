@@ -1,8 +1,0 @@
-{
-  "data": "2026-11-09",
-  "developer": {"sha": "c6fc53561055178085edcbc123fc86166edf89fa", "run": 42425474655, "conclusion": "success"},
-  "pr67": {"sha": "1cd636e791529f987175355e2f10dbaeac264b2a", "run": 42681909047, "conclusion": "success"},
-  "pr68": {"sha": "4507aaca269e32873ad52b1f48ae431c56cdb971", "run": 42681914171, "conclusion": "success"},
-  "pr69_documentacao_evidencias": {"sha": "33b656f818f0942d1e7b393618fa018082fbcba4", "run": 42682766618, "conclusion": "success"},
-  "observacao": "Snapshot de checks consultados; commits documentais posteriores possuem seus próprios checks no PR."
-}
