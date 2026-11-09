@@ -166,7 +166,7 @@ Evidências: [base](evidencias/base-pytest.txt), [cobertura](evidencias/base-cob
 | PR #65 original `63f3ce5` | SUCCESS na consulta inicial | [run 42569749460](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/42569749460) |
 | Correção #67 `1cd636e` | SUCCESS | [run 42681909047](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/42681909047) |
 | Correção #68 `4507aac` | SUCCESS | [run 42681914171](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/42681914171) |
-| Entrega A `33b656f` | SUCCESS | [run 42682766618](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/42682766618) |
+| Entrega A `d94249c` | SUCCESS | [run 42682985411](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/42682985411) |
 
 ## G. PRs e commits
 
@@ -184,7 +184,7 @@ e `/tmp/sentia-pc1/integracao`. A árvore original permanece em developer local
 nenhum crédito foi atribuído a um integrante indevidamente.
 
 O conector GitHub recusou a criação de PRs com 403 por permissão da integração;
-a publicação prosseguiu com o gh autenticado do ambiente. Não houve merges,
+a publicação prosseguiu com o gh autenticado do ambiente. Não houve merges oficiais,
 force push, reescrita de histórico ou alterações de branches dos colegas.
 Na atualização final, developer/main permaneceram nos SHAs auditados. O PR #66
 (`feat/painel-filtros-admin`, `dcc1f3f`, 29 arquivos) apareceu durante a execução.
