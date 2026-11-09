@@ -4,7 +4,7 @@ PORTA ?= 8501
 PORTA_API ?= 8000
 
 .DEFAULT_GOAL := help
-.PHONY: help setup setup-ml env run api lint test test-frontend check
+.PHONY: help setup setup-ml env run api hash-senha lint test test-frontend check
 
 help: ## Lista os comandos disponíveis
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed -E 's/:.*## /\t/' | expand -t 16
@@ -25,8 +25,11 @@ run: ## Inicia o painel em http://localhost:8501 (PORTA=8501)
 api: ## Inicia a API FastAPI (PORTA_API=8000)
 	uv run uvicorn src.servico.main:app --reload --port $(PORTA_API)
 
-lint: ## Verifica o código do frontend com o ruff
-	uv run ruff check src/apresentacao tests/test_painel_*.py
+hash-senha: ## Gera o SENTIA_ADMIN_SENHA_HASH do Administrador (a senha não aparece)
+	uv run python -m src.servico.autenticacao
+
+lint: ## Verifica o código do painel e da API com o ruff
+	uv run ruff check src/apresentacao src/servico tests/test_painel_*.py tests/test_api_administracao.py
 
 test-frontend: ## Executa somente os testes do frontend
 	uv run pytest tests/test_painel_*.py -q

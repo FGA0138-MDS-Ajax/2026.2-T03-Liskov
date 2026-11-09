@@ -16,5 +16,5 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --locked
-      - run: uv run ruff check src/apresentacao tests/test_painel_*.py
+      - run: uv run ruff check src/apresentacao src/servico tests/test_painel_*.py tests/test_api_administracao.py
       - run: uv run pytest --cov=src
