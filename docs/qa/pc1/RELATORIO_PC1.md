@@ -66,3 +66,13 @@ Preparar dependências antes da aula, pois a instalação inicial exige rede.
 Não apresentar o fluxo completo como integrado. Não há correção funcional
 indispensável na base para essa demonstração; as correções dos PRs precisam ser
 revisadas antes de qualquer merge.
+
+## Atualização após correções e integração experimental
+
+- Correção #64: PR [#67](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/67),
+  SHA `1cd636e`; 222 passed, nenhum failed/skipped; CI success.
+- Correção #65: PR [#68](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/68),
+  SHA `4507aac`; 175 passed, 14 skips históricos por base antiga; CI success.
+- Integração experimental `480ecf1`: **471 passed, 0 failed, 0 skipped**, 96%.
+- Contratos conjuntos **COMPATÍVEIS**, somente no escopo offline testado.
+  [Resoluções e limites](evidencias/integracao-resolucoes.md).

@@ -70,6 +70,14 @@ def test_csv_e_tweetsentbr_pipeline_bson(tmp_path):
     assert docs[0]["rotulo_original"] == "POS"
     assert docs[0]["rotulo_padronizado"] == "positivo"
     tweets = tmp_path / "tweets.csv"
-    tweets.write_text("id,texto,rotulo\nsyn-2,Outro texto sintético,neutro\n", encoding="utf-8")
+    tweets.write_text("id,texto,rotulo,fonte\nsyn-2,Outro texto sintético,neutro,TweetSentBR\n", encoding="utf-8")
     docs = verificar_documentos(adquirir_dados(tweets))
     assert docs[0]["rotulo_padronizado"] == "neutro"
+
+
+def test_bpsad_pipeline_bson(tmp_path):
+    csv = tmp_path / "bpsad.csv"
+    csv.write_text("review_id,review_text,rating,dataset,review_date\nsyn-bpsad,Resenha sintética,5,sintetica,2026-11-09\n", encoding="utf-8")
+    docs = verificar_documentos(adquirir_dados(csv))
+    assert docs[0]["rotulo_padronizado"] == "positivo"
+    assert docs[0]["id_origem"] == "syn-bpsad"
