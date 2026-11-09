@@ -1,9 +1,9 @@
-
 """Aquisição de tweets recentes pela API XFetch para o SentIA."""
 
 from __future__ import annotations
 
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -16,8 +16,9 @@ URL_BUSCA_RECENTE = "https://api.xfetch.io/v1/search/recent"
 # A API permite solicitar até 20 tweets por página.
 LIMITE_POR_PAGINA = 20
 
-# None significa que a paginação é automática.
+# None habilita paginação automática, sempre limitada pelo teto local.
 MAX_PAGINAS: int | None = None
+LIMITE_SEGURANCA_PAGINAS = 10
 
 LIMITE_MAXIMO_POR_PAGINA = 20
 LIMITE_MAXIMO_TOTAL = 100
@@ -88,6 +89,8 @@ def _extrair_proximo_token(resposta: dict[str, Any]) -> str | None:
     if not isinstance(token, str):
         raise ErroXFetch("O next_token retornado pela API é inválido.")
 
+    if not token.strip():
+        raise ErroXFetch("O next_token retornado pela API é inválido.")
     return token
 
 
@@ -97,28 +100,32 @@ def _normalizar_tweet(tweet: dict[str, Any]) -> dict[str, Any] | None:
     identificador = tweet.get("id")
     texto = tweet.get("text")
 
-    if identificador is None or not isinstance(texto, str):
+    if isinstance(identificador, bool) or not isinstance(identificador, (str, int)):
+        return None
+    if not str(identificador).strip() or not isinstance(texto, str) or not texto.strip():
         return None
 
-    if not texto.strip():
-        return None
+    data = tweet.get("created_at")
+    if data is not None:
+        if not isinstance(data, str):
+            raise ErroXFetch("Data de publicação inválida; esperado ISO 8601 com fuso.")
+        try:
+            instante = datetime.fromisoformat(data.replace("Z", "+00:00"))
+            if instante.tzinfo is None:
+                raise ValueError("Data sem fuso")
+            data = instante.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        except ValueError:
+            raise ErroXFetch("Data de publicação inválida; esperado ISO 8601 com fuso.") from None
 
-    metadados = {
-        "provedor": "XFetch",
-    }
-
-    campos_opcionais = (
-        "author_id",
-        "lang",
-        "like_count",
-        "retweet_count",
-        "reply_count",
-        "quote_count",
-    )
-
-    for campo in campos_opcionais:
-        if campo in tweet:
-            metadados[campo] = tweet[campo]
+    # Lista de permissão: nunca transportar author_id ou perfis para persistência.
+    metadados = {"provedor": "XFetch"}
+    idioma = tweet.get("lang")
+    if isinstance(idioma, str) and idioma.strip():
+        metadados["lang"] = idioma
+    for campo in ("like_count", "retweet_count", "reply_count", "quote_count"):
+        valor = tweet.get(campo)
+        if type(valor) is int and valor >= 0:
+            metadados[campo] = valor
 
     return {
         "id_origem": str(identificador),
@@ -126,7 +133,7 @@ def _normalizar_tweet(tweet: dict[str, Any]) -> dict[str, Any] | None:
         "fonte": "X",
         "rotulo_original": None,
         "rotulo_padronizado": None,
-        "data_publicacao": tweet.get("created_at"),
+        "data_publicacao": data,
         "metadados": metadados,
     }
 
@@ -154,6 +161,7 @@ def buscar_tweets_xfetch(
         limite_por_pagina: Quantidade máxima solicitada por requisição.
         max_paginas: Limite opcional de páginas. None permite paginação
             automática até atingir a quantidade ou acabar os resultados.
+            Todas as chamadas respeitam o teto local de 10 requisições.
 
     Returns:
         Lista de tweets no formato padronizado do SentIA.
@@ -171,15 +179,15 @@ def buscar_tweets_xfetch(
         max_paginas,
     )
 
-    raiz_projeto = Path(__file__).resolve().parents[3]
-    load_dotenv(dotenv_path=raiz_projeto / ".env")
-
-    chave = api_key or os.getenv("XFETCH_API_KEY")
-
-    if not chave:
-        raise ErroXFetch(
-            "Chave da API não encontrada. Configure XFETCH_API_KEY."
-        )
+    if api_key is None:
+        raiz_projeto = Path(__file__).resolve().parents[3]
+        load_dotenv(dotenv_path=raiz_projeto / ".env")
+        chave = os.getenv("XFETCH_API_KEY")
+    else:
+        chave = api_key
+    if not isinstance(chave, str) or not chave.strip():
+        raise ErroXFetch("Chave da API não encontrada. Configure XFETCH_API_KEY.")
+    chave = chave.strip()
 
     cabecalhos = {
         "Authorization": f"Bearer {chave}",
@@ -192,14 +200,15 @@ def buscar_tweets_xfetch(
 
     proximo_token: str | None = None
     paginas_consultadas = 0
+    teto_paginas = min(max_paginas or LIMITE_SEGURANCA_PAGINAS, LIMITE_SEGURANCA_PAGINAS)
 
     while len(registros) < quantidade:
 
-        # Só limita as páginas quando max_paginas foi informado.
-        if max_paginas is not None and paginas_consultadas >= max_paginas:
+        # Teto absoluto mesmo com tokens novos e páginas vazias/duplicadas.
+        if paginas_consultadas >= teto_paginas:
             break
 
-        # Ajusta automaticamente o tamanho da requisição final.
+        # XFetch exige manter query, limit e ordenação entre páginas.
         parametros: dict[str, Any] = {
             "query": consulta.strip(),
             "limit": min(limite_por_pagina, quantidade),
@@ -222,9 +231,10 @@ def buscar_tweets_xfetch(
             resposta.raise_for_status()
 
         except requests.RequestException as erro:
-            raise ErroXFetch(
-                f"Falha na comunicação com o XFetch: {erro}"
-            ) from erro
+            status = getattr(getattr(erro, "response", None), "status_code", None)
+            detalhe = f" (HTTP {status})" if type(status) is int else ""
+            # Não propagar URL/consulta, headers ou chave contidos no erro do driver.
+            raise ErroXFetch(f"Falha na comunicação com o XFetch{detalhe}.") from None
 
         try:
             conteudo = resposta.json()
@@ -241,7 +251,7 @@ def buscar_tweets_xfetch(
 
         paginas_consultadas += 1
 
-        dados = conteudo.get("data", [])
+        dados = conteudo.get("data")
 
         if not isinstance(dados, list):
             raise ErroXFetch(

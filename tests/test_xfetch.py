@@ -51,10 +51,9 @@ class TestNormalizacaoXFetch:
             "fonte": "X",
             "rotulo_original": None,
             "rotulo_padronizado": None,
-            "data_publicacao": "2026-11-09T10:00:00.000Z",
+            "data_publicacao": "2026-11-09T10:00:00Z",
             "metadados": {
                 "provedor": "XFetch",
-                "author_id": "12345",
                 "lang": "pt",
                 "like_count": 5,
             },
@@ -146,7 +145,7 @@ class TestBuscaXFetch:
     def test_paginacao_automatica_para_45_tweets(
         self, mock_get, mock_dotenv
     ):
-        """Deve consultar páginas de 20, 20 e 5 tweets."""
+        """Mantém o limit de 20 nas três páginas, conforme contrato XFetch."""
 
         primeira_pagina = [
             criar_tweet(i) for i in range(1, 21)
@@ -418,3 +417,82 @@ class TestBuscaXFetch:
         with patch.dict(os.environ, {}, clear=True):
             with pytest.raises(xfetch.ErroXFetch):
                 xfetch.buscar_tweets_xfetch("Brasil")
+
+
+@pytest.mark.parametrize("max_paginas", [None, 1, 4, 1000])
+def test_teto_absoluto_com_tokens_sempre_novos(monkeypatch, max_paginas):
+    respostas = iter(criar_resposta([], next_token=f"pagina-{i}") for i in range(50))
+    get = Mock(side_effect=lambda *a, **k: next(respostas))
+    monkeypatch.setattr(xfetch.requests, "get", get)
+    assert xfetch.buscar_tweets_xfetch("consulta sintética", api_key="fake", max_paginas=max_paginas) == []
+    assert get.call_count == min(max_paginas or 10, 10)
+
+
+@pytest.mark.parametrize("status", [401, 402, 403, 429, 500, 503])
+def test_status_http_sem_retry_nem_vazamento(monkeypatch, status):
+    resposta = Mock(status_code=status)
+    resposta.raise_for_status.side_effect = requests.HTTPError("SEGREDO consulta privada", response=resposta)
+    get = Mock(return_value=resposta)
+    monkeypatch.setattr(xfetch.requests, "get", get)
+    with pytest.raises(xfetch.ErroXFetch) as erro:
+        xfetch.buscar_tweets_xfetch("consulta privada", api_key="SEGREDO")
+    assert f"HTTP {status}" in str(erro.value)
+    assert "SEGREDO" not in str(erro.value) and "privada" not in str(erro.value)
+    assert erro.value.__suppress_context__
+    assert get.call_count == 1
+
+
+def test_timeout_sem_retry(monkeypatch):
+    get = Mock(side_effect=requests.Timeout("SEGREDO"))
+    monkeypatch.setattr(xfetch.requests, "get", get)
+    with pytest.raises(xfetch.ErroXFetch, match="comunicação") as erro:
+        xfetch.buscar_tweets_xfetch("sintética", api_key="fake")
+    assert "SEGREDO" not in str(erro.value) and get.call_count == 1
+
+
+@pytest.mark.parametrize("corpo", [None, [], {}, {"data": None}, {"error": "falhou"},
+                                  {"data": [], "meta": []},
+                                  {"data": [], "meta": {"pagination": []}},
+                                  {"data": [], "meta": {"pagination": {"next_token": 3}}},
+                                  {"data": [], "meta": {"pagination": {"next_token": " "}}}])
+def test_envelope_invalido(monkeypatch, corpo):
+    resposta = criar_resposta([])
+    resposta.json.return_value = corpo
+    monkeypatch.setattr(xfetch.requests, "get", Mock(return_value=resposta))
+    with pytest.raises(xfetch.ErroXFetch):
+        xfetch.buscar_tweets_xfetch("sintética", api_key="fake")
+
+
+@pytest.mark.parametrize("identificador", [True, {}, [], "", "  ", 1.1])
+def test_identificador_invalido(identificador):
+    assert xfetch._normalizar_tweet({"id": identificador, "text": "Texto"}) is None
+
+
+@pytest.mark.parametrize("data", ["2026-11-09T10:00:00", "inválida", 42, "2026-11-09"])
+def test_data_sem_fuso_ou_invalida(data):
+    with pytest.raises(xfetch.ErroXFetch):
+        xfetch._normalizar_tweet({"id": "syn-1", "text": "Texto", "created_at": data})
+
+
+def test_preserva_texto_e_filtra_metadados():
+    texto = "  @exemplo Não gostei!!! 😊 https://example.invalid  "
+    tweet = {"id": "synthetic-1", "text": texto, "created_at": "2026-11-09T07:00:00-03:00",
+             "author_id": "autor-sintetico", "author": {"name": "sintético"},
+             "lang": {"segredo": "não copiar"}, "like_count": -1, "reply_count": True,
+             "quote_count": {"author_id": "não copiar"}, "retweet_count": 2}
+    registro = xfetch._normalizar_tweet(tweet)
+    assert registro["texto_original"] == texto
+    assert registro["metadados"] == {"provedor": "XFetch", "retweet_count": 2}
+    assert registro["data_publicacao"] == "2026-11-09T10:00:00Z"
+    assert "sentimento" not in registro
+    sem_data = xfetch._normalizar_tweet({"id": "synthetic-2", "text": "Texto"})
+    assert sem_data["data_publicacao"] is None
+
+
+@pytest.mark.parametrize("chave", ["", "  ", 42])
+def test_chave_invalida_nao_faz_requisicao(monkeypatch, chave):
+    get = Mock()
+    monkeypatch.setattr(xfetch.requests, "get", get)
+    with pytest.raises(xfetch.ErroXFetch):
+        xfetch.buscar_tweets_xfetch("sintética", api_key=chave)
+    get.assert_not_called()

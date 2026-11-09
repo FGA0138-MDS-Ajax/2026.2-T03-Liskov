@@ -1,4 +1,10 @@
-# Pesquisa híbrida: MongoDB + XFetch
+# Proposta futura: pesquisa híbrida MongoDB + XFetch
+
+**Status: NÃO IMPLEMENTADO.** Documento conceitual para futuras issues e aceite da PO.
+Busca semântica, embeddings, Vector Search, persistência e coordenação das fontes
+não são entregas do módulo de aquisição deste PR. Nenhum desses fluxos foi
+validado como integração real nesta auditoria.
+
 
 ## Objetivo
 
