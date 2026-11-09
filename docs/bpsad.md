@@ -4,10 +4,13 @@
 
 O **BPSAD** (*Brazilian Portuguese Sentiment Analysis Dataset*) reúne avaliações de produtos e aplicativos em português brasileiro oriundas de múltiplas plataformas (*B2W*, *Buscapé*, *Olist*, *Mercado Livre* e *UTLC*).
 
-No projeto SentIA, o BPSAD cumpre dois papéis fundamentais:
+Referência: integração PC1 `bfaf7da`, 09/11/2026. A implementação disponível
+é o adaptador e a auditoria; experimentos completos do #64 estão fora deste SHA.
+
+No projeto SentIA, o BPSAD é utilizado ou proposto para:
 
 1. **Validação de escala e streaming do módulo de importação (Issue #2):** Processamento de grandes volumes via [`iterar_bpsad`](../src/processamento/aquisicao/bpsad_adapter.py) e [`iterar_dataset_csv`](../src/processamento/aquisicao/csv_importer.py) sem materializar milhões de registros em memória.
-2. **Fonte recomendada para avaliação independente de modelos (Issue #3 / Issue #17):** Diferentemente do TweetSentBR (utilizado no ajuste fino do checkpoint `pysentimiento/bertweet-pt-sentiment`), o BPSAD pertence a domínios independentes de avaliações em português e possui rótulos originais verificáveis (`rating` de 1 a 5 mapeados para `NEG`, `NEU` e `POS`), evitando vazamento entre treinamento e teste (*data leakage*).
+2. **Fonte candidata à avaliação em outro domínio (Issues #3/#17):** avaliações de produtos diferem de tweets, mas isso não comprova independência em relação ao pré-treinamento. É necessário auditar proveniência, licença, duplicatas e partições. Notas `rating` de 1 a 5 são convertidas em `NEG`, `NEU` e `POS`; são rótulos indiretos, não previsões.
 
 ---
 
@@ -41,7 +44,7 @@ Na entrega inicial da documentação (PR #40), foram declarados os seguintes nú
 Executando o auditor reprodutível sobre a amostra sintética versionada:
 
 ```bash
-python scripts/auditar_datasets.py tests/fixtures/bpsad_sample.csv
+uv run python -m scripts.auditar_datasets tests/fixtures/bpsad_sample.csv
 ```
 
 - **Total lidos:** `5` | **Total importados:** `5` | **Total descartados:** `0`
@@ -57,7 +60,7 @@ O script [`scripts/auditar_datasets.py`](../scripts/auditar_datasets.py) process
 Para auditar o `concatenated.csv` completo localmente sem sobrecarga de memória, utilize a flag `--sem-duplicatas`:
 
 ```bash
-python scripts/auditar_datasets.py /caminho/para/concatenated.csv --sem-duplicatas > relatorio_bpsad.json
+uv run python -m scripts.auditar_datasets /caminho/para/concatenated.csv --sem-duplicatas > relatorio_bpsad.json
 ```
 
 O arquivo `relatorio_bpsad.json` gerado conterá:
@@ -98,3 +101,19 @@ print("Importados:", relatorio.total_importados)
 print("Descartados:", relatorio.total_descartados)
 print("Motivos:", relatorio.descartes_por_motivo)
 ```
+
+## 6. Contrato e alcance das evidências
+
+`review_text` → `texto_original`, `rating` → `rotulo_original` e sigla em
+`rotulo_padronizado`, `dataset` → `fonte`, `review_id` → `id_origem`,
+`review_date` → `data_publicacao`. Extras como `category` vão para `metadados`.
+Ausência de publicação não autoriza usar processamento como substituto.
+O adaptador não produz `sentimento` nem `probabilidades`; isso cabe ao classificador.
+Ver [contratos](contratos-dados.md).
+
+A amostra de cinco linhas é sintética. Contagens históricas do corpus completo
+são declaradas pelo autor do PR #40, sem hash/log suficiente para validação
+independente nesta tarefa. Resultados atuais de testes estão no
+[ensaio por SHA/data](qa/pc1/RELATORIO_ENSAIO_FINAL.md).
+[Experimentos #64](experimentos_bpsad.md) e métricas declaradas não foram
+reproduzidos sobre o corpus real nesta revisão.

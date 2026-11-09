@@ -12,7 +12,8 @@ autorizados pela equipe. Os testes unitários abaixo não precisam de nenhum ser
 - Para o ping real: servidor local em execução **ou** cluster Atlas acessível,
   usuário de banco e permissão de acesso de rede configurados.
 
-Na raiz do repositório, **após integrar a migração uv do #48**:
+Referência atual: integração `bfaf7da`, 09/11/2026. O #48 já está integrado
+na base (`c6fc535`); use uv diretamente na raiz:
 
 ```bash
 uv sync --locked
@@ -121,33 +122,16 @@ mensagens com marcadores sintéticos. Eles não comprovam conectividade real do 
 Não remova a validação de TLS para contornar erros. Não há conexão real automática
 na suíte; execute a CLI real somente contra o ambiente local/externo autorizado.
 
-## Integração com o PR #48 e atualização da branch original
+## Histórico de integração #47/#48
 
-A correção do #47 **não incorpora o frontend nem copia seu manifesto/lock**. Enquanto
-o #48 está aberto, o freeze do #47 foi retirado, deixando `requirements.txt` igual ao
-ancestral comum anterior à contribuição MongoDB. Esse arquivo ainda existia no head
-original do #47; isto não restaura o arquivo na branch onde #48 o removeu.
+Os PRs #47 e #48 e suas correções já compõem `c6fc535`, ancestral da referência
+PC1. As instruções anteriores para combinar requirements antigos com o ambiente
+do frontend eram transitórias; não se aplicam à instalação atual. O histórico
+completo foi preservado na
+[revisão anterior deste documento](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/ca25e1223564f55b2465f9de87672cfae878df07/docs/mongodb_setup.md).
+Não restaurar requirements removidos; manifesto e lock são a fonte atual.
 
-Sequência para a mantenedora/SM, após a revisão dos PRs de correção:
-
-1. Integrar o #48 corrigido em developer pela revisão normal do projeto.
-2. Atualizar a branch original do #47 sobre essa developer, preservando commits e
-   usando o fluxo de integração da equipe, sem push forçado. Esta atualização não
-   foi executada automaticamente na branch da autora.
-3. Manter `requirements*.txt` removidos e `pyproject.toml`, `uv.lock` e
-   `.python-version` da base uv. Não há novas dependências diretas de MongoDB a acrescentar.
-4. Conferir o diff: apenas conexão, CLI, exemplo, documentação e testes MongoDB devem
-   compor a entrega do #47. Reexecutar os comandos locked e a suíte completa.
-
-Antes dessa atualização, testes do checkout MongoDB podem usar o ambiente uv do
-checkout separado do #48, sem copiar seus arquivos para esta branch. Executar na
-raiz do checkout MongoDB (ajuste o caminho absoluto):
-
-```bash
-uv run --project /caminho/checkout-frontend pytest tests/test_database.py -v -ra
-uv run --project /caminho/checkout-frontend pytest -v -ra
-uv run --project /caminho/checkout-frontend pytest --cov=src --cov-report=term-missing
-```
-
-Esse procedimento valida o código MongoDB com as dependências futuras; a integração
-com a developer atual deve ser validada adicionalmente em worktree experimental.
+O PR #47 relata ping real do autor, mas esta revisão documental executa testes
+com mocks; isso não é uma nova homologação Atlas. Persistência, consultas, índices
+automatizados e API de análises permanecem nas entregas correspondentes.
+Ver [estado atual](qa/pc1/STATUS_ENTREGAS.md) e [contratos](contratos-dados.md).
