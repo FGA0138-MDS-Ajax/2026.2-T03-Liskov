@@ -15,3 +15,5 @@ toolbarMode = "minimal"
 # Evita a pergunta de e-mail da primeira execução. O navegador não abre sozinho.
 [server]
 headless = true
+# Mesmo limite padrão da API para o CSV (SENTIA_LIMITE_CSV_MB), em MB.
+maxUploadSize = 10
