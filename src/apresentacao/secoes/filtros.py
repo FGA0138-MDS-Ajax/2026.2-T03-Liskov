@@ -21,6 +21,14 @@ def filtros_atuais() -> FiltrosAnalises:
     return st.session_state.get(CHAVE_FILTROS, FiltrosAnalises())
 
 
+def _limpar_filtros() -> None:
+    """Callback executado antes de renderizar os widgets, inclusive no navegador."""
+    st.session_state[CHAVE_FILTROS] = FiltrosAnalises()
+    st.session_state["filtro_inicio"] = None
+    st.session_state["filtro_fim"] = None
+    st.session_state["filtro_sentimento"] = TODOS
+
+
 def renderizar() -> FiltrosAnalises:
     """Mostra o formulário e devolve os filtros aplicados."""
     with st.form("filtros", border=True, enter_to_submit=False):
@@ -52,13 +60,8 @@ def renderizar() -> FiltrosAnalises:
                 "Aplicar filtros", type="primary", key="aplicar_filtros"
             )
         with col_limpar:
-            limpar = st.form_submit_button("Limpar", key="limpar_filtros")
+            st.form_submit_button("Limpar", key="limpar_filtros", on_click=_limpar_filtros)
 
-    if limpar:
-        st.session_state[CHAVE_FILTROS] = FiltrosAnalises()
-        for chave in ("filtro_inicio", "filtro_fim", "filtro_sentimento"):
-            st.session_state.pop(chave, None)
-        st.rerun()
     if aplicar:
         try:
             st.session_state[CHAVE_FILTROS] = montar_filtros(
