@@ -35,10 +35,18 @@ pagina = st.navigation(
             url_path="dashboard",
             default=True,
         ),
+        # Sem login, o Usuário vê só a entrada; o endereço é o mesmo nos dois casos.
         st.Page(
             administracao.renderizar,
             title="Administração",
-            icon=":material/settings:",
+            icon=":material/admin_panel_settings:",
+            url_path="administracao",
+        )
+        if administracao.sessao_ativa()
+        else st.Page(
+            administracao.renderizar_login,
+            title="Entrar",
+            icon=":material/login:",
             url_path="administracao",
         ),
     ]
