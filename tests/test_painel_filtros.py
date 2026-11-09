@@ -125,3 +125,14 @@ def test_limpar_volta_a_exibir_todas_as_analises(app):
 
 def test_sem_filtro_de_periodo_nao_ha_aviso_de_textos_sem_data(app):
     assert not any("sem data" in i.value for i in app.info)
+
+
+def test_limpar_restaura_campos_e_permite_nova_aplicacao(app):
+    aplicar(app, date(2026, 9, 1), date(2026, 8, 1), "Negativo")
+    app.button(key="limpar_filtros").click().run()
+    assert app.date_input(key="filtro_inicio").value is None
+    assert app.date_input(key="filtro_fim").value is None
+    assert app.selectbox(key="filtro_sentimento").value == "Todos"
+    aplicar(app, sentimento="Negativo")
+    assert total(app) == "5"
+    assert not app.error
