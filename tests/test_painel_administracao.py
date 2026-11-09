@@ -5,6 +5,7 @@ As rotas administrativas ainda são uma proposta; não há teste de integração
 com backend administrativo nesta entrega (ver docs/frontend/CONTRATO-API.md).
 """
 
+import csv
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -381,5 +382,12 @@ def test_sessao_expirada_volta_ao_login_com_aviso(ambiente):
     ids=["csv-malformado", "campo-acima-do-limite"],
 )
 def test_mock_trata_erros_do_leitor_csv_com_mensagem_para_interface(conteudo):
-    with pytest.raises(ErroFonteDados, match="CSV.*malformado"):
-        AdministracaoMock().importar_dataset(sessao_valida(), "sintetico.csv", conteudo)
+    # O importador de produção pode ampliar o limite global em outros testes.
+    # Reproduz o limite padrão do processo Streamlit e restaura o estado depois.
+    limite_anterior = csv.field_size_limit()
+    try:
+        csv.field_size_limit(131_072)
+        with pytest.raises(ErroFonteDados, match="CSV.*malformado"):
+            AdministracaoMock().importar_dataset(sessao_valida(), "sintetico.csv", conteudo)
+    finally:
+        csv.field_size_limit(limite_anterior)
