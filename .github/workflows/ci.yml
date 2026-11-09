@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, developer]
   pull_request:
-    branches: [main, developer, feat/frontend-fundacao, feature/config-mongodb-pymongo, xfetch, feat/integrar-classificador]
+    # Inclui correções dirigidas às branches dos autores.
 
 jobs:
   test:
@@ -17,5 +17,7 @@ jobs:
           enable-cache: true
       - run: uv sync --locked
       - run: uv lock --check
-      - run: uv run ruff check --isolated --select F,E9 src tests scripts amostrar_bpsad.py
-      - run: uv run pytest -ra --cov=src
+      - run: uv run ruff check src/apresentacao tests/test_painel_*.py
+      # Incremental: erros de sintaxe e nomes/imports em todas as camadas.
+      - run: uv run ruff check --isolated --select F,E9 .
+      - run: uv run pytest -ra --cov=src --cov-report=term-missing
