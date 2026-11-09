@@ -8,6 +8,8 @@ venv/
 .ipynb_checkpoints/
 .pytest_cache/
 .coverage
+.ruff_cache/
+coverage.xml
 htmlcov/
 data/
 models/*.pkl

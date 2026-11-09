@@ -1,0 +1,9 @@
+{
+  "data": "2026-11-09",
+  "base": "c6fc53561055178085edcbc123fc86166edf89fa",
+  "metodo": "subprocessos reais, polling HTTP em localhost, encerrados em finally",
+  "fastapi": {"url": "http://127.0.0.1:18080/health", "status": 200, "corpo": {"status": "ok"}},
+  "streamlit": {"url": "http://127.0.0.1:18501/_stcore/health", "status": 200, "corpo": "ok"},
+  "interface": "Streamlit AppTest na suíte; sem inspeção visual em navegador",
+  "externos": "Sem Atlas, XFetch real ou pesos de modelos"
+}
