@@ -1,0 +1,41 @@
+{
+  "sha256_dataset": "8b7be5d0a6bb982c99bf0613ac71f9f8eed49849586a5019b2db2094a6136060",
+  "train_size": 6804,
+  "test_size": 1696,
+  "train_groups": 6775,
+  "test_groups": 1694,
+  "overlap_groups": 0,
+  "train_classes": {
+    "positivo": 3121,
+    "neutro": 1767,
+    "negativo": 1916
+  },
+  "test_classes": {
+    "positivo": 820,
+    "negativo": 485,
+    "neutro": 391
+  },
+  "baseline": {
+    "acuracia": 0.6220518867924528,
+    "f1_macro": 0.5963239134757402,
+    "matriz_confusao": [
+      [
+        542,
+        133,
+        145
+      ],
+      [
+        49,
+        322,
+        114
+      ],
+      [
+        82,
+        118,
+        191
+      ]
+    ],
+    "relatorio": "              precision    recall  f1-score   support\n\n    positivo       0.81      0.66      0.73       820\n    negativo       0.56      0.66      0.61       485\n      neutro       0.42      0.49      0.45       391\n\n    accuracy                           0.62      1696\n   macro avg       0.60      0.60      0.60      1696\nweighted avg       0.65      0.62      0.63      1696\n"
+  },
+  "elapsed_seconds": 0.6687771279999879
+}
