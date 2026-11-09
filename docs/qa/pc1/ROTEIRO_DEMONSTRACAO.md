@@ -3,7 +3,7 @@
 Data: **09/11/2026**. Duração sugerida: 5–8 minutos, sem constituir regra da disciplina.
 Cenário principal: **B**, integração `test/pc1-integracao-frontend-atualizado`,
 SHA `bfaf7da4437493f5ee9b44022d4979623b232add` (#69 + frontend #70 + correção
-#71). A branch `docs/pc1-documentacao-consolidada` mantém o mesmo código e acrescenta
+#71). A branch `docs-pc1-documentacao-consolidada` mantém o mesmo código e acrescenta
 esta documentação. Não confundir com `developer`, ainda em `c6fc535` no corte.
 
 Contingência **A**: `chore/pc1-estabilizacao-organizacao`, SHA

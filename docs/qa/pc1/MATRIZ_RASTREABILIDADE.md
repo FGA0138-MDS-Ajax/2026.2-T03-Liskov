@@ -1,6 +1,6 @@
 # Matriz de rastreabilidade — PC1
 
-Corte: **09/11/2026**, branch `docs/pc1-documentacao-consolidada`, derivada da
+Corte: **09/11/2026**, branch `docs-pc1-documentacao-consolidada`, derivada da
 integração `test/pc1-integracao-frontend-atualizado`, SHA
 `bfaf7da4437493f5ee9b44022d4979623b232add` (#69 + #70 + correção #71).
 

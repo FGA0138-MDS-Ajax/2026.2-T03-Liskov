@@ -3,7 +3,7 @@
 Corte: **09/11/2026**. Cenário principal: integração experimental
 `bfaf7da4437493f5ee9b44022d4979623b232add`, com preparação #69 (`b9d8326`),
 frontend #70 (`61926fe`) e correção #71 (`bcd75e7`). Branch documental:
-`docs/pc1-documentacao-consolidada`. `developer` remota consultada: `c6fc535`.
+`docs-pc1-documentacao-consolidada`. `developer` remota consultada: `c6fc535`.
 Os PRs #69/#70/#71 continuam abertos, sem integração oficial a developer.
 
 ## Concluído tecnicamente no escopo delimitado

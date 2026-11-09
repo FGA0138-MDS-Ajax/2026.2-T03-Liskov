@@ -187,7 +187,7 @@ PC1 para transformar este ensaio em homologação acadêmica.
 
 ## Reexecução na consolidação documental
 
-Em 09/11/2026, branch `docs/pc1-documentacao-consolidada`, worktree
+Em 09/11/2026, branch `docs-pc1-documentacao-consolidada`, worktree
 `/tmp/sentia-docs-pc1`, código-base congelado
 `bfaf7da4437493f5ee9b44022d4979623b232add`: **461 passed, 0 failed/skipped/errors,
 94% de cobertura de src**. [Log desta revisão](evidencias/documentacao/suite.txt).

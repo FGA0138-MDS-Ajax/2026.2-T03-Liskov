@@ -9,7 +9,7 @@ valor técnico. Convenção: [guia do frontend](docs/frontend/README.md#changelo
 Corte documental: **09/11/2026**, integração experimental `bfaf7da` (#69 + #70 +
 correção #71). Os PRs permanecem abertos; estas entradas indicam presença nessa
 integração, **não merge em developer/main**. A revisão documental deriva desse
-SHA em `docs/pc1-documentacao-consolidada`.
+SHA em `docs-pc1-documentacao-consolidada`.
 
 ### Adicionado
 

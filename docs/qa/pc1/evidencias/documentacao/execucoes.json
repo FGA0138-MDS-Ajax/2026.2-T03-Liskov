@@ -1,6 +1,6 @@
 {
   "data": "2026-11-09",
-  "branch": "docs/pc1-documentacao-consolidada",
+  "branch": "docs-pc1-documentacao-consolidada",
   "codigo_base": "bfaf7da4437493f5ee9b44022d4979623b232add",
   "python": "3.11.18",
   "uv": "0.13.7",

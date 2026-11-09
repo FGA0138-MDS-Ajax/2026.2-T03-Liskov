@@ -2,7 +2,7 @@
 
 **09/11/2026 · cenário B · código `bfaf7da` · #69 + #70 + correção #71.**
 Os PRs estão abertos; esta integração não é a developer. Documentação em
-`docs/pc1-documentacao-consolidada`. [Roteiro completo](ROTEIRO_DEMONSTRACAO.md).
+`docs-pc1-documentacao-consolidada`. [Roteiro completo](ROTEIRO_DEMONSTRACAO.md).
 
 1. **Objetivo:** analisar sentimentos de textos em português, com foco em
    publicações de redes sociais sobre temas de interesse.

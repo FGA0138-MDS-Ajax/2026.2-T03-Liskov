@@ -14,7 +14,7 @@ experimental `test/pc1-integracao-frontend-atualizado`, SHA
 [PR #70](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/70)
 (`61926fe`), mais a correção de ensaio `bcd75e7`. Ambos estão abertos no corte consultado. **O frontend #70 existe
 nesta integração, mas ainda não está integrado à `developer`**, cujo SHA remoto
-consultado é `c6fc535`. A branch `docs/pc1-documentacao-consolidada` altera só documentação.
+consultado é `c6fc535`. A branch `docs-pc1-documentacao-consolidada` altera só documentação.
 
 ## Funcionalidades e estado real
 
@@ -57,7 +57,7 @@ Requisitos: Git, Python **3.11** para reproduzir o ambiente validado e
 ```bash
 git clone https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov.git
 cd 2026.2-T03-Liskov
-git switch docs/pc1-documentacao-consolidada
+git switch docs-pc1-documentacao-consolidada
 uv sync --locked
 make env
 ```

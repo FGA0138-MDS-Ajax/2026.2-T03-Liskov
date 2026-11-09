@@ -116,10 +116,15 @@ Não houve alteração silenciosa de requisito, prioridade, estimativa ou métri
 ## Referência Git e entrega
 
 Base congelada: `bfaf7da4437493f5ee9b44022d4979623b232add`, cenário B do
-ensaio mais recente. Branch própria: `docs/pc1-documentacao-consolidada`.
+ensaio mais recente. Branch própria: `docs-pc1-documentacao-consolidada`.
 O destino `test/pc1-base-documentacao` publica somente uma referência para esse
 commit já existente, permitindo um PR com diff exclusivamente documental, sem
 incorporar #70/#71 silenciosamente à developer e sem criar novo merge.
+
+O nome inicial `docs/pc1-documentacao-consolidada` foi recusado pelo GitHub:
+a branch remota acadêmica `docs` já ocupa esse prefixo. A branch própria foi
+renomeada para `docs-pc1-documentacao-consolidada`, sem reescrever commits ou
+modificar a branch `docs`.
 
 Commits usam autoria Codex definida por comando, sem alterar configuração global.
 A árvore original em developer `e2a3ff0`, com `docs/auditorias/` não rastreado,
