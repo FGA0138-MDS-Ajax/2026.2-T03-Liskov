@@ -14,9 +14,12 @@ registros = buscar_tweets_xfetch("tecnologia lang:pt", quantidade=45, max_pagina
 
 Esse exemplo faz requisições pagas se executado com chave real: preparar e obter
 autorização antes. Configure `XFETCH_API_KEY` em ambiente ou `.env` não versionado.
-Para testes offline: `python -m pytest tests/test_xfetch.py -v -ra` no ambiente do
-projeto. O head histórico deste PR antecede uv e a integração do pipeline; validar
-também em developer antes do merge. Não adicionar o pipeline a este módulo.
+A branch foi atualizada com a developer `c6fc535` em 09/11/2026. A instalação
+atual usa `uv sync --locked`; o workflow preserva a CI uv da developer e inclui
+o destino `xfetch` para correções. Para testes offline, após preparar dependências:
+`uv run --offline pytest tests/test_xfetch.py tests/test_xfetch_pipeline.py -v -ra`.
+O pipeline continua separado deste módulo; os testes de integração usam somente
+HTTP/analisador simulados e serialização BSON, sem gravar no MongoDB.
 
 ## Contrato externo verificado em 09/11/2026
 
@@ -88,3 +91,28 @@ banco + provedor não estão implementados. Ver a
 [proposta futura](pesquisa_hibrida_mongodb_xfetch.md). API/frontend ainda não
 expõem essa aquisição ao usuário. Compatibilidade offline com o pipeline não
 comprova consulta real, licença de dados, autenticação ou persistência.
+
+## Validação de integração — 09/11/2026
+
+Referências: head XFetch `2dfa96f47f08da723590a15aa7f2abf77c7ae8e9`, já com
+a correção #68, e developer `c6fc53561055178085edcbc123fc86166edf89fa`.
+O único conflito foi `.github/workflows/ci.yml`: preservados Python 3.11,
+instalação uv locked e lint/testes da developer, reunindo também o destino
+`xfetch` aos destinos de PR existentes. Nenhuma versão/dependência foi alterada.
+
+Suíte integrada: **455 passed, 0 failed/skipped, 96% de cobertura de src**
+(1.173 instruções, 46 não cobertas). Focados XFetch/pipeline: **61 passed**.
+Ruff do frontend, Ruff `F,E9` geral, lock check e diff check aprovados.
+Um aviso de depreciação Starlette/httpx permanece, sem falhas.
+
+Os novos testes em `tests/test_xfetch_pipeline.py` verificam paginação e
+deduplicação, lotes de um/dois registros, preservação de texto/ID/fonte,
+datas UTC e ausentes, exclusão de identificadores do autor, anotações humanas
+ausentes e documentos BSON serializáveis. Uma falha HTTP na segunda página
+interrompe a aquisição sem retornar resultado parcial ou repetir a chamada.
+
+A verificação usa respostas HTTP e analisador sintéticos, sem chave real,
+requisição paga, inferência BERTweet real ou servidor MongoDB. O contrato
+externo foi reconferido na OpenAPI/documentação oficial citada acima.
+A aprovação técnica do módulo não conclui a pesquisa híbrida nem a integração
+real do dashboard, persistência e serviço externo.
