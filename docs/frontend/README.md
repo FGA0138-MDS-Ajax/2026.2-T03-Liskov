@@ -5,7 +5,20 @@ interface acessa o sistema **somente pela API** e nunca importa banco ou process
 `tests/test_painel_arquitetura.py` verifica essa regra.
 
 - Contrato com o backend: [CONTRATO-API.md](CONTRATO-API.md)
+- Wireframes e o que já foi implementado deles: [WIREFRAMES.md](WIREFRAMES.md)
 - Mudanças entregues: [CHANGELOG.md](../../CHANGELOG.md)
+
+## Telas
+
+| Tela | Quem vê | O que faz |
+|---|---|---|
+| Dashboard | Todos | Filtros de período e sentimento e indicadores de total e percentual. Gráfico, listagem e resumo ainda serão adicionados (#27, #28, #29) |
+| Entrar | Quem não fez login | Formulário de usuário e senha do Administrador |
+| Administração | Administrador com login | Importar dataset CSV, iniciar coleta e análise e acompanhar a situação |
+
+Sem login, o menu mostra **Entrar** no lugar de **Administração**; as ferramentas do
+Administrador não aparecem (teste T03). No modo `mock`, entre com o usuário `admin` e a senha
+`senha-de-exemplo`. Essas credenciais são fictícias e não funcionam no modo `api`.
 
 ## Como executar
 
@@ -63,7 +76,8 @@ dois** e não use `pip install` neste projeto.
 
 No modo `mock`, todas as telas exibem o aviso **"Dados de exemplo"**. Não remova esse
 aviso: mock não é integração concluída. O modo `api` ainda mostra erro porque as rotas de
-análises não existem (ver contrato).
+análises e de administração não existem (ver contrato). O cenário `erro` também simula a
+API de administração indisponível.
 
 ## Verificações
 
@@ -85,13 +99,18 @@ antiga do Streamlit (validado com a 1.67).
 src/apresentacao/
 ├── app.py             # entrada, navegação e aviso de mock
 ├── config.py          # variáveis de ambiente
-├── contrato.py        # tipos de dados e a interface FonteAnalises
+├── contrato.py        # tipos e interfaces FonteAnalises e FonteAdministracao
 ├── tema.py            # rótulos, ícones e cores de cada sentimento
-├── transformacoes.py  # cálculos sem Streamlit (fáceis de testar)
+├── transformacoes.py  # cálculos e validações sem Streamlit (fáceis de testar)
 ├── componentes.py     # componentes reutilizáveis
-├── fontes/            # mock.py e api.py: de onde vêm os dados
-└── paginas/           # uma tela por arquivo
+├── fontes/            # de onde vêm os dados: mock ou API, análises e administração
+├── secoes/            # uma seção do dashboard por arquivo (filtros, indicadores...)
+└── paginas/           # uma tela por arquivo; só compõe as seções
 ```
+
+Cada seção nova do dashboard (gráfico, listagem, resumo) ganha um arquivo em `secoes/` e recebe
+os filtros aplicados por `secoes/filtros.py`. Assim, duas pessoas trabalham em seções diferentes
+sem conflito.
 
 ## Convenções
 
