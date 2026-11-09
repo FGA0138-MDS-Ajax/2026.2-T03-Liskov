@@ -18,8 +18,9 @@ Software, UnB/FGA, 2026.2.
 O painel usa **dados fictícios identificados na tela**. O cliente HTTP representa
 um contrato proposto; a API ainda não fornece os endpoints de análises/resumo.
 XFetch e avaliação exploratória BPSAD estão nos PRs #65 e #64, respectivamente.
-O PR #66 propõe filtros e administração autenticada; ainda não está integrado
-à base auditada e não compõe esta demonstração.
+O PR #70 propõe filtros e administração mock e substitui o #66, fechado sem merge.
+O [roteiro atualizado do PC1](docs/qa/pc1/ROTEIRO_PC1_ATUALIZADO.md) distingue
+a reserva desta branch (cenário A) da integração experimental corrigida (cenário B).
 
 ## Arquitetura e tecnologias
 
