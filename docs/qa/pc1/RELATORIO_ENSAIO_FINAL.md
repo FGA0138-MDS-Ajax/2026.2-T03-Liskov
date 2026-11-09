@@ -24,7 +24,7 @@ vale para a worktree integrada com #71; não presume que os PRs já foram mescla
 Worktree B: `/tmp/sentia-ensaio/integracao`, branch
 `test/pc1-integracao-frontend-atualizado`. Reserva A: `/tmp/sentia-pc1/base`.
 Correções: `/tmp/sentia-ensaio/pr70`, branch `fix/pr70-ensaio-pc1`.
-Relatórios: `/tmp/sentia-ensaio/relatorios`, branch `docs/pc1-ensaio-final`.
+Relatórios: `/tmp/sentia-ensaio/relatorios`, branch `chore/pc1-ensaio-relatorios`.
 Playwright está isolado em `/tmp/sentia-ensaio/browser-env`; não entrou no lockfile.
 Nenhum modelo, dataset grande ou serviço externo foi usado no ensaio.
 

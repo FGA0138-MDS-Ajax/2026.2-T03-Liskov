@@ -167,5 +167,5 @@ uv run pytest -v -ra
 ```
 
 Para trazer também relatórios e fixture de descartes, integre a branch publicada
-`origin/docs/pc1-ensaio-final` **nesse ambiente local**, após conferir seu diff.
+`origin/chore/pc1-ensaio-relatorios` **nesse ambiente local**, após conferir seu diff.
 Não executar esses merges em developer/main nem tratá-los como autorização de merge oficial.
