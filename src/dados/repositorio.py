@@ -3,7 +3,7 @@ from typing import Any
 
 from pymongo import ASCENDING, IndexModel
 from pymongo.collection import Collection
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import BulkWriteError, DuplicateKeyError
 from pymongo.mongo_client import MongoClient
 
 NOME_BANCO_PADRAO = "sentia"
@@ -13,7 +13,8 @@ CAMPOS_TEXTO_OBRIGATORIOS = ("id_origem", "fonte", "texto_original")
 
 
 class ErroAnaliseInvalida(ValueError):
-     """Documento fora do esquema da coleção analises."""
+    """Documento fora do esquema da coleção analises."""
+
 
 INDICES = [
     IndexModel(
@@ -45,13 +46,14 @@ def criar_indices(colecao: Collection):
 
     return colecao.create_indexes(INDICES)
 
+
 def validar_analise(documento: dict[str, Any]):
 
     for campo in CAMPOS_TEXTO_OBRIGATORIOS:
         valor = documento.get(campo)
         if not isinstance(valor, str) or not valor.strip():
             raise ErroAnaliseInvalida(f"Campo obrigatório ausente ou vazio: {campo}")
-        
+
     if documento.get("sentimento") not in SENTIMENTOS_VALIDOS:
         raise ErroAnaliseInvalida("Sentimento deve ser positivo, negativo ou neutro")
 
@@ -66,7 +68,9 @@ def validar_analise(documento: dict[str, Any]):
         if campo in documento:
             data = documento[campo]
             if not isinstance(data, datetime) or data.tzinfo is None:
-                raise ErroAnaliseInvalida(f"{campo} deve ser uma data com fuso horário (UTC)")
+                raise ErroAnaliseInvalida(
+                    f"{campo} deve ser uma data com fuso horário (UTC)"
+                )
 
 
 def salvar_analise(colecao: Collection, documento: dict[str, Any]):
@@ -77,4 +81,22 @@ def salvar_analise(colecao: Collection, documento: dict[str, Any]):
     except DuplicateKeyError:
         return False
     return True
-    
+
+
+def salvar_analises(colecao: Collection, documentos: list[dict[str, Any]]):
+
+    copias = [dict(documento) for documento in documentos]
+    for copia in copias:
+        validar_analise(copia)
+
+    if not copias:
+        return {"inseridos": 0, "duplicados": 0}
+
+    try:
+        resultado = colecao.insert_many(copias, ordered=False)
+    except BulkWriteError as erro:
+        falhas = erro.details["writeErrors"]
+        if any(falha["code"] != 11000 for falha in falhas):
+            raise
+        return {"inseridos": erro.details["nInserted"], "duplicados": len(falhas)}
+    return {"inseridos": len(resultado.inserted_ids), "duplicados": 0}
