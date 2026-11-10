@@ -1,28 +1,95 @@
-# template-repository - Branch Main
+# SentIA
 
-Template de Repositório para a matéria de Métodos de Desenvolvimento de Software lecionado pelo professor Ricardo Ajax.
+Plataforma em desenvolvimento para análise de sentimentos em textos em português.
+Projeto acadêmico da equipe **T03 — Liskov**, Métodos de Desenvolvimento de
+Software (MDS), UnB/FGA, 2026.2.
 
-Essa Branch deve ser usada exclusivamente para a versão de produção dos softwares da equipe.
+## Estado atual no PC1
 
-O repositório conta com mais 3 branchs:
-* docs: Usada para armazenar a documentação do projeto.
-* developer: usada como um intermediário antes do código chegar realmente para produção. É o ambiente ideal para realizar os últimos testes antes das apresentações.
-* gh-pages: Local dos arquivos estáticos de deploy da documentação. (Para deploy da documentação, consultar seu monitor)
+### O que já está implementado e testado
+- **Aquisição e auditoria de dados (`src/processamento/aquisicao/`)**:
+  - Importador CSV estrito e tolerante com relatório de descartes (`csv_importer.py`).
+  - Adaptadores para **TweetSentBR** (`tweetsentbr.py`) e **BPSAD** (`bpsad_adapter.py`).
+  - Coleta paginada via **XFetch** (`xfetch.py`, integrado pelo PR #65 na `developer`), validada em suíte com cliente HTTP simulado.
+  - Auditoria e cálculo de SHA-256 de datasets (`auditoria_datasets.py`).
+- **Processamento e classificação (`src/processamento/classificacao/` e `pipeline.py`)**:
+  - Adaptador `ClassificadorBertweet` com analisador injetável, normalização de rótulos (`positivo`, `negativo`, `neutro`) e validação de probabilidades.
+  - Baseline clássico TF-IDF + Regressão Logística (`baseline.py`) e métricas de avaliação (`avaliacao.py`).
+  - `PipelineClassificacao` em lote que preserva `texto_original`, `id_origem`, `fonte`, separa anotação humana (`rotulo_original`/`rotulo_padronizado`) da inferência (`sentimento`) e gera documentos compatíveis com BSON.
+- **Banco de dados (`src/dados/database.py`)**:
+  - Gerenciamento explícito de conexão e verificação (`ping`) com PyMongo e esquema lógico documentado em [`docs/banco/esquema-mongodb.md`](docs/banco/esquema-mongodb.md).
+- **Serviço HTTP (`src/servico/main.py`)**:
+  - Aplicação FastAPI com rota `GET /health` (`{"status": "ok"}`).
+- **Painel web (`src/apresentacao/`, PRs #48, #70 e #71)**:
+  - Aplicação Streamlit com navegação entre **Dashboard** e **Administração**.
+  - Indicadores de total analisado e distribuição percentual por sentimento.
+  - Filtros de período (`De` / `Até`) e de sentimento com botão **Limpar** e aviso de textos sem data excluídos do recorte temporal.
+  - Fluxo administrativo com login (`Entrar` / `Sair`), upload de CSV com contagem de importados/descartados e acompanhamento de coleta.
+  - Clientes HTTP (`fontes/api.py` e `fontes/administracao_api.py`) prontos para o contrato proposto em [`docs/frontend/CONTRATO-API.md`](docs/frontend/CONTRATO-API.md).
 
-## Especificações Técnicas do Repositório
+### O que opera em modo mock na demonstração
+- O painel Streamlit roda por padrão com `SENTIA_FONTE_DADOS=mock` sobre **17 análises fictícias** identificadas na interface (`8` positivas / `47%`, `4` neutras / `24%`, `5` negativas / `29%`).
+- O login administrativo (`admin` / `senha-de-exemplo`), a importação de CSV pela tela e o início/consulta de coleta no painel utilizam `AdministracaoMock` (validam formato e contabilizam linhas em memória, sem gravar no MongoDB nem acionar o BERTweet real).
+- O script `scripts/demonstrar_pipeline.py` usa um analisador simulado determinístico para demonstrar o contrato `CSV → PipelineClassificacao → BSON` offline.
 
-Este repositório é planejado e estruturado para que seja realizado documentações de software. Caso haja outra necessidades, deve-se consultar a professora.
+### O que continua pendente para as próximas entregas
+- Persistência CRUD no MongoDB e índices automáticos (#20).
+- Rotas reais de análises, resumo, filtros e administração no FastAPI (#19, #21, #23–#25, #58).
+- Integração ponta a ponta entre painel, API, classificador e banco (#22, #26, #27).
+- Gráficos de distribuição, resumo textual estatístico e nuvem de palavras no dashboard (#28–#30).
+- Reprodução independente em corpus completo dos experimentos exploratórios BPSAD ([`docs/experimentos_bpsad.md`](docs/experimentos_bpsad.md), integrados pelo PR #64).
 
-Atualmente se usa a ferramenta MkDocs para gerar sua documentação baseado nos seus arquivos markdowns, vocês podem achar mais instruções sobre o MkDocs através do link da documentação da ferramenta: [https://www.mkdocs.org/](https://www.mkdocs.org/).
+## Arquitetura
 
-Também é usado uma "sub-ferramenta" do MkDocs para sua estilização, o Material Theme, que pode ser consultado através do link: [https://squidfunk.github.io/mkdocs-material/](https://squidfunk.github.io/mkdocs-material/).
+`src/apresentacao` (Streamlit) → `src/servico` (FastAPI) → `src/processamento` (aquisição/classificação) → `src/dados` (MongoDB).
+Consulte [`docs/arquitetura.md`](docs/arquitetura.md) e [`docs/contratos-dados.md`](docs/contratos-dados.md).
 
-Este repositório também conta com uma pipeline de automatização de deploy do seu conteúdo MkDocs, para que a cada commit feito na main, a pipeline gere uma versão atualizada da sua documentação em minutos. Vale ressaltar que é importante realizar uma configuração para que tudo funcione da forma correta, as instruções são as seguintes:
+## Preparação do ambiente
 
-* Acesse as configurações do repositório;
-* Procure a aba de "Pages"
-* Em "Source" escolha a opção "Deploy from a branch";
-* Em "Branch" escolha "gh-pages";
-* Clique em salvar e pronto;
+Requisitos: Git, [uv](https://docs.astral.sh/uv/getting-started/installation/) e Python 3.11.
 
-Após essas etapas de configuração, o seu GitPages deve funcionar normalmente.
+```bash
+uv sync --locked
+make env
+```
+
+`make env` cria `.env` a partir de `.env.example` sem sobrescrever um arquivo existente. Não é necessário configurar MongoDB ou `XFETCH_API_KEY` para a demonstração offline.
+
+## Execução
+
+### 1. Painel Streamlit (modo demonstração mock)
+```bash
+SENTIA_FONTE_DADOS=mock SENTIA_MOCK_CENARIO=normal uv run streamlit run src/apresentacao/app.py
+```
+Acesse `http://localhost:8501` (ou use `make run`). Para simular outros estados da interface, altere `SENTIA_MOCK_CENARIO` para `vazio` ou `erro`.
+
+### 2. API FastAPI
+```bash
+uv run uvicorn src.servico.main:app --host 127.0.0.1 --port 8000
+curl --fail http://127.0.0.1:8000/health
+```
+Resposta esperada: `{"status":"ok"}`.
+
+### 3. Pipeline offline (CSV → Classificador simulado → BSON)
+```bash
+uv run python -m scripts.demonstrar_pipeline
+```
+
+## Validação e testes
+
+```bash
+uv run pytest -v -ra
+uv run ruff check src/apresentacao tests/test_painel_*.py
+uv lock --check
+```
+
+## Documentação
+
+Consulte o índice completo em [`docs/README.md`](docs/README.md):
+- [Roteiro de demonstração do PC1 (5–8 min)](docs/qa/pc1/ROTEIRO_DEMONSTRACAO.md)
+- [Status final do PC1 e ordem de merge](docs/qa/pc1/STATUS_FINAL.md)
+- [Matriz de rastreabilidade](docs/qa/pc1/MATRIZ_RASTREABILIDADE.md)
+- [Validação do frontend (#70 + #71)](docs/qa/pc1/VALIDACAO_FRONTEND_CLICIA.md)
+- [Arquitetura](docs/arquitetura.md) e [Contratos de dados](docs/contratos-dados.md)
+- [Guia do painel](docs/frontend/README.md), [Contrato da API](docs/frontend/CONTRATO-API.md) e [Wireframes](docs/frontend/WIREFRAMES.md)
+- [Classificação](docs/classificacao.md), [TweetSentBR](docs/tweetsentbr.md), [BPSAD](docs/bpsad.md), [XFetch](docs/integracao_xfetch.md) e [Esquema MongoDB](docs/banco/esquema-mongodb.md)

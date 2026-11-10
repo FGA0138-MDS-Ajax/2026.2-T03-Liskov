@@ -72,29 +72,84 @@ def test_baseline_treina_e_preve_somente_rotulos_validos(tmp_path):
     assert baseline.carregar(tmp_path / "m.pkl").predict(["otimo"]).shape == (1,)
 
 
-def test_bertweet_preserva_negacao_ao_encaminhar_ao_analisador():
-    class AnalisadorRegistrador:
-        def __init__(self):
-            self.textos_recebidos = []
+@pytest.mark.parametrize("entrada", [
+    {},
+    {"texto": "Adorei o atendimento!"},
+])
+def test_bertweet_rejeita_dicionarios_antes_da_inferencia(entrada):
+    from unittest.mock import Mock
 
-        def predict(self, textos):
-            self.textos_recebidos.extend(textos)
-            return [
-                SimpleNamespace(
-                    output="NEG",
-                    probas={"POS": 0.05, "NEG": 0.9, "NEU": 0.05},
-                )
-                for _ in textos
-            ]
+    # Permite verificar se o analisador chegou a ser chamado.
+    analisador = Mock()
+    classificador = ClassificadorBertweet(analisador=analisador)
 
-    frases = [
-        "Gostei do atendimento.",
-        "Não gostei do atendimento.",
+    # Dicionários devem ser rejeitados, inclusive quando estão vazios.
+    with pytest.raises(TypeError, match="dicionário"):
+        classificador.prever(entrada)
+
+    # A entrada inválida não deve chegar ao modelo.
+    analisador.predict.assert_not_called()
+
+
+def test_bertweet_configura_modelo_e_tamanho_do_lote(monkeypatch):
+    import sys
+    from unittest.mock import Mock
+
+    from src.processamento.classificacao.bertweet import NOME_MODELO
+
+    # Substitui o carregamento real pra não acabar baixando o modelo durante o teste
+    criar_analisador = Mock(return_value=AnalisadorFalso())
+    modulo_simulado = SimpleNamespace(create_analyzer=criar_analisador)
+    monkeypatch.setitem(sys.modules, "pysentimiento", modulo_simulado)
+
+    ClassificadorBertweet(tamanho_lote=7)
+
+    # Confere os parâmetros enviados à biblioteca ao criar o analisador
+    criar_analisador.assert_called_once_with(
+        task="sentiment",
+        lang="pt",
+        model_name=NOME_MODELO,
+        batch_size=7,
+    )
+
+
+def test_bertweet_preserva_negacoes_antes_da_inferencia():
+    from unittest.mock import Mock
+
+    textos = [
+        "n\u00e3o gostei do atendimento",
+        "nunca mais compro nesse lugar",
+        "n\u00e3o \u00e9 ruim, mas poderia melhorar",
     ]
+    resultado = SimpleNamespace(
+        output="NEG",
+        probas={"POS": 0.05, "NEG": 0.9, "NEU": 0.05},
+    )
+    analisador = Mock()
+    analisador.predict.return_value = [resultado] * len(textos)
 
-    analisador = AnalisadorRegistrador()
-    clf = ClassificadorBertweet(analisador=analisador)
+    classificador = ClassificadorBertweet(analisador=analisador)
+    classificador.prever(textos)
 
-    clf.prever(frases)
+    analisador.predict.assert_called_once_with(textos)
 
-    assert analisador.textos_recebidos == frases
+
+def test_bertweet_preserva_urls_mencoes_emojis_pontuacao_e_acentos():
+    from unittest.mock import Mock
+
+    textos = [
+        "Adorei!!! https://exemplo.com",
+        "@usuario, voc\u00ea N\u00c3O gostou? \U0001f621",
+        "Que experi\u00eancia incr\u00edvel, p\u00e9ssima n\u00e3o foi! \U0001f60a",
+    ]
+    resultado = SimpleNamespace(
+        output="POS",
+        probas={"POS": 0.9, "NEG": 0.05, "NEU": 0.05},
+    )
+    analisador = Mock()
+    analisador.predict.return_value = [resultado] * len(textos)
+
+    classificador = ClassificadorBertweet(analisador=analisador)
+    classificador.prever(textos)
+
+    analisador.predict.assert_called_once_with(textos)

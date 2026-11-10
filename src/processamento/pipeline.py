@@ -1,7 +1,7 @@
-﻿"""Integra aquisição CSV e classificação BERTweet no pipeline do SentIA."""
+"""Integra aquisição CSV e classificação BERTweet no pipeline do SentIA."""
 
 import math
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, Iterable
 
 from .aquisicao import converter_rotulo_para_sentia, iterar_dataset_csv
@@ -21,6 +21,14 @@ def _normalizar_data_publicacao(valor: Any, indice: int) -> datetime | None:
     if isinstance(valor, datetime):
         data = valor
     elif isinstance(valor, str):
+        # Data de calendário documentada pelo importador: meia-noite UTC.
+        # Horários sem fuso continuam inválidos; nunca inferir data ausente.
+        if len(valor.strip()) == 10:
+            try:
+                calendario = date.fromisoformat(valor.strip())
+            except ValueError as erro:
+                raise ErroPipeline(f"Registro {indice}: data_publicacao inválida.") from erro
+            return datetime(calendario.year, calendario.month, calendario.day, tzinfo=timezone.utc)
         try:
             data = datetime.fromisoformat(valor.strip().replace("Z", "+00:00"))
         except ValueError as erro:
@@ -76,6 +84,10 @@ class PipelineClassificacao:
             indice = indice_inicial + deslocamento
             if not isinstance(registro, dict):
                 raise ErroPipeline(f"Registro {indice}: esperado um dicionário.")
+            for campo in ("id_origem", "fonte"):
+                valor = registro.get(campo)
+                if not isinstance(valor, str) or not valor.strip():
+                    raise ErroPipeline(f"Registro {indice}: {campo} deve ser string não vazia.")
             texto = registro.get("texto_original")
             if not isinstance(texto, str) or not texto.strip():
                 raise ErroPipeline(
@@ -158,6 +170,8 @@ class PipelineClassificacao:
                 sentimento = converter_rotulo_para_sentia(
                     previsao["sentimento"]
                 )
+                if sentimento not in ROTULOS:
+                    raise ErroPipeline(f"Registro {indice}: sentimento ausente ou inválido.")
                 rotulo_padronizado = converter_rotulo_para_sentia(
                     registro.get("rotulo_padronizado")
                 )

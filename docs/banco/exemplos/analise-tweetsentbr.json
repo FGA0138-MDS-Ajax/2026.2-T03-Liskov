@@ -1,0 +1,11 @@
+{
+  "id_origem": "TweetSentBR_000001_0a1b2c3d4e5f",
+  "fonte": "TweetSentBR",
+  "texto_original": "Adorei o programa de hoje, muito divertido!",
+  "sentimento": "positivo",
+  "probabilidades": { "positivo": 0.88, "negativo": 0.02, "neutro": 0.10 },
+  "modelo": { "nome": "pysentimiento/bertweet-pt-sentiment", "versao": "a-definir" },
+  "rotulo_original": "positivo",
+  "rotulo_padronizado": "positivo",
+  "data_processamento": { "$date": "2026-11-03T14:32:00Z" }
+}

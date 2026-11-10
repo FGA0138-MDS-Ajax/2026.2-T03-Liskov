@@ -5,7 +5,7 @@ pré-processamento de texto adequado a tweets é feito pelo PySentimiento.
 """
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable, Mapping # Mapping permite identificar dicionários
 
 from .rotulos import ROTULOS, normalizar_rotulo
 
@@ -33,28 +33,43 @@ class ClassificadorBertweet:
         if analisador is None:
             from pysentimiento import create_analyzer  # import tardio (pesado)
 
-            analisador = create_analyzer(task="sentiment", lang="pt")
+            analisador = create_analyzer(
+                task="sentiment",
+                lang="pt",
+                model_name=NOME_MODELO,
+                batch_size=tamanho_lote,
+            )# informa explicitamente qual modelo carregar e tbm configura o tamanho do lote
         self._analisador = analisador
         self.tamanho_lote = tamanho_lote
         self.nome_modelo = NOME_MODELO
 
     @staticmethod
     def _validar_textos(textos: Iterable[str] | str) -> list[str]:
+        if isinstance(textos, Mapping):
+            raise TypeError("textos não pode ser um dicionário ou mapeamento") # Rejeita coisas do tipo "{"texto":"Adorei!"} na entrada, pra não acabar classificando "texto" por engano
+
         if isinstance(textos, str):
             textos = [textos]
         else:
             try:
                 textos = list(textos)
             except TypeError as exc:
-                raise TypeError("textos deve ser uma string ou uma coleção de strings") from exc
+                raise TypeError(
+                    "textos deve ser uma string ou uma coleção de strings"
+                ) from exc
 
         for indice, texto in enumerate(textos):
             if not isinstance(texto, str):
-                raise TypeError(f"texto na posição {indice} deve ser uma string")
+                raise TypeError(
+                    f"texto na posição {indice} deve ser uma string"
+                )
             if not texto.strip():
-                raise ValueError(f"texto na posição {indice} não pode ser vazio")
-        return textos
+                raise ValueError(
+                    f"texto na posição {indice} não pode ser vazio"
+                )
 
+        return textos
+    
     def prever(self, textos: Iterable[str] | str) -> list[str]:
         """Retorna apenas os rótulos padronizados dos textos recebidos."""
         return [r["sentimento"] for r in self.prever_com_probabilidades(textos)]

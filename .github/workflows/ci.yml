@@ -4,16 +4,20 @@ on:
   push:
     branches: [main, developer]
   pull_request:
-    branches: [main, developer]
+    # Inclui correções dirigidas às branches dos autores.
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # A versão do Python vem de .python-version.
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
-          python-version: "3.11"
-          cache: pip
-      - run: pip install -r requirements-dev.txt
-      - run: pytest --cov=src
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv lock --check
+      - run: uv run ruff check src/apresentacao tests/test_painel_*.py
+      # Incremental: erros de sintaxe e nomes/imports em todas as camadas.
+      - run: uv run ruff check --isolated --select F,E9 .
+      - run: uv run pytest -ra --cov=src --cov-report=term-missing

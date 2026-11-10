@@ -139,6 +139,14 @@ def arquivo_csv_invalido(diretorio_fixtures: Path) -> Path:
     return caminho
 
 
+@pytest.fixture(scope="session")
+def arquivo_bpsad_sample(diretorio_fixtures: Path) -> Path:
+    """Retorna o caminho para a amostra sintética representativa do esquema BPSAD."""
+    caminho = diretorio_fixtures / "bpsad_sample.csv"
+    assert caminho.is_file(), f"Fixture obrigatória ausente: {caminho}"
+    return caminho
+
+
 @pytest.fixture
 def arquivo_csv_apenas_cabecalho(tmp_path: Path) -> Path:
     """Cria um CSV temporário contendo apenas a linha de cabeçalho, sem registros."""
