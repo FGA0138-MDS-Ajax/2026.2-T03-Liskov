@@ -70,3 +70,31 @@ def test_baseline_treina_e_preve_somente_rotulos_validos(tmp_path):
     assert set(pred) <= {"positivo", "negativo", "neutro"}
     baseline.salvar(modelo, tmp_path / "m.pkl")
     assert baseline.carregar(tmp_path / "m.pkl").predict(["otimo"]).shape == (1,)
+
+
+def test_bertweet_preserva_negacao_ao_encaminhar_ao_analisador():
+    class AnalisadorRegistrador:
+        def __init__(self):
+            self.textos_recebidos = []
+
+        def predict(self, textos):
+            self.textos_recebidos.extend(textos)
+            return [
+                SimpleNamespace(
+                    output="NEG",
+                    probas={"POS": 0.05, "NEG": 0.9, "NEU": 0.05},
+                )
+                for _ in textos
+            ]
+
+    frases = [
+        "Gostei do atendimento.",
+        "Não gostei do atendimento.",
+    ]
+
+    analisador = AnalisadorRegistrador()
+    clf = ClassificadorBertweet(analisador=analisador)
+
+    clf.prever(frases)
+
+    assert analisador.textos_recebidos == frases
