@@ -14,7 +14,7 @@ interface acessa o sistema **somente pela API** e nunca importa banco ou process
 |---|---|---|
 | Dashboard | Todos | Filtros de período e sentimento e indicadores de total e percentual. Gráfico, listagem e resumo ainda serão adicionados (#27, #28, #29) |
 | Entrar | Quem não fez login | Formulário de usuário e senha do Administrador |
-| Administração | Administrador com login | Importar dataset CSV, iniciar coleta e análise e acompanhar a situação |
+| Administração | Administrador com login | Importar dataset CSV e já analisá-lo, iniciar coleta e análise e ver o resultado por sentimento |
 
 Sem login, o menu mostra **Entrar** no lugar de **Administração**; as ferramentas do
 Administrador não aparecem (teste T03). No modo `mock`, entre com o usuário `admin` e a senha

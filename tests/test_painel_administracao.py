@@ -26,6 +26,7 @@ from src.apresentacao.fontes.administracao_mock import (
     AdministracaoMockComErro,
 )
 from src.apresentacao.fontes.mock import ANALISES_DE_EXEMPLO
+from src.apresentacao.transformacoes import mascarar_mencoes
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
@@ -391,3 +392,102 @@ def test_mock_trata_erros_do_leitor_csv_com_mensagem_para_interface(conteudo):
             AdministracaoMock().importar_dataset(sessao_valida(), "sintetico.csv", conteudo)
     finally:
         csv.field_size_limit(limite_anterior)
+
+
+@pytest.mark.parametrize(
+    ("texto", "esperado"),
+    [
+        ("Oi @fulano_1, tudo bem?", "Oi @usuário, tudo bem?"),
+        ("@a e @b concordam", "@usuário e @usuário concordam"),
+        ("email@exemplo.com fica igual", "email@exemplo.com fica igual"),
+        ("sem menção", "sem menção"),
+    ],
+)
+def test_mencoes_sao_mascaradas(texto, esperado):
+    assert mascarar_mencoes(texto) == esperado
+
+
+def test_cliente_le_contagem_e_exemplos_da_coleta():
+    corpo = {
+        **COLETA_JSON,
+        "situacao": "concluida",
+        "textos_coletados": 3,
+        "textos_analisados": 3,
+        "por_sentimento": {"positivo": 2, "neutro": 1, "negativo": 0},
+        "exemplos": [{"texto": "Adorei", "sentimento": "positivo"}],
+    }
+    api, _ = cliente(corpo=corpo)
+    coleta = api.consultar_coleta(SESSAO_API, "c1")
+    assert coleta.por_sentimento == {"positivo": 2, "neutro": 1, "negativo": 0}
+    assert coleta.exemplos[0].sentimento == "positivo"
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"por_sentimento": {"feliz": 1}},
+        {"textos_analisados": 1, "textos_coletados": 1, "por_sentimento": {"positivo": 2}},
+        {"exemplos": [{"texto": "Oi", "sentimento": "feliz"}]},
+        {"exemplos": "não é lista"},
+    ],
+)
+def test_resultado_fora_do_contrato_vira_erro(extra):
+    api, _ = cliente(corpo={**COLETA_JSON, **extra})
+    with pytest.raises(ErroFonteDados, match="não segue o contrato"):
+        api.consultar_coleta(SESSAO_API, "c1")
+
+
+def test_coleta_concluida_mostra_indicadores_e_exemplos(ambiente):
+    app = entrar(ambiente())
+    app.button(key="iniciar_coleta").click().run()
+    app.button(key="atualizar_coleta").click().run()
+    assert not app.exception
+    assert app.table, "a tabela de exemplos deveria aparecer"
+    assert "previsão do modelo" in app.caption[-1].value
+
+
+# --- Importar e já analisar ------------------------------------------------------
+
+
+def test_importar_ja_inicia_a_analise_do_dataset():
+    from src.apresentacao.paginas.administracao import importar_e_analisar
+
+    conteudo = (FIXTURES / "dataset_valido.csv").read_bytes()
+    resultado, coleta, passo = importar_e_analisar(
+        AdministracaoMock(), sessao_valida(), "a.csv", conteudo, analisar=True
+    )
+    assert resultado.registros_importados > 0
+    assert coleta is not None and coleta.fonte == resultado.id_dataset
+    assert "A análise começou" in passo
+
+
+def test_importar_sem_analisar_nao_inicia_coleta():
+    from src.apresentacao.paginas.administracao import importar_e_analisar
+
+    conteudo = (FIXTURES / "dataset_valido.csv").read_bytes()
+    _, coleta, passo = importar_e_analisar(
+        AdministracaoMock(), sessao_valida(), "a.csv", conteudo, analisar=False
+    )
+    assert coleta is None
+    assert "escolha o dataset" in passo
+
+
+def test_falha_ao_iniciar_a_analise_mantem_a_importacao():
+    from src.apresentacao.paginas.administracao import importar_e_analisar
+
+    class AdminSemColeta(AdministracaoMock):
+        def iniciar_coleta(self, sessao, fonte):
+            raise ErroFonteDados("Fonte de coleta desconhecida.")
+
+    conteudo = (FIXTURES / "dataset_valido.csv").read_bytes()
+    resultado, coleta, passo = importar_e_analisar(
+        AdminSemColeta(), sessao_valida(), "a.csv", conteudo, analisar=True
+    )
+    assert resultado.registros_importados > 0
+    assert coleta is None
+    assert "Fonte de coleta desconhecida" in passo
+
+
+def test_formulario_de_importacao_vem_com_a_analise_marcada(ambiente):
+    app = entrar(ambiente())
+    assert app.checkbox(key="analisar_ao_importar").value is True

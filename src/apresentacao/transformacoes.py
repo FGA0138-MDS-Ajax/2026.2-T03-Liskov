@@ -1,5 +1,6 @@
 """Cálculos de apresentação, sem dependência do Streamlit para facilitar testes."""
 
+import re
 from datetime import date
 
 from src.apresentacao.contrato import SENTIMENTOS, FiltrosAnalises, Sentimento
@@ -69,3 +70,11 @@ def descrever_filtros(filtros: FiltrosAnalises, rotulos: dict[Sentimento, str]) 
 
 def filtros_ativos(filtros: FiltrosAnalises) -> bool:
     return filtros != FiltrosAnalises()
+
+
+_MENCAO = re.compile(r"(?<![\w@])@\w+")
+
+
+def mascarar_mencoes(texto: str) -> str:
+    """Troca `@perfil` por `@usuário`: o painel não identifica autores (decisão da PO)."""
+    return _MENCAO.sub("@usuário", texto)
