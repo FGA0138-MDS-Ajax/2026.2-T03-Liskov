@@ -126,6 +126,7 @@ class ExemploAnalise:
 
     texto: str
     sentimento: Sentimento
+    origem: str | None = None  # Na pesquisa: "base" (já guardado) ou "x" (tweet novo).
 
 
 @dataclass(frozen=True)
@@ -138,9 +139,21 @@ class Coleta:
     textos_coletados: int = 0
     textos_analisados: int = 0
     mensagem: str | None = None
+    termo: str | None = None  # Só na pesquisa por assunto.
+    # Na pesquisa: textos vindos da base, do X e repetidos descartados.
+    origem: dict[str, int] | None = None
     # Resultado parcial ou final: contagem por sentimento e alguns textos analisados.
     por_sentimento: dict[Sentimento, int] = field(default_factory=dict)
     exemplos: tuple[ExemploAnalise, ...] = ()
+
+
+# Pesquisa híbrida por assunto (docs/pesquisa_hibrida_mongodb_xfetch.md): a API procura
+# primeiro na base do SentIA e, se faltar e for permitido, completa com tweets do X.
+FONTE_PESQUISA = "pesquisa"
+QUANTIDADE_BUSCA_PADRAO = 5
+PASSO_QUANTIDADE_BUSCA = 5
+QUANTIDADE_BUSCA_MAXIMA = 100
+TAMANHO_MAXIMO_TERMO = 100
 
 
 class FonteAdministracao(Protocol):
@@ -157,5 +170,13 @@ class FonteAdministracao(Protocol):
     def listar_fontes_coleta(self, sessao: SessaoAdministrador) -> list[FonteColeta]: ...
 
     def iniciar_coleta(self, sessao: SessaoAdministrador, fonte: str) -> Coleta: ...
+
+    def pesquisar(
+        self,
+        sessao: SessaoAdministrador,
+        termo: str,
+        quantidade: int,
+        complementar_com_x: bool,
+    ) -> Coleta: ...
 
     def consultar_coleta(self, sessao: SessaoAdministrador, id_coleta: str) -> Coleta: ...

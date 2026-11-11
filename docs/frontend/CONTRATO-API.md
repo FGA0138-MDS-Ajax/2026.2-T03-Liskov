@@ -209,6 +209,42 @@ supera `textos_coletados`. Em `falhou`, `mensagem` explica o problema em linguag
 `textos_analisados`), e `exemplos`, até 10 textos já analisados. Ao concluir, o painel mostra
 os indicadores e os exemplos, com `@menções` trocadas por `@usuário`.
 
+### Pesquisa híbrida por assunto (`POST /coletas` com `fonte: "pesquisa"`)
+
+Segue `docs/pesquisa_hibrida_mongodb_xfetch.md`. Na aba **Pesquisar assunto**, o
+Administrador informa o assunto, a meta de textos e se o X pode completar a meta. A API:
+
+1. procura o assunto nos textos que já tem (datasets importados, pesquisas anteriores e
+   TweetSentBR);
+2. se faltar e `complementar_com_x` for `true`, pede ao XFetch **só o que falta**;
+3. descarta repetidos pelo par fonte + `id_origem` e guarda os tweets novos na base;
+4. classifica tudo com o BERTweet; o painel acompanha por `GET /coletas/{id}`.
+
+```json
+{ "fonte": "pesquisa", "termo": "custo de vida", "quantidade": 5, "complementar_com_x": true }
+```
+
+- `termo`: texto não vazio de até 100 caracteres. `quantidade`: meta de 1 a 100, um máximo.
+- A coleta devolvida inclui `termo` e `origem`, e cada item de `exemplos` traz `origem`:
+
+```json
+{
+  "origem": { "base": 3, "x": 2, "duplicatas": 1 },
+  "exemplos": [ { "texto": "...", "sentimento": "neutro", "origem": "x" } ]
+}
+```
+
+- Se a base não bastar e o X não puder ser usado, a coleta termina como `concluida` com uma
+  `mensagem` explicando quantos textos a base tinha.
+- Todas as coletas devolvem `por_sentimento` e até 10 `exemplos`; o painel mascara
+  `@menções` antes de exibir.
+
+**Versão de teste (branch `feat/pesquisa-hibrida-admin`, ainda sem issue):** a "base" fica na
+memória da API, no lugar do MongoDB (#20), e a busca na base é por palavras (sem acento e por radical; consultas
+de até 3 palavras exigem todas no texto), no lugar da busca semântica com embeddings. Cada
+consulta ao XFetch é **paga**; a chave fica só no `.env` da API (`XFETCH_API_KEY`). Sem ela, a
+pesquisa usa só a base.
+
 ### Implementação de referência
 
 `src/servico/administracao.py` e `src/servico/autenticacao.py` implementam estas rotas, para
@@ -252,6 +288,8 @@ Erros de conexão, tempo esgotado, 404 e respostas fora do contrato seguem a tab
    bloqueio de tentativas e CSV de até 10 MB.
 6. Guardar datasets, coletas e análises no MongoDB (#20), no lugar da memória.
 7. Quais fontes externas a coleta oferece além do TweetSentBR, como o X (XFetch).
+8. Pesquisa híbrida: limite de gasto com o XFetch, critério de relevância da busca na base e
+   quando trocar a busca por palavras pela busca semântica (Vector Search).
 
 ## Como trocar o mock pela API
 

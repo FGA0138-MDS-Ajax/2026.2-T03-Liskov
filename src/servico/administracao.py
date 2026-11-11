@@ -33,6 +33,7 @@ from src.processamento.aquisicao import (
 )
 
 from .autenticacao import Autenticador, ConfiguracaoAdmin, Sessao
+from .pesquisa import pesquisar
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,10 @@ LIMITE_COLETA_PADRAO = 1000
 TAMANHO_LOTE_ANALISE = 32
 ID_TWEETSENTBR = "tweetsentbr"
 
+# Pesquisa híbrida (src/servico/pesquisa.py): base do SentIA e, se faltar, o X.
+FONTE_PESQUISA = "pesquisa"
+TAMANHO_MAXIMO_TERMO = 100
+QUANTIDADE_MAXIMA_PESQUISA = 100
 MAXIMO_EXEMPLOS = 10
 SENTIMENTOS = ("positivo", "neutro", "negativo")
 
@@ -81,11 +86,16 @@ class Coleta:
     textos_coletados: int = 0
     textos_analisados: int = 0
     mensagem: str | None = None
+    termo: str | None = None
+    quantidade: int | None = None
+    complementar_com_x: bool = False
+    # Pesquisa: quantos textos vieram da base, quantos do X e quantos repetidos saíram.
+    origem: dict[str, int] | None = None
     por_sentimento: dict[str, int] = field(default_factory=lambda: dict.fromkeys(SENTIMENTOS, 0))
     exemplos: list[dict[str, str]] = field(default_factory=list)
 
     def como_resposta(self) -> dict[str, Any]:
-        return {
+        resposta = {
             "id": self.id,
             "fonte": self.fonte,
             "situacao": self.situacao,
@@ -95,6 +105,11 @@ class Coleta:
             "por_sentimento": dict(self.por_sentimento),
             "exemplos": [dict(e) for e in self.exemplos],
         }
+        if self.termo is not None:
+            resposta["termo"] = self.termo
+        if self.origem is not None:
+            resposta["origem"] = dict(self.origem)
+        return resposta
 
 
 @dataclass
@@ -126,9 +141,21 @@ class RepositorioAdministracao:
         with self._trava:
             return self.datasets.get(id_dataset)
 
-    def criar_coleta(self, fonte: str) -> Coleta:
+    def criar_coleta(
+        self,
+        fonte: str,
+        termo: str | None = None,
+        quantidade: int | None = None,
+        complementar_com_x: bool = False,
+    ) -> Coleta:
         with self._trava:
-            coleta = Coleta(id=self._proximo_id("col"), fonte=fonte)
+            coleta = Coleta(
+                id=self._proximo_id("col"),
+                fonte=fonte,
+                termo=termo,
+                quantidade=quantidade,
+                complementar_com_x=complementar_com_x,
+            )
             self.coletas[coleta.id] = coleta
             return replace(coleta)
 
@@ -152,6 +179,13 @@ class RepositorioAdministracao:
             self.analises.extend(documentos)
 
 
+def _buscar_x_padrao(termo: str, quantidade: int) -> list[dict[str, Any]]:
+    from src.processamento.aquisicao.xfetch import buscar_tweets_xfetch
+
+    # Só tweets em português; o módulo pagina e limita a 10 requisições por busca.
+    return buscar_tweets_xfetch(f"{termo} lang:pt", quantidade=quantidade)
+
+
 def _criar_pipeline_padrao() -> Any:
     try:
         from src.processamento.pipeline import PipelineClassificacao
@@ -173,6 +207,7 @@ class ContextoAdministracao:
         limite_csv_bytes: int = LIMITE_CSV_MB_PADRAO * 1024 * 1024,
         limite_coleta: int = LIMITE_COLETA_PADRAO,
         caminho_tweetsentbr: Path = CAMINHO_PADRAO_TWEETSENTBR,
+        buscar_x: Callable[[str, int], list[dict[str, Any]]] | None = None,
     ) -> None:
         self.autenticador = autenticador
         self.repositorio = repositorio or RepositorioAdministracao()
@@ -182,11 +217,16 @@ class ContextoAdministracao:
         self.limite_csv_bytes = limite_csv_bytes
         self.limite_coleta = limite_coleta
         self.caminho_tweetsentbr = caminho_tweetsentbr
+        # Sem função de busca (sem XFETCH_API_KEY), a busca no X fica desligada.
+        self.buscar_x = buscar_x
+        self._tweetsentbr: list[dict[str, Any]] | None = None
 
     @classmethod
     def do_ambiente(cls) -> ContextoAdministracao:
+        chave_xfetch = os.getenv("XFETCH_API_KEY", "").strip()
         return cls(
             Autenticador(ConfiguracaoAdmin.do_ambiente()),
+            buscar_x=_buscar_x_padrao if chave_xfetch else None,
             limite_csv_bytes=_inteiro_do_ambiente("SENTIA_LIMITE_CSV_MB", LIMITE_CSV_MB_PADRAO)
             * 1024
             * 1024,
@@ -209,6 +249,19 @@ class ContextoAdministracao:
                 {"id": dataset.id, "nome": f"Dataset importado: {dataset.nome_arquivo}"}
             )
         return fontes
+
+    def registros_da_base(self) -> list[dict[str, Any]]:
+        """Tudo o que a API já tem: datasets importados, buscas no X e o TweetSentBR."""
+        if self._tweetsentbr is None:
+            self._tweetsentbr = (
+                list(iterar_tweetsentbr(self.caminho_tweetsentbr, modo_estrito=False))
+                if self.caminho_tweetsentbr.is_file()
+                else []
+            )
+        registros = list(self._tweetsentbr)
+        for dataset in self.repositorio.listar_datasets():
+            registros.extend(dataset.registros)
+        return registros
 
     def registros_da_fonte(self, fonte: str) -> list[dict[str, Any]]:
         if fonte == ID_TWEETSENTBR:
@@ -270,6 +323,9 @@ class CorpoLogin(BaseModel):
 
 class CorpoColeta(BaseModel):
     fonte: str
+    termo: str | None = None
+    quantidade: int | None = None
+    complementar_com_x: bool = False
 
 
 @roteador.post("/auth/login")
@@ -368,14 +424,49 @@ def listar_fontes(
     return {"fontes": contexto.fontes()}
 
 
+def _registros_da_coleta(
+    contexto: ContextoAdministracao, coleta: Coleta
+) -> tuple[list[dict[str, Any]], list[str | None]]:
+    """Textos a analisar e a origem de cada um: "base" ou "x" na pesquisa; None nas demais."""
+    if coleta.fonte != FONTE_PESQUISA:
+        registros = contexto.registros_da_fonte(coleta.fonte)
+        return registros, [None] * len(registros)
+    assert coleta.termo and coleta.quantidade
+    resultado = pesquisar(
+        coleta.termo,
+        coleta.quantidade,
+        contexto.registros_da_base(),
+        buscar_x=contexto.buscar_x,
+        complementar_com_x=coleta.complementar_com_x,
+    )
+    if resultado.do_x:
+        # Os tweets novos entram na base: a próxima pesquisa os reaproveita sem pagar.
+        momento = datetime.now(UTC).strftime("%d/%m %H:%M")
+        contexto.repositorio.adicionar_dataset(
+            f"busca no X por “{coleta.termo}” ({momento} UTC)", resultado.do_x
+        )
+    contexto.repositorio.atualizar_coleta(
+        coleta.id,
+        origem={
+            "base": len(resultado.da_base),
+            "x": len(resultado.do_x),
+            "duplicatas": resultado.duplicatas,
+        },
+        mensagem=resultado.aviso,
+    )
+    return resultado.registros, resultado.origens
+
+
 def executar_coleta(contexto: ContextoAdministracao, id_coleta: str) -> None:
     """Coleta os textos da fonte e os classifica em lotes, atualizando o progresso."""
+    from src.processamento.aquisicao.xfetch import ErroXFetch
+
     repositorio = contexto.repositorio
     coleta = repositorio.obter_coleta(id_coleta)
     if coleta is None:
         return
     try:
-        registros = contexto.registros_da_fonte(coleta.fonte)
+        registros, origens = _registros_da_coleta(contexto, coleta)
         repositorio.atualizar_coleta(
             id_coleta, situacao="em_andamento", textos_coletados=len(registros)
         )
@@ -388,14 +479,15 @@ def executar_coleta(contexto: ContextoAdministracao, id_coleta: str) -> None:
             lote = registros[inicio : inicio + TAMANHO_LOTE_ANALISE]
             documentos = pipeline.processar_registros(lote)
             repositorio.salvar_analises(documentos)
-            for documento in documentos:
+            for posicao, documento in enumerate(documentos, start=inicio):
                 sentimento = documento.get("sentimento")
                 if sentimento in por_sentimento:
                     por_sentimento[sentimento] += 1
                 if len(exemplos) < MAXIMO_EXEMPLOS:
-                    exemplos.append(
-                        {"texto": documento["texto_original"], "sentimento": sentimento}
-                    )
+                    exemplo = {"texto": documento["texto_original"], "sentimento": sentimento}
+                    if origens[posicao] is not None:
+                        exemplo["origem"] = origens[posicao]
+                    exemplos.append(exemplo)
             analisados += len(lote)
             repositorio.atualizar_coleta(
                 id_coleta,
@@ -404,7 +496,7 @@ def executar_coleta(contexto: ContextoAdministracao, id_coleta: str) -> None:
                 exemplos=list(exemplos),
             )
         campos: dict[str, Any] = {"situacao": "concluida"}
-        if not registros:
+        if not registros and not repositorio.obter_coleta(id_coleta).mensagem:
             campos["mensagem"] = "Nenhum texto encontrado para analisar."
         repositorio.atualizar_coleta(id_coleta, **campos)
     except ErroClassificadorIndisponivel:
@@ -413,6 +505,9 @@ def executar_coleta(contexto: ContextoAdministracao, id_coleta: str) -> None:
             situacao="falhou",
             mensagem="O classificador de sentimentos não está instalado neste servidor.",
         )
+    except ErroXFetch as erro:
+        # As mensagens do módulo XFetch não trazem chave, cabeçalhos nem consulta.
+        repositorio.atualizar_coleta(id_coleta, situacao="falhou", mensagem=str(erro))
     except Exception:  # A coleta roda em segundo plano e não pode derrubar a API.
         logger.exception("Falha na coleta %s", id_coleta)
         repositorio.atualizar_coleta(
@@ -429,9 +524,19 @@ def iniciar_coleta(
     _sessao: Administrador,
     contexto: Contexto,
 ) -> Any:
-    if corpo.fonte not in {f["id"] for f in contexto.fontes()}:
+    termo = quantidade = None
+    if corpo.fonte == FONTE_PESQUISA:
+        termo = " ".join((corpo.termo or "").split())
+        if not termo or len(termo) > TAMANHO_MAXIMO_TERMO:
+            return _erro(422, "Informe uma palavra ou frase de até 100 caracteres.")
+        quantidade = corpo.quantidade
+        if quantidade is None or not 1 <= quantidade <= QUANTIDADE_MAXIMA_PESQUISA:
+            return _erro(422, "A meta de textos deve ficar entre 1 e 100.")
+    elif corpo.fonte not in {f["id"] for f in contexto.fontes()}:
         return _erro(422, "Fonte de coleta desconhecida.")
-    coleta = contexto.repositorio.criar_coleta(corpo.fonte)
+    coleta = contexto.repositorio.criar_coleta(
+        corpo.fonte, termo, quantidade, corpo.complementar_com_x
+    )
     tarefas.add_task(executar_coleta, contexto, coleta.id)
     return JSONResponse(coleta.como_resposta(), status_code=202)
 

@@ -10,6 +10,7 @@ from urllib.parse import quote
 import requests
 
 from src.apresentacao.contrato import (
+    FONTE_PESQUISA,
     SENTIMENTOS,
     SITUACOES_COLETA,
     Coleta,
@@ -49,6 +50,9 @@ def _para_coleta(valor: Any) -> Coleta:
     mensagem = dados.get("mensagem")
     if mensagem is not None:
         mensagem = _texto(mensagem)
+    termo = dados.get("termo")
+    if termo is not None:
+        termo = _texto(termo, nao_vazio=True)
     contagens = _objeto(dados.get("por_sentimento") or {})
     if not set(contagens) <= set(SENTIMENTOS):
         raise ValueError("Sentimento fora do contrato.")
@@ -64,12 +68,22 @@ def _para_coleta(valor: Any) -> Coleta:
         sentimento = exemplo["sentimento"]
         if sentimento not in SENTIMENTOS:
             raise ValueError("Sentimento fora do contrato.")
+        origem_exemplo = exemplo.get("origem")
+        if origem_exemplo is not None and origem_exemplo not in ("base", "x"):
+            raise ValueError("Origem fora do contrato.")
         exemplos.append(
             ExemploAnalise(
                 texto=_texto(exemplo["texto"], nao_vazio=True),
                 sentimento=sentimento,
+                origem=origem_exemplo,
             )
         )
+    origem = dados.get("origem")
+    if origem is not None:
+        origem = _objeto(origem)
+        if set(origem) != {"base", "x", "duplicatas"}:
+            raise ValueError("Origem fora do contrato.")
+        origem = {chave: _inteiro(valor) for chave, valor in origem.items()}
     return Coleta(
         id=_texto(dados["id"], nao_vazio=True),
         fonte=_texto(dados["fonte"], nao_vazio=True),
@@ -77,8 +91,10 @@ def _para_coleta(valor: Any) -> Coleta:
         textos_coletados=coletados,
         textos_analisados=analisados,
         mensagem=mensagem,
+        termo=termo,
         por_sentimento=por_sentimento,
         exemplos=tuple(exemplos),
+        origem=origem,
     )
 
 
@@ -220,6 +236,28 @@ class AdministracaoApi:
             esperado=(202,),
             recusa="A API recusou a fonte escolhida.",
             json={"fonte": fonte},
+        )
+        return self._coleta(dados)
+
+    def pesquisar(
+        self,
+        sessao: SessaoAdministrador,
+        termo: str,
+        quantidade: int,
+        complementar_com_x: bool,
+    ) -> Coleta:
+        dados = self._chamar(
+            "post",
+            "/coletas",
+            sessao=sessao,
+            esperado=(202,),
+            recusa="A API recusou a pesquisa.",
+            json={
+                "fonte": FONTE_PESQUISA,
+                "termo": termo,
+                "quantidade": quantidade,
+                "complementar_com_x": complementar_com_x,
+            },
         )
         return self._coleta(dados)
 
