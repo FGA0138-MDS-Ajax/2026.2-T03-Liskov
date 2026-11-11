@@ -53,6 +53,13 @@ uv sync --locked
 make env
 ```
 
+Para instalar também as dependências pesadas opcionais do classificador real (`torch`, `transformers` e `pysentimiento`):
+
+```bash
+uv sync --locked --group ml
+# ou: make setup-ml
+```
+
 `make env` cria `.env` a partir de `.env.example` sem sobrescrever um arquivo existente. Não é necessário configurar MongoDB ou `XFETCH_API_KEY` para a demonstração offline.
 
 ## Execução
@@ -78,10 +85,18 @@ uv run python -m scripts.demonstrar_pipeline
 ## Validação e testes
 
 ```bash
-uv run pytest -v -ra
-uv run ruff check src/apresentacao tests/test_painel_*.py
+make check
+# ou individualmente:
 uv lock --check
+uv run ruff check --isolated --select F,E9 .
+uv run ruff check src/apresentacao tests/test_painel_*.py
+uv run pytest -v -ra
 ```
+
+### Escopo da CI e governança de branches (`main` e `developer`)
+- **Fluxo de branches**: o trabalho de desenvolvimento converge via Pull Request na branch `developer`, que mantém no histórico o commit da `main` (`c72faeb`) sem *force push* e sem arquivos `requirements*.txt` legados (gerenciamento unificado em `pyproject.toml` + `uv.lock`).
+- **O que a CI valida automaticamente (`.github/workflows/ci.yml`)**: integridade do lockfile (`uv lock --check`), lint de erros sintáticos/nomes indefinidos (`ruff check --isolated --select F,E9 .`) e suíte automatizada offline (`pytest -v`) com dublês/mocks para banco, rede e classificador.
+- **O que depende de serviços ou artefatos externos**: conexão com instância real do MongoDB (`uv run python test_mongo.py` com `MONGODB_URI`), download dos pesos do modelo Hugging Face (`--group ml`) e coleta real na API XFetch (`XFETCH_API_KEY`).
 
 ## Documentação
 

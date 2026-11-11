@@ -3,7 +3,11 @@ from datetime import datetime, timezone
 
 import pytest
 
-from src.processamento.pipeline import ErroPipeline, PipelineClassificacao
+from src.processamento.pipeline import (
+    ErroInferencia,
+    ErroPipeline,
+    PipelineClassificacao,
+)
 
 
 class ClassificadorFalso:
@@ -130,6 +134,19 @@ def test_rejeita_lote_com_quantidade_incorreta():
     pipeline = PipelineClassificacao(classificador=classificador)
 
     with pytest.raises(ErroPipeline, match="quantidade de previsões"):
+        pipeline.processar_registros([registro()])
+
+
+def test_classificador_com_falha_gera_erro_de_inferencia():
+    classificador = ClassificadorFalso()
+
+    def falha_inferencia(textos):
+        raise RuntimeError("erro interno")
+
+    classificador.prever_com_probabilidades = falha_inferencia
+    pipeline = PipelineClassificacao(classificador=classificador)
+
+    with pytest.raises(ErroInferencia, match="Falha ao classificar"):
         pipeline.processar_registros([registro()])
 
 
