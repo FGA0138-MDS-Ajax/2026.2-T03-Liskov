@@ -9,9 +9,11 @@ import io
 from datetime import UTC, datetime, timedelta
 
 from src.apresentacao.contrato import (
+    SENTIMENTOS,
     Coleta,
     ErroAutenticacao,
     ErroFonteDados,
+    ExemploAnalise,
     FonteColeta,
     ResultadoImportacao,
     SessaoAdministrador,
@@ -31,6 +33,18 @@ FONTES_EXEMPLO = [
     FonteColeta(id="tweetsentbr", nome="TweetSentBR"),
     FonteColeta(id="dataset_exemplo", nome="Dataset importado de exemplo"),
 ]
+
+
+def _resultado_exemplo(quantidade: int) -> dict:
+    """Contagens e exemplos tirados dos primeiros textos de exemplo."""
+    amostra = ANALISES_DE_EXEMPLO[:quantidade]
+    return {
+        "por_sentimento": {s: sum(a.sentimento == s for a in amostra) for s in SENTIMENTOS},
+        "exemplos": tuple(
+            ExemploAnalise(texto=a.texto_original, sentimento=a.sentimento)
+            for a in amostra[:10]
+        ),
+    }
 
 
 class AdministracaoMock:
@@ -115,6 +129,7 @@ class AdministracaoMock:
             situacao="concluida",
             textos_coletados=total,
             textos_analisados=total,
+            **_resultado_exemplo(total),
         )
 
     @staticmethod

@@ -171,9 +171,10 @@ Resposta **201**:
 }
 ```
 
-`registros_lidos` deve ser igual a importados + descartados. A importação só grava os textos;
-para classificá-los, o Administrador escolhe o dataset em "Coleta e análise". Por isso, o
-dataset importado deve aparecer em `GET /coletas/fontes`.
+`registros_lidos` deve ser igual a importados + descartados. A importação só grava os textos.
+Com a opção "Analisar o sentimento logo após importar" (marcada por padrão), o painel chama em
+seguida `POST /coletas` com o `id_dataset`; sem ela, o Administrador escolhe o dataset em
+"Coleta e análise". Por isso, o dataset importado deve aparecer em `GET /coletas/fontes`.
 
 ### `GET /coletas/fontes`
 
@@ -196,12 +197,35 @@ consulta quando o Administrador clica em "Atualizar situação".
   "situacao": "em_andamento",
   "textos_coletados": 800,
   "textos_analisados": 350,
-  "mensagem": null
+  "mensagem": null,
+  "por_sentimento": { "positivo": 150, "neutro": 120, "negativo": 80 },
+  "exemplos": [ { "texto": "Adorei o atendimento", "sentimento": "positivo" } ]
 }
 ```
 
 `situacao` é `pendente`, `em_andamento`, `concluida` ou `falhou`. `textos_analisados` nunca
 supera `textos_coletados`. Em `falhou`, `mensagem` explica o problema em linguagem simples.
+`por_sentimento` traz a contagem parcial ou final por sentimento (a soma não supera
+`textos_analisados`), e `exemplos`, até 10 textos já analisados. Ao concluir, o painel mostra
+os indicadores e os exemplos, com `@menções` trocadas por `@usuário`.
+
+### Implementação de referência
+
+`src/servico/administracao.py` e `src/servico/autenticacao.py` implementam estas rotas, para
+o backend continuar a partir delas (#58):
+
+- Um único Administrador, configurado por `SENTIA_ADMIN_USUARIO` e `SENTIA_ADMIN_SENHA_HASH`
+  (hash scrypt, gerado com `uv run python -m src.servico.autenticacao`). Sem essas variáveis,
+  as rotas respondem **503**. Nenhuma credencial fica no repositório.
+- Token opaco com expiração de `SENTIA_SESSAO_MINUTOS` (padrão 60) e bloqueio com **429** após
+  várias tentativas erradas.
+- CSV de até `SENTIA_LIMITE_CSV_MB` (padrão 10 MB) e até `SENTIA_LIMITE_COLETA` textos do
+  TweetSentBR por coleta (padrão 1000).
+- **Limitação:** datasets, coletas, análises e sessões ficam na memória da API, no lugar do
+  MongoDB (#20), e se perdem quando ela reinicia.
+- **Memória:** o BERTweet na placa de vídeo, com `--reload`, passou de 5 GB numa máquina de
+  6,7 GB. No processador ficou perto de 1,7 GB:
+  `env CUDA_VISIBLE_DEVICES= SENTIA_LIMITE_COLETA=300 uv run --group ml uvicorn src.servico.main:app --port 8000`.
 
 ### Erros da administração
 
@@ -212,6 +236,7 @@ supera `textos_coletados`. Em `falhou`, `mensagem` explica o problema em linguag
 | 403 | Este usuário não tem permissão de administrador. |
 | 400, 415 ou 422 | O campo `mensagem` do corpo, se for um texto de até 300 caracteres; senão, uma mensagem padrão |
 | 413 | O arquivo é maior que o limite aceito pela API. |
+| 404 ou 503 com `mensagem` | O campo `mensagem` do corpo (por exemplo, "Coleta não encontrada.") |
 | 429 | Muitas tentativas. Aguarde um pouco e tente de novo. |
 
 Erros de conexão, tempo esgotado, 404 e respostas fora do contrato seguem a tabela de
@@ -222,11 +247,11 @@ Erros de conexão, tempo esgotado, 404 e respostas fora do contrato seguem a tab
 1. Qual data o filtro de período usa (alinhamento da equipe; issue #24).
 2. Fuso horário usado para interpretar `inicio` e `fim` (issue #24).
 3. Dados para o gráfico "Evolução no período", se for mantido (alinhamento da equipe).
-4. Responsável pelo backend: as issues #21, #23, #24, #25 e #58 estão sem responsável.
-5. Formato do token (JWT ou opaco), tempo de expiração e limite de tentativas de login.
-6. Tamanho máximo do CSV aceito por `POST /datasets`.
-7. Quais fontes externas a coleta oferece além do TweetSentBR (depende da decisão sobre a
-   busca por palavra-chave).
+4. Responsável pelo backend: as issues #23, #24 e #25 estão sem responsável.
+5. Manter ou não as escolhas da implementação de referência: token opaco, sessão de 60 minutos,
+   bloqueio de tentativas e CSV de até 10 MB.
+6. Guardar datasets, coletas e análises no MongoDB (#20), no lugar da memória.
+7. Quais fontes externas a coleta oferece além do TweetSentBR, como o X (XFetch).
 
 ## Como trocar o mock pela API
 

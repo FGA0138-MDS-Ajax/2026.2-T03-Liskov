@@ -10,10 +10,12 @@ from urllib.parse import quote
 import requests
 
 from src.apresentacao.contrato import (
+    SENTIMENTOS,
     SITUACOES_COLETA,
     Coleta,
     ErroAutenticacao,
     ErroFonteDados,
+    ExemploAnalise,
     FonteColeta,
     ResultadoImportacao,
     SessaoAdministrador,
@@ -47,6 +49,27 @@ def _para_coleta(valor: Any) -> Coleta:
     mensagem = dados.get("mensagem")
     if mensagem is not None:
         mensagem = _texto(mensagem)
+    contagens = _objeto(dados.get("por_sentimento") or {})
+    if not set(contagens) <= set(SENTIMENTOS):
+        raise ValueError("Sentimento fora do contrato.")
+    por_sentimento = {s: _inteiro(contagens.get(s, 0)) for s in SENTIMENTOS} if contagens else {}
+    if sum(por_sentimento.values()) > analisados:
+        raise ValueError("Mais sentimentos do que textos analisados.")
+    exemplos_brutos = dados.get("exemplos") or []
+    if not isinstance(exemplos_brutos, list):
+        raise TypeError("Exemplos deve ser uma lista.")
+    exemplos = []
+    for exemplo in exemplos_brutos:
+        exemplo = _objeto(exemplo)
+        sentimento = exemplo["sentimento"]
+        if sentimento not in SENTIMENTOS:
+            raise ValueError("Sentimento fora do contrato.")
+        exemplos.append(
+            ExemploAnalise(
+                texto=_texto(exemplo["texto"], nao_vazio=True),
+                sentimento=sentimento,
+            )
+        )
     return Coleta(
         id=_texto(dados["id"], nao_vazio=True),
         fonte=_texto(dados["fonte"], nao_vazio=True),
@@ -54,6 +77,8 @@ def _para_coleta(valor: Any) -> Coleta:
         textos_coletados=coletados,
         textos_analisados=analisados,
         mensagem=mensagem,
+        por_sentimento=por_sentimento,
+        exemplos=tuple(exemplos),
     )
 
 
@@ -100,7 +125,13 @@ class AdministracaoApi:
         if codigo == 403:
             raise ErroAutenticacao("Este usuário não tem permissão de administrador.")
         if codigo == 404:
-            raise ErroFonteDados(f"A API não oferece a rota {rota}.")
+            raise ErroFonteDados(
+                _mensagem_da_api(resposta) or f"A API não oferece a rota {rota}."
+            )
+        if codigo == 503:
+            raise ErroFonteDados(
+                _mensagem_da_api(resposta) or "A API está indisponível no momento."
+            )
         if codigo == 413:
             raise ErroFonteDados("O arquivo é maior que o limite aceito pela API.")
         if codigo in (400, 415, 422):

@@ -121,6 +121,14 @@ SITUACOES_COLETA: tuple[SituacaoColeta, ...] = (
 
 
 @dataclass(frozen=True)
+class ExemploAnalise:
+    """Texto analisado na coleta, com o sentimento previsto pelo modelo."""
+
+    texto: str
+    sentimento: Sentimento
+
+
+@dataclass(frozen=True)
 class Coleta:
     """Execução de coleta e análise; textos analisados nunca superam os coletados."""
 
@@ -130,6 +138,9 @@ class Coleta:
     textos_coletados: int = 0
     textos_analisados: int = 0
     mensagem: str | None = None
+    # Resultado parcial ou final: contagem por sentimento e alguns textos analisados.
+    por_sentimento: dict[Sentimento, int] = field(default_factory=dict)
+    exemplos: tuple[ExemploAnalise, ...] = ()
 
 
 class FonteAdministracao(Protocol):

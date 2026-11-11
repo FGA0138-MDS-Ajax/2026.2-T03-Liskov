@@ -29,6 +29,11 @@ versões publicadas; outras frentes também podem registrar suas entregas aqui.
   (#60), e início e acompanhamento de coleta e análise (#61). Ambos usam **dados de exemplo**
   até a API oferecer as rotas.
 - Proposta de contrato para login, importação e coleta, com cliente HTTP correspondente (#58).
+- Rotas de administração na API: login com senha em hash scrypt e token com expiração, logout,
+  importação de CSV e coleta com análise pelo BERTweet, todas exigindo login (#58). Os dados
+  ficam em memória até a persistência no MongoDB (#20).
+- Análise logo após importar o dataset (#60) e resultado da coleta com indicadores por
+  sentimento e exemplos, com `@menções` mascaradas (#61).
 - Wireframes do dashboard na documentação, com o que já foi implementado de cada um (#14).
 - Base do painel Streamlit com navegação entre Dashboard e Administração; a Administração
   ainda é só um aviso de área não implementada (#13).
