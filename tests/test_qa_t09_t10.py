@@ -30,6 +30,7 @@ from pymongo.errors import ConnectionFailure, OperationFailure
 
 from src.apresentacao.contrato import (
     SENTIMENTOS,
+    ErroAutenticacao,
     ErroFonteDados,
     FiltrosAnalises,
     SessaoAdministrador,
@@ -40,6 +41,8 @@ from src.dados import database
 from src.processamento.aquisicao import xfetch
 from src.processamento.aquisicao.csv_importer import importar_dataset_csv
 from src.processamento.pipeline import PipelineClassificacao
+from src.servico.administracao import ContextoAdministracao, obter_contexto
+from src.servico.autenticacao import Autenticador
 from src.servico.main import app
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -382,8 +385,15 @@ def test_t10_health_contrato_http_cabecalhos_e_esquema_openapi():
     assert openapi.status_code == 200
     esquema = openapi.json()
     assert esquema["info"]["title"] == "SentIA API"
-    # Confirma que apenas /health está publicada no backend antes da issue #21
-    assert set(esquema["paths"]) == {"/health"}
+    assert set(esquema["paths"]) == {
+        "/health",
+        "/auth/login",
+        "/auth/logout",
+        "/datasets",
+        "/coletas/fontes",
+        "/coletas",
+        "/coletas/{id_coleta}",
+    }
 
 
 @pytest.mark.parametrize("metodo", ["post", "put", "delete", "patch"])
@@ -406,8 +416,13 @@ def test_t10_fonte_api_contra_fastapi_real_valida_health_e_sinaliza_rotas_penden
         fonte.resumir(FiltrosAnalises())
 
 
-def test_t10_administracao_api_contra_fastapi_real_sinaliza_rotas_pendentes_com_404():
-    sessao_asgi = AdaptadorTestClientRequests(TestClient(app))
+def test_t10_administracao_api_contra_fastapi_real_sinaliza_503_e_sessao_invalida(
+    monkeypatch,
+):
+    contexto = ContextoAdministracao(Autenticador(configuracao=None))
+    monkeypatch.setitem(app.dependency_overrides, obter_contexto, lambda: contexto)
+    cliente = TestClient(app)
+    sessao_asgi = AdaptadorTestClientRequests(cliente)
     admin = AdministracaoApi("http://testserver", sessao=sessao_asgi)
     sessao_admin = SessaoAdministrador(
         token="token-qa",
@@ -415,19 +430,22 @@ def test_t10_administracao_api_contra_fastapi_real_sinaliza_rotas_pendentes_com_
         expira_em=datetime(2030, 1, 1, tzinfo=UTC),
     )
 
-    with pytest.raises(ErroFonteDados, match="não oferece a rota /auth/login"):
+    resposta = cliente.post("/auth/login", json={"usuario": "admin", "senha": "senha"})
+    assert resposta.status_code == 503
+
+    with pytest.raises(ErroFonteDados, match="A administração não está configurada"):
         admin.entrar("admin", "senha")
 
-    with pytest.raises(ErroFonteDados, match="não oferece a rota /datasets"):
+    with pytest.raises(ErroAutenticacao, match="Sua sessão expirou. Entre novamente."):
         admin.importar_dataset(sessao_admin, "lote.csv", b"texto,fonte\nola,x\n")
 
-    with pytest.raises(ErroFonteDados, match="não oferece a rota /coletas/fontes"):
+    with pytest.raises(ErroAutenticacao, match="Sua sessão expirou. Entre novamente."):
         admin.listar_fontes_coleta(sessao_admin)
 
-    with pytest.raises(ErroFonteDados, match="não oferece a rota /coletas"):
+    with pytest.raises(ErroAutenticacao, match="Sua sessão expirou. Entre novamente."):
         admin.iniciar_coleta(sessao_admin, "tweetsentbr")
 
-    with pytest.raises(ErroFonteDados, match="não oferece a rota /coletas/c1"):
+    with pytest.raises(ErroAutenticacao, match="Sua sessão expirou. Entre novamente."):
         admin.consultar_coleta(sessao_admin, "c1")
 
 
