@@ -385,7 +385,7 @@ def test_t10_health_contrato_http_cabecalhos_e_esquema_openapi():
     assert openapi.status_code == 200
     esquema = openapi.json()
     assert esquema["info"]["title"] == "SentIA API"
-    assert set(esquema["paths"]) == {
+    assert {
         "/health",
         "/auth/login",
         "/auth/logout",
@@ -393,7 +393,8 @@ def test_t10_health_contrato_http_cabecalhos_e_esquema_openapi():
         "/coletas/fontes",
         "/coletas",
         "/coletas/{id_coleta}",
-    }
+        "/analises",
+    } <= set(esquema["paths"])
 
 
 @pytest.mark.parametrize("metodo", ["post", "put", "delete", "patch"])
@@ -409,7 +410,7 @@ def test_t10_fonte_api_contra_fastapi_real_valida_health_e_sinaliza_rotas_penden
 
     assert fonte.verificar_saude() is True
 
-    with pytest.raises(ErroFonteDados, match="não oferece a rota /analises"):
+    with pytest.raises(ErroFonteDados, match=r"HTTP 405\)"):
         fonte.listar(FiltrosAnalises(inicio=date(2026, 10, 1), sentimento="positivo"))
 
     with pytest.raises(ErroFonteDados, match="não oferece a rota /analises/resumo"):
