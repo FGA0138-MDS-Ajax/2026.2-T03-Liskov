@@ -96,7 +96,7 @@ class PipelineClassificacao:
             metadados = registro.get("metadados")
             if metadados is not None and not isinstance(metadados, dict):
                 raise ErroPipeline(
-                    f"Registro {indice}: metadados precisam ser um dicion?rio."
+                    f"Registro {indice}: metadados precisam ser um dicionário."
                 )
 
             textos.append(texto)
@@ -148,7 +148,7 @@ class PipelineClassificacao:
                 valor = probabilidades[rotulo]
                 if isinstance(valor, bool) or not isinstance(valor, (int, float)):
                     raise ErroPipeline(
-                        f"Registro {indice}: probabilidade inv?lida para {rotulo}."
+                        f"Registro {indice}: probabilidade inválida para {rotulo}."
                     )
                 try:
                     finito = math.isfinite(float(valor))
