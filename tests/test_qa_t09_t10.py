@@ -43,6 +43,7 @@ from src.processamento.aquisicao.csv_importer import importar_dataset_csv
 from src.processamento.pipeline import PipelineClassificacao
 from src.servico.administracao import ContextoAdministracao, obter_contexto
 from src.servico.autenticacao import Autenticador
+from src.servico.dependencias import obter_colecao_analises
 from src.servico.main import app
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -394,6 +395,7 @@ def test_t10_health_contrato_http_cabecalhos_e_esquema_openapi():
         "/coletas",
         "/coletas/{id_coleta}",
         "/analises",
+        "/analises/resumo",
     } <= set(esquema["paths"])
 
 
@@ -404,17 +406,24 @@ def test_t10_health_rejeita_metodos_http_nao_permitidos_com_405(metodo):
     assert resposta.status_code == 405
 
 
-def test_t10_fonte_api_contra_fastapi_real_valida_health_e_sinaliza_rotas_pendentes():
+def test_t10_fonte_api_contra_fastapi_real_valida_health_e_consultas_vazias(monkeypatch):
+    colecao = Mock()
+    colecao.count_documents.return_value = 0
+    colecao.find.return_value.sort.return_value.skip.return_value.limit.return_value = []
+    colecao.aggregate.return_value = []
+    monkeypatch.setitem(app.dependency_overrides, obter_colecao_analises, lambda: colecao)
     sessao_asgi = AdaptadorTestClientRequests(TestClient(app))
     fonte = FonteApi("http://testserver", sessao=sessao_asgi)
 
     assert fonte.verificar_saude() is True
 
-    with pytest.raises(ErroFonteDados, match=r"HTTP 405\)"):
-        fonte.listar(FiltrosAnalises(inicio=date(2026, 10, 1), sentimento="positivo"))
-
-    with pytest.raises(ErroFonteDados, match="não oferece a rota /analises/resumo"):
-        fonte.resumir(FiltrosAnalises())
+    pagina = fonte.listar(FiltrosAnalises(inicio=date(2026, 10, 1), sentimento="positivo"))
+    assert pagina.total == 0
+    assert pagina.itens == []
+    resumo = fonte.resumir(FiltrosAnalises())
+    assert resumo.total == 0
+    assert resumo.sem_data_publicacao == 0
+    assert resumo.por_sentimento == {"positivo": 0, "negativo": 0, "neutro": 0}
 
 
 def test_t10_administracao_api_contra_fastapi_real_sinaliza_503_e_sessao_invalida(

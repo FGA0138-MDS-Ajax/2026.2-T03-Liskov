@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, date, datetime, time
 from typing import Any
 
 from pymongo import ASCENDING, IndexModel
@@ -102,3 +102,69 @@ def salvar_analises(colecao: Collection, documentos: list[dict[str, Any]]):
             raise
         return {"inseridos": erro.details["nInserted"], "duplicados": len(falhas)}
     return {"inseridos": len(resultado.inserted_ids), "duplicados": 0}
+
+
+def _filtro_consulta(
+    inicio: date | None = None,
+    fim: date | None = None,
+    sentimento: str | None = None,
+) -> dict[str, Any]:
+    filtro: dict[str, Any] = {}
+    if sentimento is not None:
+        filtro["sentimento"] = sentimento
+    periodo = {}
+    if inicio is not None:
+        periodo["$gte"] = datetime.combine(inicio, time.min, UTC)
+    if fim is not None:
+        periodo["$lte"] = datetime.combine(fim, time.max, UTC)
+    if periodo:
+        filtro["data_publicacao"] = periodo
+    return filtro
+
+
+def listar_analises(
+    colecao: Collection,
+    *,
+    inicio: date | None = None,
+    fim: date | None = None,
+    sentimento: str | None = None,
+    pagina: int = 1,
+    tamanho: int = 20,
+) -> dict[str, Any]:
+    filtro = _filtro_consulta(inicio, fim, sentimento)
+    total = colecao.count_documents(filtro)
+    # A chave única (fonte, id_origem) desempata datas iguais de forma estável.
+    cursor = (
+        colecao.find(filtro, {"_id": 0})
+        .sort([("data_processamento", -1), ("fonte", 1), ("id_origem", 1)])
+        .skip((pagina - 1) * tamanho)
+        .limit(tamanho)
+    )
+    return {"itens": list(cursor), "pagina": pagina, "tamanho": tamanho, "total": total}
+
+
+def resumir_analises(
+    colecao: Collection,
+    *,
+    inicio: date | None = None,
+    fim: date | None = None,
+    sentimento: str | None = None,
+) -> dict[str, Any]:
+    filtro = _filtro_consulta(inicio, fim, sentimento)
+    contagens = {classe: 0 for classe in ("positivo", "negativo", "neutro")}
+    for grupo in colecao.aggregate([
+        {"$match": filtro},
+        {"$group": {"_id": "$sentimento", "total": {"$sum": 1}}},
+    ]):
+        contagens[grupo["_id"]] = grupo["total"]
+    sem_data = 0
+    if inicio is not None or fim is not None:
+        filtro_sem_data = {"data_publicacao": None}
+        if sentimento is not None:
+            filtro_sem_data["sentimento"] = sentimento
+        sem_data = colecao.count_documents(filtro_sem_data)
+    return {
+        "total": sum(contagens.values()),
+        "por_sentimento": contagens,
+        "sem_data_publicacao": sem_data,
+    }
