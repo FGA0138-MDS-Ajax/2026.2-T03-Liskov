@@ -1,9 +1,11 @@
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RegistroEntrada(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     id_origem: str = Field(min_length=1, pattern=r"\S")
     fonte: str = Field(min_length=1, pattern=r"\S")
     texto_original: str = Field(min_length=1, pattern=r"\S")
