@@ -1,9 +1,9 @@
 # Contrato entre o painel e a API
 
-**Situação em 09/11/2026:** o backend oferece somente `GET /health`. As rotas de
-análises e de administração abaixo **ainda não existem**. Este documento é uma
-**proposta do frontend** para as issues #19, #21, #23, #24, #25 e #58, e pode mudar
-quando o contrato for aprovado.
+**Situação após a implementação das issues #23, #24 e #25:** o backend oferece
+`GET /health`, `POST /analises`, as duas rotas de consulta de análises e as rotas de
+administração listadas abaixo. O contrato de leitura segue a proposta do frontend;
+a escolha de `data_publicacao` como referência temporal ainda requer validação da PO.
 
 No código, a proposta é consumida por `src/apresentacao/fontes/api.py` (análises) e
 `fontes/administracao_api.py` (administração). Enquanto o backend não evolui, as telas
@@ -16,20 +16,21 @@ respostas simuladas **não comprovam integração**.
 | Rota | Situação | Origem |
 |---|---|---|
 | `GET /health` | **Existe** | `src/servico/main.py` |
-| `GET /analises` | Não existe | Nome e filtros: Arquitetura 2.4.2. Paginação e corpo: proposta |
-| `GET /analises/resumo` | Não existe | **Proposta.** O esquema (seção 4.7) prevê a contagem por sentimento, mas não define a rota |
-| `POST /auth/login` | Não existe | **Proposta** (login do Administrador, issue #58) |
-| `POST /auth/logout` | Não existe | **Proposta** |
-| `POST /datasets` | Não existe | Nome: Arquitetura 2.4.2. Corpo: **proposta** |
-| `GET /coletas/fontes` | Não existe | **Proposta** |
-| `POST /coletas` | Não existe | Nome: Arquitetura 2.4.2. Corpo: **proposta** |
-| `GET /coletas/{id}` | Não existe | **Proposta** |
+| `POST /analises` | **Implementada** | Issue #21: classificação e persistência de lotes |
+| `GET /analises` | **Implementada** | Issues #23, #24 e #25: consulta MongoDB com paginação e filtros |
+| `GET /analises/resumo` | **Implementada** | Agregação MongoDB do mesmo conjunto filtrado, sem paginação |
+| `POST /auth/login` | **Implementada** | Administração (PR #75) |
+| `POST /auth/logout` | **Implementada** | Administração (PR #75) |
+| `POST /datasets` | **Implementada** | Administração (PR #75) |
+| `GET /coletas/fontes` | **Implementada** | Administração (PR #75) |
+| `POST /coletas` | **Implementada** | Administração (PR #75) |
+| `GET /coletas/{id}` | **Implementada** | Administração (PR #75) |
 
 **Por que `/analises/resumo`?** Indicadores, gráfico e resumo precisam de totais sobre
 todos os registros filtrados. Calculá-los no painel exigiria baixar todas as páginas,
 contrariando a meta de resposta em até 2 segundos e a regra de filtrar no banco.
 
-## Filtros (propostos para as duas rotas de leitura)
+## Filtros implementados nas duas rotas de leitura
 
 | Parâmetro | Formato | Regra proposta |
 |---|---|---|
@@ -37,16 +38,25 @@ contrariando a meta de resposta em até 2 segundos e a regra de filtrar no banco
 | `fim` | `AAAA-MM-DD` | Inclusivo; `inicio` depois de `fim` retorna 422 |
 | `sentimento` | `positivo`, `neutro` ou `negativo` | Outro valor retorna 422 |
 
-Somente em `/analises`: `pagina` (a partir de 1) e `tamanho`. O backend define o limite
-máximo e uma ordenação determinística (issue #23).
+Somente em `/analises`: `pagina` (padrão 1, a partir de 1) e `tamanho` (padrão 20,
+máximo 100); valores fora dos limites retornam 422. A ordenação usa
+`data_processamento` decrescente, seguida de `fonte` e `id_origem` crescentes.
+A chave única `(fonte, id_origem)` desempata datas iguais. A paginação usa skip/limit
+no banco; escritas concorrentes podem alterar as páginas entre requisições.
+
+O período usa `data_publicacao`: `inicio` começa às 00:00:00 UTC e `fim` inclui
+todo o último dia em UTC. Datas inexistentes, fora de `AAAA-MM-DD` ou intervalos
+invertidos retornam 422. Registros sem publicação (campo ausente ou nulo) só são
+excluídos quando há filtro temporal. A data de referência precisa de validação da PO.
 
 `pagina` e `tamanho` devem ser inteiros positivos; `total` é inteiro não negativo.
-Booleanos, números fracionários e números em strings são rejeitados, sem conversão.
+Na resposta JSON, booleanos, números fracionários e números em strings são rejeitados
+pelo cliente, sem conversão. Na query HTTP, paginação é enviada como inteiros em texto.
 `itens` é uma lista com no máximo `tamanho` registros, respeitando o total restante
 a partir de `(pagina - 1) * tamanho`. Uma página além do fim pode retornar lista vazia.
-Ainda não há limite máximo de tamanho aprovado; o cliente não inventa esse limite.
+O limite técnico implementado no backend é 100; o cliente não altera esse limite.
 
-## Respostas propostas
+## Respostas implementadas de leitura
 
 `GET /analises`: coleção vazia retorna 200 com `itens: []`, sem erro.
 
@@ -70,7 +80,8 @@ Ainda não há limite máximo de tamanho aprovado; o cliente não inventa esse l
 ```
 
 Os campos seguem `docs/banco/esquema-mongodb.md`. `data_publicacao` pode ser nula:
-datas nunca são inventadas.
+datas nunca são inventadas. `_id` não é exposto. Datas BSON são serializadas em
+ISO 8601 com fuso UTC, inclusive quando o driver retorna datetime sem tzinfo.
 
 O cliente valida os tipos em tempo de execução: `id_origem` é string não vazia,
 `fonte` e `texto_original` são strings, `sentimento` é uma das três classes e
@@ -92,6 +103,8 @@ desconhecida; string vazia e datetime sem fuso são rejeitados.
 `sem_data_publicacao` conta os registros deixados de fora do filtro de período por não
 terem data. Sem filtro de período, vale 0. Quando é maior que 0, o dashboard avisa
 quantos textos ficaram de fora, como recomenda o esquema (seção 4.7).
+Essa contagem respeita o filtro de sentimento e não depende da página solicitada.
+Total e contagens por sentimento são agregados no banco, sem baixar todas as análises.
 
 `total` conta somente os registros que atendem aos filtros e deve ser igual à soma
 das contagens das três classes em `por_sentimento`. Essas contagens e
@@ -244,8 +257,8 @@ Erros de conexão, tempo esgotado, 404 e respostas fora do contrato seguem a tab
 
 ## Pontos em aberto
 
-1. Qual data o filtro de período usa (alinhamento da equipe; issue #24).
-2. Fuso horário usado para interpretar `inicio` e `fim` (issue #24).
+1. Validar com a PO a escolha implementada de `data_publicacao` para o período (issue #24).
+2. A implementação interpreta `inicio` e `fim` em UTC, com dias inclusivos (issue #24).
 3. Dados para o gráfico "Evolução no período", se for mantido (alinhamento da equipe).
 4. Responsável pelo backend: as issues #23, #24 e #25 estão sem responsável.
 5. Manter ou não as escolhas da implementação de referência: token opaco, sessão de 60 minutos,
