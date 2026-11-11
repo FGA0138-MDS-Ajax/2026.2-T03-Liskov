@@ -13,6 +13,10 @@ class ErroPipeline(ValueError):
     """Erro de validação ou execução do pipeline."""
 
 
+class ErroInferencia(RuntimeError):
+    """Falha operacional durante a inferência do classificador."""
+
+
 def _normalizar_data_publicacao(valor: Any, indice: int) -> datetime | None:
     """Converte data ISO 8601 para datetime UTC; não inventa datas."""
     if valor is None or (isinstance(valor, str) and not valor.strip()):
@@ -104,7 +108,7 @@ class PipelineClassificacao:
         try:
             previsoes = self.classificador.prever_com_probabilidades(textos)
         except Exception as erro:
-            raise ErroPipeline(
+            raise ErroInferencia(
                 f"Falha ao classificar o lote iniciado no registro {indice_inicial}."
             ) from erro
 
