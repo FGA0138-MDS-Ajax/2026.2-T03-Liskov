@@ -14,6 +14,7 @@ import logging
 import os
 import tempfile
 import threading
+from src.dados.repositorio import validar_analise
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
@@ -39,14 +40,14 @@ logger = logging.getLogger(__name__)
 
 LIMITE_CSV_MB_PADRAO = 10
 LIMITE_COLETA_PADRAO = 1000
-TAMANHO_LOTE_ANALISE = 32
+TAMANHO_LOTE_ANALISE = 100
 ID_TWEETSENTBR = "tweetsentbr"
 
 # Pesquisa híbrida (src/servico/pesquisa.py): base do SentIA e, se faltar, o X.
 FONTE_PESQUISA = "pesquisa"
 TAMANHO_MAXIMO_TERMO = 100
 QUANTIDADE_MAXIMA_PESQUISA = 100
-MAXIMO_EXEMPLOS = 10
+MAXIMO_EXEMPLOS = 100
 SENTIMENTOS = ("positivo", "neutro", "negativo")
 
 
@@ -174,9 +175,42 @@ class RepositorioAdministracao:
         with self._trava:
             self.coletas[id_coleta] = replace(self.coletas[id_coleta], **campos)
 
-    def salvar_analises(self, documentos: Iterable[dict[str, Any]]) -> None:
+    def salvar_analises(
+        self, documentos: Iterable[dict[str, Any]]
+    ) -> dict[str, int]:
+        copias = [dict(documento) for documento in documentos]
+
+        for documento in copias:
+            validar_analise(documento)
+
+        inseridos = 0
+        duplicados = 0
+
         with self._trava:
-            self.analises.extend(documentos)
+            chaves = {
+                (item["fonte"], item["id_origem"])
+                for item in self.analises
+            }
+
+            for documento in copias:
+                chave = (documento["fonte"], documento["id_origem"])
+
+                if chave in chaves:
+                    duplicados += 1
+                    continue
+
+                self.analises.append(documento)
+                chaves.add(chave)
+                inseridos += 1
+
+        return {
+            "inseridos": inseridos,
+            "duplicados": duplicados,
+        }
+
+    def obter_analises(self) -> list[dict[str, Any]]:
+        with self._trava:
+            return [dict(analise) for analise in self.analises]
 
 
 def _buscar_x_padrao(termo: str, quantidade: int) -> list[dict[str, Any]]:

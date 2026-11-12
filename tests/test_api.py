@@ -136,6 +136,7 @@ def test_post_analises_sanitiza_falhas_operacionais(recursos, origem):
 
 @pytest.mark.parametrize("fase", ["conexao", "colecao", "indices", "encerramento"])
 def test_dependencia_mongodb_sanitiza_falhas_e_fecha_cliente(monkeypatch, fase):
+    monkeypatch.setenv("SENTIA_ARMAZENAMENTO", "mongodb")
     mongo = Mock()
     conectar = Mock(return_value=mongo)
     fechar = Mock()
