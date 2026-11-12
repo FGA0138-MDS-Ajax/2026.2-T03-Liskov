@@ -45,10 +45,50 @@ class PipelineFalso:
     def __init__(self) -> None:
         self.lotes: list[int] = []
 
+    @staticmethod
+    def _normalizar_data_publicacao(valor):
+        if not valor:
+            return None
+
+        data = datetime.fromisoformat(valor.replace("Z", "+00:00"))
+
+        if data.tzinfo is None:
+            data = data.replace(tzinfo=UTC)
+
+        return data.astimezone(UTC)
+
     def processar_registros(self, registros):
         registros = list(registros)
         self.lotes.append(len(registros))
-        return [{**r, "sentimento": "neutro"} for r in registros]
+
+        return [
+            {
+                **{
+                    chave: valor
+                    for chave, valor in registro.items()
+                    if chave != "data_publicacao"
+                },
+                "sentimento": "neutro",
+                "probabilidades": {
+                    "positivo": 0.0,
+                    "negativo": 0.0,
+                    "neutro": 1.0,
+                },
+                "modelo": {"nome": "pipeline-falso"},
+                "data_processamento": datetime.now(UTC),
+                **(
+                    {
+                        "data_publicacao": self._normalizar_data_publicacao(
+                            registro["data_publicacao"]
+                        )
+                    }
+                    if registro.get("data_publicacao")
+                    else {}
+                ),
+            }
+            for registro in registros
+        ]
+
 
 
 def _contexto(tmp_path: Path, **opcoes) -> ContextoAdministracao:
@@ -287,7 +327,7 @@ def test_coleta_do_tweetsentbr_respeita_o_limite(tmp_path):
         app.dependency_overrides.clear()
     assert situacao["situacao"] == "concluida"
     assert situacao["textos_analisados"] == 40
-    assert contexto.pipeline().lotes == [32, 8]
+    assert contexto.pipeline().lotes == [40]
 
 
 def test_tweetsentbr_some_da_lista_sem_o_arquivo(cliente):

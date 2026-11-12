@@ -63,14 +63,24 @@ def validar_analise(documento: dict[str, Any]):
 
     if "data_processamento" not in documento:
         raise ErroAnaliseInvalida("data_processamento deve ser obrigatória")
+    
+    data_processamento = documento["data_processamento"]
 
-    for campo in ("data_processamento", "data_publicacao"):
-        if campo in documento:
-            data = documento[campo]
-            if not isinstance(data, datetime) or data.tzinfo is None:
-                raise ErroAnaliseInvalida(
-                    f"{campo} deve ser uma data com fuso horário (UTC)"
-                )
+    if not isinstance(data_processamento, datetime) or data_processamento.tzinfo is None:
+        raise ErroAnaliseInvalida(
+            "data_processamento deve ser uma data com fuso horário (UTC)"
+        )
+
+    if "data_publicacao" in documento:
+        data_publicacao = documento["data_publicacao"]
+
+        if (
+            not isinstance(data_publicacao, datetime)
+            or data_publicacao.tzinfo is None
+        ):
+            raise ErroAnaliseInvalida(
+                "data_publicacao deve ser uma data com fuso horário (UTC)"
+            )
 
 
 def salvar_analise(colecao: Collection, documento: dict[str, Any]):
