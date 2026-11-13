@@ -1,9 +1,11 @@
 from datetime import UTC, date, datetime, time
 from typing import Any
 
+from bson import ObjectId
+from bson.errors import InvalidId
 from pymongo import ASCENDING, IndexModel
 from pymongo.collection import Collection
-from pymongo.errors import BulkWriteError, DuplicateKeyError
+from pymongo.errors import BulkWriteError, DuplicateKeyError, PyMongoError
 from pymongo.mongo_client import MongoClient
 
 NOME_BANCO_PADRAO = "sentia"
@@ -14,6 +16,46 @@ CAMPOS_TEXTO_OBRIGATORIOS = ("id_origem", "fonte", "texto_original")
 
 class ErroAnaliseInvalida(ValueError):
     """Documento fora do esquema da coleção analises."""
+
+
+class ErroConsultaInvalida(ValueError):
+    """Chave natural inválida para a busca de uma análise."""
+
+
+class ErroLeituraAnalises(RuntimeError):
+    """Falha de leitura com mensagem segura, sem URI ou credenciais."""
+
+
+def _buscar_analise(colecao: Collection, filtro: dict[str, Any]) -> dict[str, Any] | None:
+    try:
+        return colecao.find_one(filtro)
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao consultar o MongoDB; verifique a conexão."
+        ) from None
+
+
+def buscar_por_id_origem(
+    colecao: Collection, fonte: str, id_origem: str
+) -> dict[str, Any] | None:
+    """Busca interna pela chave natural exata, sem serializar o documento BSON."""
+    for nome, valor in (("fonte", fonte), ("id_origem", id_origem)):
+        if not isinstance(valor, str) or not valor.strip():
+            raise ErroConsultaInvalida(f"{nome} deve ser texto não vazio.")
+    return _buscar_analise(colecao, {"fonte": fonte, "id_origem": id_origem})
+
+
+def buscar_por_id(
+    colecao: Collection, id_documento: str | ObjectId
+) -> dict[str, Any] | None:
+    """Busca interna por ObjectId ou seu hexadecimal; ID inválido retorna None."""
+    if not isinstance(id_documento, (str, ObjectId)):
+        return None
+    try:
+        identificador = ObjectId(id_documento)
+    except (InvalidId, TypeError):
+        return None
+    return _buscar_analise(colecao, {"_id": identificador})
 
 
 INDICES = [
