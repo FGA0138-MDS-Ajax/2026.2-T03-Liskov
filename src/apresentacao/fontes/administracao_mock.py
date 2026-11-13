@@ -7,8 +7,10 @@ demonstrar o fluxo de login. No modo api, quem valida o acesso é a API.
 import csv
 import io
 from datetime import UTC, datetime, timedelta
+from urllib.parse import quote, unquote
 
 from src.apresentacao.contrato import (
+    FONTE_PESQUISA,
     SENTIMENTOS,
     Coleta,
     ErroAutenticacao,
@@ -19,6 +21,7 @@ from src.apresentacao.contrato import (
     SessaoAdministrador,
 )
 from src.apresentacao.fontes.mock import ANALISES_DE_EXEMPLO
+from src.apresentacao.transformacoes import validar_busca
 
 USUARIO_EXEMPLO = "admin"
 SENHA_EXEMPLO = "senha-de-exemplo"
@@ -34,15 +37,22 @@ FONTES_EXEMPLO = [
     FonteColeta(id="dataset_exemplo", nome="Dataset importado de exemplo"),
 ]
 
+# Pesquisa simulada: a "base" sempre tem 3 textos sobre o assunto, o X devolve no máximo
+# 12 tweets novos e 1 repetido é descartado, para mostrar todos os casos da tela.
+TEXTOS_NA_BASE_EXEMPLO = 3
+TWEETS_DO_X_EXEMPLO = 12
+_PREFIXO_PESQUISA = "pesquisa_"
 
-def _resultado_exemplo(quantidade: int) -> dict:
+
+def _resultado_exemplo(quantidade: int, origens: list[str] | None = None) -> dict:
     """Contagens e exemplos tirados dos primeiros textos de exemplo."""
     amostra = ANALISES_DE_EXEMPLO[:quantidade]
+    origens = origens or [None] * len(amostra)
     return {
         "por_sentimento": {s: sum(a.sentimento == s for a in amostra) for s in SENTIMENTOS},
         "exemplos": tuple(
-            ExemploAnalise(texto=a.texto_original, sentimento=a.sentimento)
-            for a in amostra[:10]
+            ExemploAnalise(texto=a.texto_original, sentimento=a.sentimento, origem=o)
+            for a, o in list(zip(amostra, origens, strict=True))[:10]
         ),
     }
 
@@ -116,9 +126,32 @@ class AdministracaoMock:
             raise ErroFonteDados("Fonte de coleta desconhecida.")
         return Coleta(id=f"coleta_{fonte}", fonte=fonte, situacao="em_andamento")
 
+    def pesquisar(
+        self,
+        sessao: SessaoAdministrador,
+        termo: str,
+        quantidade: int,
+        complementar_com_x: bool,
+    ) -> Coleta:
+        self._validar(sessao)
+        try:
+            termo, quantidade = validar_busca(termo, quantidade)
+        except ValueError as erro:
+            raise ErroFonteDados(str(erro)) from erro
+        # O id guarda a pesquisa porque o mock não tem estado entre execuções.
+        completar = int(complementar_com_x)
+        return Coleta(
+            id=f"{_PREFIXO_PESQUISA}{quantidade}_{completar}_{quote(termo, safe='')}",
+            fonte=FONTE_PESQUISA,
+            situacao="em_andamento",
+            termo=termo,
+        )
+
     def consultar_coleta(self, sessao: SessaoAdministrador, id_coleta: str) -> Coleta:
         """Sem estado entre execuções do Streamlit: toda coleta conhecida já terminou."""
         self._validar(sessao)
+        if id_coleta.startswith(_PREFIXO_PESQUISA):
+            return self._pesquisa_concluida(id_coleta)
         fonte = id_coleta.removeprefix("coleta_")
         if fonte == id_coleta or fonte not in {f.id for f in FONTES_EXEMPLO}:
             raise ErroFonteDados("Coleta não encontrada.")
@@ -130,6 +163,33 @@ class AdministracaoMock:
             textos_coletados=total,
             textos_analisados=total,
             **_resultado_exemplo(total),
+        )
+
+    @staticmethod
+    def _pesquisa_concluida(id_coleta: str) -> Coleta:
+        partes = id_coleta.removeprefix(_PREFIXO_PESQUISA).split("_", 2)
+        if len(partes) != 3 or not partes[0].isdigit() or partes[1] not in ("0", "1"):
+            raise ErroFonteDados("Coleta não encontrada.")
+        meta, completar, termo = int(partes[0]), partes[1] == "1", unquote(partes[2])
+        da_base = min(meta, TEXTOS_NA_BASE_EXEMPLO)
+        do_x = min(meta - da_base, TWEETS_DO_X_EXEMPLO) if completar else 0
+        total = da_base + do_x
+        aviso = None
+        if not completar and da_base < meta:
+            aviso = (
+                f"A base tem {da_base} texto(s) sobre o assunto. Marque a opção de "
+                "completar com o X para chegar à meta."
+            )
+        return Coleta(
+            id=id_coleta,
+            fonte=FONTE_PESQUISA,
+            situacao="concluida",
+            textos_coletados=total,
+            textos_analisados=total,
+            mensagem=aviso,
+            termo=termo,
+            origem={"base": da_base, "x": do_x, "duplicatas": int(do_x > 0)},
+            **_resultado_exemplo(total, ["base"] * da_base + ["x"] * do_x),
         )
 
     @staticmethod
@@ -158,6 +218,15 @@ class AdministracaoMockComErro:
         raise ErroFonteDados(self.MENSAGEM)
 
     def iniciar_coleta(self, sessao: SessaoAdministrador, fonte: str) -> Coleta:
+        raise ErroFonteDados(self.MENSAGEM)
+
+    def pesquisar(
+        self,
+        sessao: SessaoAdministrador,
+        termo: str,
+        quantidade: int,
+        complementar_com_x: bool,
+    ) -> Coleta:
         raise ErroFonteDados(self.MENSAGEM)
 
     def consultar_coleta(self, sessao: SessaoAdministrador, id_coleta: str) -> Coleta:

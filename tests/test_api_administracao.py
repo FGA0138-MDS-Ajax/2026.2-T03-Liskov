@@ -45,10 +45,50 @@ class PipelineFalso:
     def __init__(self) -> None:
         self.lotes: list[int] = []
 
+    @staticmethod
+    def _normalizar_data_publicacao(valor):
+        if not valor:
+            return None
+
+        data = datetime.fromisoformat(valor.replace("Z", "+00:00"))
+
+        if data.tzinfo is None:
+            data = data.replace(tzinfo=UTC)
+
+        return data.astimezone(UTC)
+
     def processar_registros(self, registros):
         registros = list(registros)
         self.lotes.append(len(registros))
-        return [{**r, "sentimento": "neutro"} for r in registros]
+
+        return [
+            {
+                **{
+                    chave: valor
+                    for chave, valor in registro.items()
+                    if chave != "data_publicacao"
+                },
+                "sentimento": "neutro",
+                "probabilidades": {
+                    "positivo": 0.0,
+                    "negativo": 0.0,
+                    "neutro": 1.0,
+                },
+                "modelo": {"nome": "pipeline-falso"},
+                "data_processamento": datetime.now(UTC),
+                **(
+                    {
+                        "data_publicacao": self._normalizar_data_publicacao(
+                            registro["data_publicacao"]
+                        )
+                    }
+                    if registro.get("data_publicacao")
+                    else {}
+                ),
+            }
+            for registro in registros
+        ]
+
 
 
 def _contexto(tmp_path: Path, **opcoes) -> ContextoAdministracao:
@@ -287,7 +327,7 @@ def test_coleta_do_tweetsentbr_respeita_o_limite(tmp_path):
         app.dependency_overrides.clear()
     assert situacao["situacao"] == "concluida"
     assert situacao["textos_analisados"] == 40
-    assert contexto.pipeline().lotes == [32, 8]
+    assert contexto.pipeline().lotes == [40]
 
 
 def test_tweetsentbr_some_da_lista_sem_o_arquivo(cliente):
@@ -385,7 +425,7 @@ def test_painel_mostra_as_mensagens_da_api(painel):
         painel.consultar_coleta(sessao, "col_x")
 
 
-# Resultado da coleta e fluxo do painel
+# Pesquisa híbrida (base do SentIA + XFetch) e resultado da coleta
 
 
 def test_coleta_devolve_contagem_por_sentimento_e_exemplos(cliente):
@@ -394,7 +434,147 @@ def test_coleta_devolve_contagem_por_sentimento_e_exemplos(cliente):
     id_coleta = cliente.post("/coletas", headers=cabecalho, json={"fonte": id_dataset}).json()["id"]
     dados = cliente.get(f"/coletas/{id_coleta}", headers=cabecalho).json()
     assert dados["por_sentimento"] == {"positivo": 0, "neutro": 2, "negativo": 0}
+    # Fora da pesquisa híbrida, os exemplos não trazem origem.
     assert dados["exemplos"][0] == {"texto": "Adorei o atendimento", "sentimento": "neutro"}
+
+
+CSV_BASE = (
+    "id,texto,fonte\n"
+    "b1,A vacinação começou hoje no posto,teste\n"
+    "b2,Fila enorme para tomar a vacina,teste\n"
+    "b3,O jogo de futebol foi ótimo,teste\n"
+).encode()
+
+
+def _tweets(*ids):
+    return [{"id_origem": i, "texto_original": f"Tweet {i} sobre vacina", "fonte": "X"} for i in ids]
+
+
+class XFalso:
+    def __init__(self, *respostas):
+        self.respostas = list(respostas)
+        self.pedidos = []
+
+    def __call__(self, termo, quantidade):
+        self.pedidos.append((termo, quantidade))
+        return self.respostas.pop(0) if self.respostas else []
+
+
+@pytest.fixture
+def com_x(tmp_path):
+    def montar(x):
+        contexto = _contexto(tmp_path, buscar_x=x)
+        app.dependency_overrides[obter_contexto] = lambda: contexto
+        cliente = TestClient(app)
+        cabecalho = _entrar(cliente)
+        _importar(cliente, cabecalho, conteudo=CSV_BASE, nome="base.csv")
+        return cliente, cabecalho
+
+    yield montar
+    app.dependency_overrides.clear()
+
+
+def _pesquisar(cliente, cabecalho, termo="vacina", meta=5, completar=True):
+    resposta = cliente.post(
+        "/coletas",
+        headers=cabecalho,
+        json={"fonte": "pesquisa", "termo": termo, "quantidade": meta, "complementar_com_x": completar},
+    )
+    assert resposta.status_code == 202, resposta.json()
+    return cliente.get(f"/coletas/{resposta.json()['id']}", headers=cabecalho).json()
+
+
+def test_pesquisa_reaproveita_a_base_e_completa_com_o_x(com_x):
+    x = XFalso(_tweets("t1", "t2", "t3"))
+    cliente, cabecalho = com_x(x)
+    dados = _pesquisar(cliente, cabecalho, "vacinação", meta=5)
+    assert x.pedidos == [("vacinação", 3)]  # só o que faltou: 5 - 2 da base
+    assert dados["origem"] == {"base": 2, "x": 3, "duplicatas": 0}
+    assert dados["textos_analisados"] == 5
+    assert [e["origem"] for e in dados["exemplos"]] == ["base", "base", "x", "x", "x"]
+
+
+def test_base_suficiente_nao_consulta_o_x(com_x):
+    x = XFalso(_tweets("t1"))
+    cliente, cabecalho = com_x(x)
+    dados = _pesquisar(cliente, cabecalho, "vacina", meta=2)
+    assert x.pedidos == []
+    assert dados["origem"] == {"base": 2, "x": 0, "duplicatas": 0}
+
+
+def test_tweets_novos_entram_na_base_para_a_proxima_pesquisa(com_x):
+    x = XFalso(_tweets("t1", "t2"), _tweets("t1", "t2"))
+    cliente, cabecalho = com_x(x)
+    _pesquisar(cliente, cabecalho, "vacina", meta=4)
+    segunda = _pesquisar(cliente, cabecalho, "vacina", meta=4)
+    assert len(x.pedidos) == 1, "a segunda pesquisa deveria achar tudo na base"
+    assert segunda["origem"] == {"base": 4, "x": 0, "duplicatas": 0}
+    fontes = cliente.get("/coletas/fontes", headers=cabecalho).json()["fontes"]
+    assert any("busca no X por “vacina”" in f["nome"] for f in fontes)
+
+
+def test_repetidos_do_x_sao_descartados(com_x):
+    repetido = {"id_origem": "b1", "texto_original": "A vacinação começou hoje no posto", "fonte": "teste"}
+    x = XFalso([repetido, *_tweets("t1", "t1")])
+    cliente, cabecalho = com_x(x)
+    dados = _pesquisar(cliente, cabecalho, "vacina", meta=5)
+    assert dados["origem"] == {"base": 2, "x": 1, "duplicatas": 2}
+
+
+def test_sem_completar_com_o_x_avisa_quanto_a_base_tem(com_x):
+    x = XFalso(_tweets("t1"))
+    cliente, cabecalho = com_x(x)
+    dados = _pesquisar(cliente, cabecalho, "vacina", meta=5, completar=False)
+    assert x.pedidos == []
+    assert dados["situacao"] == "concluida"
+    assert dados["origem"]["base"] == 2
+    assert "A base tem 2 texto(s)" in dados["mensagem"]
+
+
+def test_assunto_fora_da_base_e_sem_x_conclui_sem_textos(com_x):
+    cliente, cabecalho = com_x(None)
+    dados = _pesquisar(cliente, cabecalho, "eleições", meta=5)
+    assert dados["textos_analisados"] == 0
+    assert dados["mensagem"] == "A busca no X não está configurada; o resultado usa só a base."
+
+
+def test_falha_do_xfetch_vira_mensagem_sem_detalhes(com_x):
+    from src.processamento.aquisicao.xfetch import ErroXFetch
+
+    def x(termo, quantidade):
+        raise ErroXFetch("Falha na comunicação com o XFetch (HTTP 402).")
+
+    cliente, cabecalho = com_x(x)
+    dados = _pesquisar(cliente, cabecalho, "vacina", meta=5)
+    assert dados["situacao"] == "falhou"
+    assert dados["mensagem"] == "Falha na comunicação com o XFetch (HTTP 402)."
+
+
+@pytest.mark.parametrize(
+    ("corpo", "mensagem"),
+    [
+        ({"fonte": "pesquisa", "termo": " ", "quantidade": 5}, "Informe uma palavra"),
+        ({"fonte": "pesquisa", "termo": "a" * 101, "quantidade": 5}, "Informe uma palavra"),
+        ({"fonte": "pesquisa", "termo": "copa", "quantidade": 0}, "entre 1 e 100"),
+        ({"fonte": "pesquisa", "termo": "copa"}, "entre 1 e 100"),
+    ],
+)
+def test_pesquisa_invalida_e_recusada(com_x, corpo, mensagem):
+    cliente, cabecalho = com_x(None)
+    resposta = cliente.post("/coletas", headers=cabecalho, json=corpo)
+    assert resposta.status_code == 422
+    assert mensagem in resposta.json()["mensagem"]
+
+
+def test_painel_mostra_a_origem_da_pesquisa_na_api_real(com_x):
+    cliente, _ = com_x(XFalso([{"id_origem": "t9", "texto_original": "Oi @fulano, vacina já", "fonte": "X"}]))
+    painel = AdministracaoApi("http://testserver", sessao=cliente)
+    sessao = painel.entrar(USUARIO, SENHA)
+    coleta = painel.pesquisar(sessao, "vacina", 3, complementar_com_x=True)
+    coleta = painel.consultar_coleta(sessao, coleta.id)
+    assert coleta.termo == "vacina"
+    assert coleta.origem == {"base": 2, "x": 1, "duplicatas": 0}
+    assert [e.origem for e in coleta.exemplos] == ["base", "base", "x"]
 
 
 def test_painel_importa_e_ja_analisa_o_csv_na_api_real(painel):

@@ -32,6 +32,12 @@ versões publicadas; outras frentes também podem registrar suas entregas aqui.
 - Rotas de administração na API: login com senha em hash scrypt e token com expiração, logout,
   importação de CSV e coleta com análise pelo BERTweet, todas exigindo login (#58). Os dados
   ficam em memória até a persistência no MongoDB (#20).
+- Pesquisa híbrida por assunto na administração, em aba ao lado da importação: procura primeiro
+  nos textos já guardados e, se permitido, completa com tweets novos do X pelo XFetch, mostrando
+  a origem de cada texto e o resultado por sentimento (docs/pesquisa_hibrida_mongodb_xfetch.md).
+  Versão de teste, ainda sem issue.
+- `scripts/analisar_em_lotes.py`: analisa um CSV com o BERTweet de 100 em 100 linhas, no
+  processador, para testar em máquinas com pouca memória.
 - Análise logo após importar o dataset (#60) e resultado da coleta com indicadores por
   sentimento e exemplos, com `@menções` mascaradas (#61).
 - Wireframes do dashboard na documentação, com o que já foi implementado de cada um (#14).

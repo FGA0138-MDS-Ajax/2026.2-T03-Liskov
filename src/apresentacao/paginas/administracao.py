@@ -1,6 +1,8 @@
-"""Área do Administrador: login, importação de dataset, coleta e análise.
+"""Área do Administrador: login, importação de dataset, busca por palavra-chave,
+coleta e análise.
 
-Requisitos: RF01, RF02, UC01 a UC03 e testes T01 a T03 (issues #59, #60 e #61).
+Requisitos: RF01, RF02, UC01 a UC03 e testes T01 a T03 (issues #59, #60 e #61). A
+busca por palavra-chave (tweets recentes do X) é proposta da Ata 2 e depende da API.
 O token da sessão fica só em `st.session_state` e some ao fechar a aba; a senha
 não é guardada.
 """
@@ -10,6 +12,11 @@ import streamlit as st
 from src.apresentacao.componentes import estado_erro, estado_vazio
 from src.apresentacao.config import carregar_configuracao
 from src.apresentacao.contrato import (
+    FONTE_PESQUISA,
+    PASSO_QUANTIDADE_BUSCA,
+    QUANTIDADE_BUSCA_MAXIMA,
+    QUANTIDADE_BUSCA_PADRAO,
+    TAMANHO_MAXIMO_TERMO,
     Coleta,
     ErroAutenticacao,
     ErroFonteDados,
@@ -22,11 +29,17 @@ from src.apresentacao.fontes import criar_administracao
 from src.apresentacao.fontes.administracao_mock import SENHA_EXEMPLO, USUARIO_EXEMPLO
 from src.apresentacao.secoes import indicadores
 from src.apresentacao.tema import ESTILOS_SENTIMENTO
-from src.apresentacao.transformacoes import formatar_inteiro, mascarar_mencoes
+from src.apresentacao.transformacoes import (
+    formatar_inteiro,
+    mascarar_mencoes,
+    validar_busca,
+)
 
 CHAVE_SESSAO = "sessao_admin"
 CHAVE_AVISO = "aviso_login"
 CHAVE_COLETA = "coleta_atual"
+
+ROTULOS_ORIGEM = {"base": "Base do SentIA", "x": "Novo do X"}
 
 ROTULOS_SITUACAO = {
     "pendente": "aguardando início",
@@ -54,7 +67,8 @@ def encerrar_sessao(aviso: str | None = None) -> None:
 def renderizar_login() -> None:
     st.subheader("Entrar como administrador")
     st.caption(
-        "A administração permite importar datasets e iniciar coletas. O dashboard "
+        "A administração permite importar datasets, pesquisar assuntos "
+        "e iniciar coletas. O dashboard "
         "continua disponível sem login."
     )
     aviso = st.session_state.pop(CHAVE_AVISO, None)
@@ -111,7 +125,13 @@ def renderizar() -> None:
             st.rerun()
 
     try:
-        _secao_importacao(admin, sessao)
+        aba_dataset, aba_busca = st.tabs(
+            ["Importar dataset", "Pesquisar assunto"]
+        )
+        with aba_dataset:
+            _secao_importacao(admin, sessao)
+        with aba_busca:
+            _secao_pesquisa(admin, sessao)
         st.divider()
         _secao_coleta(admin, sessao)
     except ErroAutenticacao as erro:
@@ -148,7 +168,6 @@ def importar_e_analisar(
 
 
 def _secao_importacao(admin: FonteAdministracao, sessao: SessaoAdministrador) -> None:
-    st.markdown("#### Importar dataset")
     st.caption(
         "Arquivo CSV em UTF-8 com as colunas `texto` (ou `texto_original`) e `fonte`. "
         "Opcionais: `id`, `sentimento` e `data`."
@@ -201,6 +220,55 @@ def _secao_importacao(admin: FonteAdministracao, sessao: SessaoAdministrador) ->
         )
 
 
+def _secao_pesquisa(admin: FonteAdministracao, sessao: SessaoAdministrador) -> None:
+    st.caption(
+        "Procura o assunto primeiro nos textos que o SentIA já tem (datasets importados e "
+        "pesquisas anteriores). Se não houver o suficiente, pode completar com tweets "
+        "recentes em português do X, que passam a fazer parte da base. Depois, classifica "
+        "o sentimento de cada texto."
+    )
+    with st.form("pesquisa"):
+        termo = st.text_input(
+            "Assunto, palavra ou frase",
+            max_chars=TAMANHO_MAXIMO_TERMO,
+            placeholder="Ex.: custo de vida",
+            key="busca_termo",
+        )
+        quantidade = st.number_input(
+            "Meta de textos",
+            min_value=1,
+            max_value=QUANTIDADE_BUSCA_MAXIMA,
+            value=QUANTIDADE_BUSCA_PADRAO,
+            step=PASSO_QUANTIDADE_BUSCA,
+            help="É um máximo: a base e o X podem ter menos textos sobre o assunto.",
+            key="busca_quantidade",
+        )
+        completar = st.checkbox(
+            "Completar com tweets novos do X quando a base não tiver o suficiente",
+            help="O X é consultado pelo XFetch, um serviço pago, e só para o que faltar.",
+            key="busca_completar_x",
+        )
+        pesquisar = st.form_submit_button("Pesquisar e analisar", type="primary", key="buscar")
+    if not pesquisar:
+        return
+    try:
+        termo, quantidade = validar_busca(termo, int(quantidade))
+    except ValueError as erro:
+        estado_erro(str(erro))
+        return
+    try:
+        st.session_state[CHAVE_COLETA] = admin.pesquisar(sessao, termo, quantidade, completar)
+    except ErroAutenticacao:
+        raise
+    except ErroFonteDados as erro:
+        estado_erro(str(erro))
+        return
+    st.info(
+        f"Pesquisa por **{termo}** iniciada. Acompanhe em **Coleta e análise**.",
+        icon=":material/search:",
+    )
+
+
 def _secao_coleta(admin: FonteAdministracao, sessao: SessaoAdministrador) -> None:
     st.markdown("#### Coleta e análise")
     st.caption("Coleta os textos da fonte escolhida e classifica o sentimento de cada um.")
@@ -247,14 +315,22 @@ def _secao_coleta(admin: FonteAdministracao, sessao: SessaoAdministrador) -> Non
         st.rerun()
 
 
+def _nome_coleta(coleta: Coleta, nomes: dict[str, str]) -> str:
+    if coleta.fonte == FONTE_PESQUISA and coleta.termo:
+        return f"textos sobre “{coleta.termo}”"
+    return nomes.get(coleta.fonte, coleta.fonte)
+
+
 def _mostrar_coleta(coleta: Coleta, nomes: dict[str, str]) -> None:
-    nome = nomes.get(coleta.fonte, coleta.fonte)
+    nome = _nome_coleta(coleta, nomes)
     if coleta.situacao == "concluida":
         st.success(
             f"Coleta de {nome} concluída: "
             f"{formatar_inteiro(coleta.textos_analisados)} texto(s) analisado(s).",
             icon=":material/task_alt:",
         )
+        if coleta.origem is not None:
+            st.markdown(_descrever_origem(coleta.origem))
         if coleta.mensagem:
             st.info(coleta.mensagem, icon=":material/info:")
         _mostrar_resultado(coleta)
@@ -267,6 +343,17 @@ def _mostrar_coleta(coleta: Coleta, nomes: dict[str, str]) -> None:
             f"{formatar_inteiro(coleta.textos_analisados)} analisado(s) até agora.",
             icon=":material/hourglass_top:",
         )
+
+
+def _descrever_origem(origem: dict[str, int]) -> str:
+    partes = [
+        f"**{formatar_inteiro(origem['base'])}** da base do SentIA",
+        f"**{formatar_inteiro(origem['x'])}** novo(s) do X",
+    ]
+    texto = " · ".join(partes)
+    if origem["duplicatas"]:
+        texto += f" · {formatar_inteiro(origem['duplicatas'])} repetido(s) descartado(s)"
+    return f":material/merge_type: {texto}"
 
 
 def _mostrar_resultado(coleta: Coleta) -> None:
@@ -285,4 +372,6 @@ def _mostrar_resultado(coleta: Coleta) -> None:
                 ESTILOS_SENTIMENTO[e.sentimento].rotulo for e in coleta.exemplos
             ],
         }
+        if any(e.origem for e in coleta.exemplos):
+            tabela["Origem"] = [ROTULOS_ORIGEM.get(e.origem, "—") for e in coleta.exemplos]
         st.table(tabela)

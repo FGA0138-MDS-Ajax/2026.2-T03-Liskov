@@ -105,14 +105,24 @@ def validar_analise(documento: dict[str, Any]):
 
     if "data_processamento" not in documento:
         raise ErroAnaliseInvalida("data_processamento deve ser obrigatória")
+    
+    data_processamento = documento["data_processamento"]
 
-    for campo in ("data_processamento", "data_publicacao"):
-        if campo in documento:
-            data = documento[campo]
-            if not isinstance(data, datetime) or data.tzinfo is None:
-                raise ErroAnaliseInvalida(
-                    f"{campo} deve ser uma data com fuso horário (UTC)"
-                )
+    if not isinstance(data_processamento, datetime) or data_processamento.tzinfo is None:
+        raise ErroAnaliseInvalida(
+            "data_processamento deve ser uma data com fuso horário (UTC)"
+        )
+
+    if "data_publicacao" in documento:
+        data_publicacao = documento["data_publicacao"]
+
+        if (
+            not isinstance(data_publicacao, datetime)
+            or data_publicacao.tzinfo is None
+        ):
+            raise ErroAnaliseInvalida(
+                "data_publicacao deve ser uma data com fuso horário (UTC)"
+            )
 
 
 def salvar_analise(colecao: Collection, documento: dict[str, Any]):
@@ -210,3 +220,107 @@ def resumir_analises(
         "por_sentimento": contagens,
         "sem_data_publicacao": sem_data,
     }
+    
+def _filtrar_analises_memoria(
+    analises: list[dict[str, Any]],
+    *,
+    inicio: date | None = None,
+    fim: date | None = None,
+    sentimento: str | None = None,
+) -> list[dict[str, Any]]:
+    resultado = []
+
+    data_inicio = datetime.combine(inicio, time.min, UTC) if inicio else None
+    data_fim = datetime.combine(fim, time.max, UTC) if fim else None
+
+    for analise in analises:
+        if sentimento is not None and analise.get("sentimento") != sentimento:
+            continue
+
+        data = analise.get("data_publicacao")
+
+        if data_inicio is not None:
+            if data is None or data < data_inicio:
+                continue
+
+        if data_fim is not None:
+            if data is None or data > data_fim:
+                continue
+
+        resultado.append(analise)
+
+    return resultado
+
+
+def listar_analises_memoria(
+    analises: list[dict[str, Any]],
+    *,
+    inicio: date | None = None,
+    fim: date | None = None,
+    sentimento: str | None = None,
+    pagina: int = 1,
+    tamanho: int = 20,
+) -> dict[str, Any]:
+    filtradas = _filtrar_analises_memoria(
+        analises,
+        inicio=inicio,
+        fim=fim,
+        sentimento=sentimento,
+    )
+
+    filtradas.sort(key=lambda item: (item["fonte"], item["id_origem"]))
+    filtradas.sort(key=lambda item: item["data_processamento"], reverse=True)
+
+    total = len(filtradas)
+    inicio_pagina = (pagina - 1) * tamanho
+
+    return {
+        "itens": filtradas[inicio_pagina:inicio_pagina + tamanho],
+        "pagina": pagina,
+        "tamanho": tamanho,
+        "total": total,
+    }
+
+
+def resumir_analises_memoria(
+    analises: list[dict[str, Any]],
+    *,
+    inicio: date | None = None,
+    fim: date | None = None,
+    sentimento: str | None = None,
+) -> dict[str, Any]:
+    filtradas = _filtrar_analises_memoria(
+        analises,
+        inicio=inicio,
+        fim=fim,
+        sentimento=sentimento,
+    )
+
+    contagens = {
+        "positivo": 0,
+        "negativo": 0,
+        "neutro": 0,
+    }
+
+    for analise in filtradas:
+        contagens[analise["sentimento"]] += 1
+
+    sem_data = 0
+
+    if inicio is not None or fim is not None:
+        sem_data = sum(
+            1
+            for analise in analises
+            if analise.get("data_publicacao") is None
+            and (
+                sentimento is None
+                or analise.get("sentimento") == sentimento
+            )
+        )
+
+    return {
+        "total": sum(contagens.values()),
+        "por_sentimento": contagens,
+        "sem_data_publicacao": sem_data,
+    }
+

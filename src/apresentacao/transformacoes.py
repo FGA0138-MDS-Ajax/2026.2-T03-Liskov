@@ -3,7 +3,13 @@
 import re
 from datetime import date
 
-from src.apresentacao.contrato import SENTIMENTOS, FiltrosAnalises, Sentimento
+from src.apresentacao.contrato import (
+    QUANTIDADE_BUSCA_MAXIMA,
+    SENTIMENTOS,
+    TAMANHO_MAXIMO_TERMO,
+    FiltrosAnalises,
+    Sentimento,
+)
 
 
 def calcular_percentuais(por_sentimento: dict[Sentimento, int]) -> dict[Sentimento, int]:
@@ -70,6 +76,23 @@ def descrever_filtros(filtros: FiltrosAnalises, rotulos: dict[Sentimento, str]) 
 
 def filtros_ativos(filtros: FiltrosAnalises) -> bool:
     return filtros != FiltrosAnalises()
+
+
+def validar_busca(termo: str, quantidade: int) -> tuple[str, int]:
+    """Valida a busca por palavra-chave antes de chamar a API.
+
+    Levanta ValueError com uma mensagem para o usuário. Espaços repetidos viram um só.
+    """
+    termo = " ".join(termo.split())
+    if not termo:
+        raise ValueError("Informe uma palavra ou frase para buscar.")
+    if len(termo) > TAMANHO_MAXIMO_TERMO:
+        raise ValueError(f"Use no máximo {TAMANHO_MAXIMO_TERMO} caracteres na busca.")
+    if isinstance(quantidade, bool) or not 1 <= quantidade <= QUANTIDADE_BUSCA_MAXIMA:
+        raise ValueError(
+            f"A quantidade de tweets deve ficar entre 1 e {QUANTIDADE_BUSCA_MAXIMA}."
+        )
+    return termo, quantidade
 
 
 _MENCAO = re.compile(r"(?<![\w@])@\w+")

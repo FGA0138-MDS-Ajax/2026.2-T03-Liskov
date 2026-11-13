@@ -21,12 +21,13 @@ from src.apresentacao.contrato import (
 from src.apresentacao.fontes.administracao_api import AdministracaoApi
 from src.apresentacao.fontes.administracao_mock import (
     SENHA_EXEMPLO,
+    TEXTOS_NA_BASE_EXEMPLO,
     USUARIO_EXEMPLO,
     AdministracaoMock,
     AdministracaoMockComErro,
 )
 from src.apresentacao.fontes.mock import ANALISES_DE_EXEMPLO
-from src.apresentacao.transformacoes import mascarar_mencoes
+from src.apresentacao.transformacoes import mascarar_mencoes, validar_busca
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
@@ -275,6 +276,91 @@ def test_falhas_de_rede_viram_mensagens_claras(excecao, mensagem):
         api.entrar("admin", "s3nha")
 
 
+# --- Busca por palavra-chave ---------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("termo", "quantidade", "mensagem"),
+    [
+        ("   ", 20, "Informe uma palavra ou frase"),
+        ("x" * 101, 20, "no máximo 100 caracteres"),
+        ("vacinação", 0, "entre 1 e 100"),
+        ("vacinação", 101, "entre 1 e 100"),
+    ],
+)
+def test_busca_invalida_e_recusada_antes_de_chamar_a_api(termo, quantidade, mensagem):
+    with pytest.raises(ValueError, match=mensagem):
+        validar_busca(termo, quantidade)
+
+
+def test_busca_junta_espacos_repetidos():
+    assert validar_busca("  copa   do mundo ", 5) == ("copa do mundo", 5)
+
+
+def test_mock_pesquisa_usa_a_base_e_so_completa_com_o_x_se_pedido():
+    admin, sessao = AdministracaoMock(), sessao_valida()
+    coleta = admin.pesquisar(sessao, "custo de vida", 10, complementar_com_x=True)
+    assert (coleta.fonte, coleta.situacao, coleta.termo) == (
+        "pesquisa",
+        "em_andamento",
+        "custo de vida",
+    )
+    concluida = admin.consultar_coleta(sessao, coleta.id)
+    assert concluida.origem == {"base": 3, "x": 7, "duplicatas": 1}
+    assert concluida.textos_analisados == 10
+    assert [e.origem for e in concluida.exemplos][:4] == ["base", "base", "base", "x"]
+
+    so_base = admin.pesquisar(sessao, "custo de vida", 10, complementar_com_x=False)
+    resultado = admin.consultar_coleta(sessao, so_base.id)
+    assert resultado.origem == {"base": TEXTOS_NA_BASE_EXEMPLO, "x": 0, "duplicatas": 0}
+    assert "Marque a opção" in resultado.mensagem
+
+
+def test_mock_pesquisa_invalida_vira_erro_para_a_tela():
+    with pytest.raises(ErroFonteDados, match="Informe uma palavra"):
+        AdministracaoMock().pesquisar(sessao_valida(), " ", 10, complementar_com_x=False)
+
+
+def test_pesquisa_envia_assunto_meta_e_opcao_do_x_para_a_api():
+    corpo = {
+        **COLETA_JSON,
+        "fonte": "pesquisa",
+        "termo": "vacinação",
+        "origem": {"base": 2, "x": 3, "duplicatas": 1},
+        "exemplos": [{"texto": "Oi", "sentimento": "neutro", "origem": "x"}],
+    }
+    api, http = cliente(status=202, corpo=corpo)
+    coleta = api.pesquisar(SESSAO_API, "vacinação", 30, complementar_com_x=True)
+    assert http.chamadas[0]["url"] == "http://api/coletas"
+    assert http.chamadas[0]["json"] == {
+        "fonte": "pesquisa",
+        "termo": "vacinação",
+        "quantidade": 30,
+        "complementar_com_x": True,
+    }
+    assert http.chamadas[0]["headers"] == {"Authorization": "Bearer abc"}
+    assert coleta.termo == "vacinação"
+    assert coleta.origem == {"base": 2, "x": 3, "duplicatas": 1}
+    assert coleta.exemplos[0].origem == "x"
+
+
+@pytest.mark.parametrize(
+    ("status", "corpo", "mensagem"),
+    [
+        (422, {"mensagem": "Pesquisa indisponível."}, "indisponível"),
+        (422, None, "A API recusou a pesquisa."),
+        (202, {**COLETA_JSON, "termo": ""}, "não segue o contrato"),
+        (202, {**COLETA_JSON, "origem": {"base": 1}}, "não segue o contrato"),
+        (202, {**COLETA_JSON, "exemplos": [{"texto": "a", "sentimento": "neutro", "origem": "y"}]},
+         "não segue o contrato"),
+    ],
+)
+def test_erros_da_pesquisa_viram_mensagens_claras(status, corpo, mensagem):
+    api, _ = cliente(status=status, corpo=corpo)
+    with pytest.raises(ErroFonteDados, match=mensagem):
+        api.pesquisar(SESSAO_API, "vacinação", 30, complementar_com_x=False)
+
+
 # --- Telas --------------------------------------------------------------------
 
 
@@ -392,6 +478,47 @@ def test_mock_trata_erros_do_leitor_csv_com_mensagem_para_interface(conteudo):
             AdministracaoMock().importar_dataset(sessao_valida(), "sintetico.csv", conteudo)
     finally:
         csv.field_size_limit(limite_anterior)
+
+
+def test_importacao_e_pesquisa_ficam_em_abas_lado_a_lado(ambiente):
+    app = entrar(ambiente())
+    assert [aba.label for aba in app.tabs] == ["Importar dataset", "Pesquisar assunto"]
+
+
+def test_pesquisa_mostra_origem_dos_textos_ate_concluir(ambiente):
+    app = entrar(ambiente())
+    app.text_input(key="busca_termo").input("vacinação")
+    app.number_input(key="busca_quantidade").set_value(10)
+    app.checkbox(key="busca_completar_x").check()
+    app.button(key="buscar").click().run()
+    assert not app.exception
+    assert "vacinação" in app.info[0].value
+    assert "textos sobre “vacinação”: em andamento" in app.info[1].value
+
+    app.button(key="atualizar_coleta").click().run()
+    assert app.success[0].value == (
+        "Coleta de textos sobre “vacinação” concluída: 10 texto(s) analisado(s)."
+    )
+    origem = " ".join(m.value for m in app.markdown)
+    assert "**3** da base do SentIA" in origem
+    assert "**7** novo(s) do X" in origem
+    assert "1 repetido(s) descartado(s)" in origem
+    assert "Origem" in app.table[0].value.columns
+
+
+def test_pesquisa_sem_o_x_avisa_que_a_base_nao_bastou(ambiente):
+    app = entrar(ambiente())
+    app.text_input(key="busca_termo").input("vacinação")
+    app.button(key="buscar").click().run()
+    app.button(key="atualizar_coleta").click().run()
+    assert any("Marque a opção" in i.value for i in app.info)
+
+
+def test_busca_sem_termo_pede_uma_palavra(ambiente):
+    app = entrar(ambiente())
+    app.button(key="buscar").click().run()
+    assert app.error[0].value == "Informe uma palavra ou frase para buscar."
+    assert "coleta_atual" not in app.session_state
 
 
 @pytest.mark.parametrize(
