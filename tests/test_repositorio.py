@@ -4,15 +4,22 @@ Os testes de validação rodam sem banco. Os que usam o MongoDB local são
 pulados quando ele não está disponível (por exemplo, no CI do GitHub).
 """
 
+import os
+import traceback
 from datetime import UTC, datetime
 from unittest.mock import Mock
 
 import pytest
-from pymongo.errors import BulkWriteError, DuplicateKeyError
+from bson import ObjectId
+from pymongo.errors import BulkWriteError, DuplicateKeyError, OperationFailure, ServerSelectionTimeoutError
 
 from src.dados.database import ErroConexaoMongoDB, connect_to_mongodb
 from src.dados.repositorio import (
     ErroAnaliseInvalida,
+    ErroConsultaInvalida,
+    ErroLeituraAnalises,
+    buscar_por_id,
+    buscar_por_id_origem,
     criar_indices,
     obter_colecao,
     salvar_analise,
@@ -41,6 +48,8 @@ def criar_documento(id_origem="teste_001", **mudancas):
 @pytest.fixture
 def colecao():
     """Coleção num banco de teste separado, apagado antes e depois de cada teste."""
+    if os.getenv("SENTIA_TESTES_SEM_MONGODB") == "1":
+        pytest.skip("MongoDB real desabilitado explicitamente nesta execução.")
     try:
         client = connect_to_mongodb(URI_TESTE, timeout_ms=1000)
     except ErroConexaoMongoDB:
@@ -218,3 +227,74 @@ def test_lote_invalido_nao_chama_driver_sem_banco_real():
     with pytest.raises(ErroAnaliseInvalida):
         salvar_analises(colecao_falsa, [criar_documento(), criar_documento(fonte="")])
     colecao_falsa.insert_many.assert_not_called()
+
+
+@pytest.mark.parametrize("como_texto", [True, False])
+def test_buscar_por_id_preserva_documento_bson(como_texto):
+    identificador = ObjectId()
+    documento = criar_documento(_id=identificador, rotulo_original="5", metadados={"categoria": "x"})
+    colecao_falsa = Mock()
+    colecao_falsa.find_one.return_value = documento
+    chave = str(identificador) if como_texto else identificador
+    assert buscar_por_id(colecao_falsa, chave) is documento
+    colecao_falsa.find_one.assert_called_once_with({"_id": identificador})
+    assert isinstance(documento["_id"], ObjectId)
+    assert isinstance(documento["data_processamento"], datetime)
+    assert "data_publicacao" not in documento
+
+
+def test_busca_por_chave_natural_distingue_fontes_e_preserva_chaves():
+    documentos = {fonte: criar_documento(" id-1 ", fonte=fonte) for fonte in ("b2w", "olist")}
+    colecao_falsa = Mock()
+    colecao_falsa.find_one.side_effect = lambda filtro: documentos[filtro["fonte"]]
+    for fonte in documentos:
+        assert buscar_por_id_origem(colecao_falsa, fonte, " id-1 ") is documentos[fonte]
+        colecao_falsa.find_one.assert_called_with({"fonte": fonte, "id_origem": " id-1 "})
+
+
+@pytest.mark.parametrize("busca", ["id", "chave_natural"])
+def test_busca_inexistente_retorna_none(busca):
+    colecao_falsa = Mock()
+    colecao_falsa.find_one.return_value = None
+    if busca == "id":
+        assert buscar_por_id(colecao_falsa, str(ObjectId())) is None
+    else:
+        assert buscar_por_id_origem(colecao_falsa, "b2w", "inexistente") is None
+    colecao_falsa.find_one.assert_called_once()
+
+
+@pytest.mark.parametrize("identificador", [
+    None, "", " ", "id-malformado", "g" * 24, "0" * 23, "0" * 25,
+    123, True, b"123456789012", {"$ne": None}, [],
+])
+def test_id_invalido_nao_consulta_banco(identificador):
+    colecao_falsa = Mock()
+    assert buscar_por_id(colecao_falsa, identificador) is None
+    colecao_falsa.find_one.assert_not_called()
+
+
+@pytest.mark.parametrize("campo", ["fonte", "id_origem"])
+@pytest.mark.parametrize("valor", [None, "", "  ", 123, {"$ne": None}])
+def test_chave_natural_invalida_nao_consulta_banco(campo, valor):
+    colecao_falsa = Mock()
+    argumentos = {"fonte": "b2w", "id_origem": "1", campo: valor}
+    with pytest.raises(ErroConsultaInvalida, match=campo):
+        buscar_por_id_origem(colecao_falsa, **argumentos)
+    colecao_falsa.find_one.assert_not_called()
+
+
+@pytest.mark.parametrize("busca", ["id", "chave_natural"])
+@pytest.mark.parametrize("erro_driver", [OperationFailure, ServerSelectionTimeoutError])
+def test_falha_de_busca_sanitiza_mensagem_e_traceback(busca, erro_driver):
+    segredo = "mongodb://admin:SENHA_NAO_EXPOR@servidor/sentia"
+    colecao_falsa = Mock()
+    colecao_falsa.find_one.side_effect = erro_driver(segredo)
+    with pytest.raises(ErroLeituraAnalises) as capturada:
+        if busca == "id":
+            buscar_por_id(colecao_falsa, str(ObjectId()))
+        else:
+            buscar_por_id_origem(colecao_falsa, "b2w", "1")
+    assert str(capturada.value) == "Falha ao consultar o MongoDB; verifique a conexão."
+    assert "SENHA_NAO_EXPOR" not in "".join(traceback.format_exception(capturada.value))
+    assert capturada.value.__suppress_context__ is True
+    colecao_falsa.find_one.assert_called_once()
