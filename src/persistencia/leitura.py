@@ -7,7 +7,7 @@ from pymongo import DESCENDING
 from pymongo.collection import Collection
 from pymongo.errors import PyMongoError
 
-from .escrita import SENTIMENTOS_VALIDOS
+from src.dados.repositorio import SENTIMENTOS_VALIDOS
 
 LIMITE_PADRAO = 50
 LIMITE_MAXIMO = 500

@@ -5,8 +5,8 @@ from uuid import uuid4
 import pytest
 from pymongo.errors import ServerSelectionTimeoutError
 
-from src.persistencia.escrita import criar_indices, obter_colecao, salvar_analises
-from src.persistencia.conexao import (
+from src.dados.repositorio import criar_indices, obter_colecao, salvar_analises
+from src.dados.database import (
     ErroConexaoMongoDB,
     connect_to_mongodb,
     disconnect_from_mongodb,
