@@ -146,3 +146,31 @@ def test_avaliacao_baseline_sem_modelo_real(corpus, monkeypatch):
     assert 0 <= resultado["modelos"]["baseline"]["acuracia"] <= 1
     assert len(resultado["sha256_amostra"]) == 64
     json.dumps(resultado)
+
+
+def test_metricas_por_classe_com_ordem_padronizada():
+    from src.processamento.classificacao.avaliacao import avaliar
+
+    resultado = avaliar(
+        ["positivo", "positivo", "negativo", "neutro"],
+        ["positivo", "negativo", "negativo", "positivo"],
+    )
+
+    metricas = resultado["metricas_por_classe"]
+
+    assert list(metricas) == ["positivo", "negativo", "neutro"]
+
+    assert metricas["positivo"]["precision"] == pytest.approx(0.5)
+    assert metricas["positivo"]["recall"] == pytest.approx(0.5)
+    assert metricas["positivo"]["f1-score"] == pytest.approx(0.5)
+    assert metricas["positivo"]["support"] == 2
+
+    assert metricas["negativo"]["precision"] == pytest.approx(0.5)
+    assert metricas["negativo"]["recall"] == pytest.approx(1.0)
+    assert metricas["negativo"]["f1-score"] == pytest.approx(2 / 3)
+    assert metricas["negativo"]["support"] == 1
+
+    assert metricas["neutro"]["precision"] == pytest.approx(0.0)
+    assert metricas["neutro"]["recall"] == pytest.approx(0.0)
+    assert metricas["neutro"]["f1-score"] == pytest.approx(0.0)
+    assert metricas["neutro"]["support"] == 1
