@@ -1,5 +1,7 @@
 site_name: SentIA - Análise de Sentimentos
-site_description: Documentação do projeto SentIA - Grupo Liskov T03 - MDS UnB/FGA
+site_description: Portal de documentação do projeto SentIA — Grupo Liskov (T03), MDS UnB/FGA (2026.2)
+repo_url: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov
+repo_name: FGA0138-MDS-Ajax/2026.2-T03-Liskov
 
 theme:
   name: material
@@ -14,3 +16,10 @@ nav:
 
   - Instruções:
       - MkDocs: instrucoes/instrucoes.md
+
+  - Repositório (developer):
+      - Visão Geral (README): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/README.md
+      - Índice de Documentação: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/README.md
+      - Inspeção e Gestão (PR #92): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92
+      - Revisão Acadêmica e ABNT (PR #90): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90
+      - Métricas GQM e QA (PR #91): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/91
