@@ -1,29 +1,35 @@
-# Relatório da frente Sol High — revisão acadêmica
+# Relatório da frente Sol High — reconciliação do PR #90
 
-**Data:** 14/11/2026. **Branch:** `inspecao/sol-high`. **Base após `git fetch origin`:** `developer`, `1723a7d62d55fa98fbf6eaf5cc9da80650dbe920`.
+**Data:** 14/11/2026. **Branch:** `inspecao/sol-high`. **Base técnica:** `developer`, `1723a7d62d55fa98fbf6eaf5cc9da80650dbe920`, reconfirmada por fetch nesta retomada. **PR:** [#90](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90), destino `developer`.
 
-## 1. Entrega e alcance
+## 1. Entrega atual e histórico
 
-Foram preparados os cinco artefatos pedidos: [matriz](MATRIZ_DIVERGENCIAS.md), [Visão](VISAO_ATUALIZADA_RASCUNHO.md), [Arquitetura](ARQUITETURA_ATUALIZADA_RASCUNHO.md), [ABNT](REVISAO_ABNT.md) e [decisões da PO](DECISOES_PENDENTES_PO.md), além deste relatório. Todas as alterações estão em `docs/revisao-academica/`. Código, índices, outros diretórios documentais e PDFs originais foram preservados; arquivos de instrução não integram a entrega.
+Os cinco documentos pedidos e este relatório estão em `docs/revisao-academica/`: [matriz](MATRIZ_DIVERGENCIAS.md), [Visão](VISAO_ATUALIZADA_RASCUNHO.md), [Arquitetura](ARQUITETURA_ATUALIZADA_RASCUNHO.md), [ABNT](REVISAO_ABNT.md) e [decisões da PO](DECISOES_PENDENTES_PO.md). Os seis foram atualizados diretamente nesta branch; nenhum arquivo de outra frente foi incorporado ou editado. Não houve merge, publicação de PDF, dados pessoais, corpus, credenciais ou instruções.
 
-O nome prescrito `docs/inspecao-sol-high` foi recusado pelo Git porque a referência local `docs` já existe e impede criar referência subordinada. Foi mantida a branch exclusiva já preparada `inspecao/sol-high`, cujo HEAD inicial coincide com `origin/developer`. Não houve exclusão/renomeação da branch `docs`, alteração de histórico nem merge.
+O envio inicial (`ad1eebd`, `d645d75`) registrou falta de acesso às fontes acadêmicas e não consultou os logs de CI. Essas ressalvas foram **superadas nesta retomada**, sem apagar o histórico Git. O nome `docs/inspecao-sol-high` continuou inviável por já existir a referência `docs`; preservada a branch exclusiva `inspecao/sol-high`, sem renomear ou excluir branches.
 
-**Limite material:** os PDFs de Visão, Arquitetura e Mini-tarefa GQM e o ZIP de pré-inspeção não foram localizados em workspace, Downloads ou demais arquivos acessíveis pesquisados. Os três registros esperados de `docs/inspecao/` também não estão na base. Sua localização foi solicitada ao usuário durante o trabalho. Assim, as minutas são propostas técnicas substanciais, mas a revisão integral dos originais, a preservação exata de suas seções e a auditoria bibliográfica/visual completa **não estão concluídas**. Esse limite deve permanecer no PR até acesso às fontes e reconciliação.
+Foram consultados os três registros de inspeção do Argon e a tabela de equivalência, fixados no commit `25f258786981f29552d2df2f1b4597ab7ef01c44` do [PR #92][A1], e a evidência QA do commit `84530e4b3d0ac1762b9100c4c728e6208ffca810` do [PR #91][Q2]. Esses arquivos estão acessíveis em suas branches, mesmo sem integrar a base `developer`; não são materiais inexistentes.
 
-## 2. Evidências principais
+## 2. Reconciliação factual concluída
 
-| Fonte consultada em 14/11/2026 | Estado observado | Implicação |
-| --- | --- | --- |
-| [PR #81](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/81) | Mesclado em 13/11/2026 20:40:34 UTC; merge `1723a7d`; descrição ainda restringe merge e aponta falta de aceite/custo | Pesquisa lexical em memória implementada como teste; autorização/aceite não inferidos |
-| [PR #83](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/83) | Aberto; head `7009500027fe1acfbe6dad997ef79730453c29b3`, referência histórica `fe83ad0` | Walkthrough não integrado; contagens não representam o HEAD atual |
-| [Issue #85](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/issues/85) | Aberta; pede reprodução e encaminhamento da meta à PO | RNF01 não foi alterado nem declarado atendido |
-| [PR #89](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/89) | Aberto; head `4a0e338c2a4f919b7095c3821339228b9a7c620b` | Artefatos examinados como evidência submetida pelo autor, sem reprodução da inferência |
-| [Issue #86](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/issues/86) | Aberta; atualização documental planejada para Sprint 7 | Minutas antecipam proposta rastreável, sem publicar nova versão homologada |
-| Código em `1723a7d` | Rotas, autenticação, persistência/consulta e pesquisa existem; limites discriminados na matriz | Não usar README/arquitetura PC1 como descrição atual sem contexto histórico |
+| Item solicitado | Conferência direta e alteração |
+| --- | --- |
+| I-01: fontes originais | Lidos todos os textos dos PDFs de Visão (41 páginas) e Arquitetura (29), com hashes e páginas na [auditoria ABNT](REVISAO_ABNT.md#1-fontes-e-alcance-da-leitura-direta). Criadas tabelas de correspondência de todas as seções originais nas minutas; GQM da Visão pp. 28–32 e T01–T18 pp. 35–39 incluídos |
+| I-02: US19/US20 | Backlog original pp. 25–27 contém US01–US18, sem US19/US20; US21–US23 são posteriores. Permissão de exportação P1 fica na Arquitetura §2.7 **p. 27**, sem identificador US20; não atribuir remoção de US19/US20 à v1.0.0 |
+| I-03: CI com MongoDB | Consultados job e log do run [43503741871][E1], SHA `1723a7d`: success, `mongo:7`, 814 PASS, 0 FAIL, 0 SKIP, cobertura 93%; separado de reexecução local e ML/XFetch reais |
+| IDs da PO | Aplicado o catálogo canônico PO-01a/b a PO-14a/b, com 18 subitens e tabela de todos os 14 aliases PO01–PO14. PO09 desdobrado em PO-03/04 e PO12 em PO-09/10/11a/13 |
+| ABNT e histórico | Inventário de todas as referências originais, Cohn sem entrada, acessos em branco, citações em imagens, figuras/tabelas, sumário e Apêndice A auditados com localização; sem editar/publicar os originais |
+| Precisões sobre o dossiê Argon | Bibliografia de Arquitetura é p. 29; exportação é p. 27; RF08 consta na Sprint 3 na linha do backlog p. 26, contradizendo o calendário S4; Beck (2000) está na imagem da Figura 2.1 p. 9 da Visão. São refinamentos de fonte primária, sem alterar arquivos do Argon |
 
-Fonte: metadados via conector GitHub, issues via `gh`, arquivos locais e histórico da base. Cada fato técnico nas minutas aponta para fonte fixada no SHA ou issue/PR datado.
+Fonte: PDFs identificados por hash na revisão ABNT, [plano do Argon][A1], [QA #91][Q2] e logs de CI. Não se usa anotação avaliativa docente ou matrícula como evidência publicada.
 
-## 3. Exame dos artefatos do PR #89
+### 2.1 Evidência remota de CI e seus limites
+
+Run em 13/11/2026: [43503741871](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/43503741871), [job test 132155891920][E1]. Consulta nesta sessão retornou `completed/success` para todas as etapas, inclusive lock, Ruff e pytest. O log confirma checkout de `1723a7d`, criação de container `mongo:7`, `TOTAL 2699 176 93%` e `814 passed, 10 warnings in 21.40s`, sem itens pulados ou falhas.
+
+Esse resultado prova execução da suíte com banco de teste real nos testes que usam a coleção. O classificador e XFetch usam dublês; não é reprodução do modelo real, chamada paga, benchmark ou fluxo navegador→API→banco→pesos reais. Esta frente **não reexecutou localmente** a suíte do produto. A execução local do Sol Medium é distinta (789 PASS, 25 SKIP e 92%), não deve substituir os números remotos. A CI do primeiro envio do PR #90 também consta verde em `43646136042`; o status do novo head deve ser conferido no próprio PR após o push.
+
+## 3. Exame dos artefatos do PR #89 (envio inicial)
 
 Foram lidos os JSONs [avaliação](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/4a0e338c2a4f919b7095c3821339228b9a7c620b/docs/resultados_bpsad/avaliacao_pc1_final.json) e [amostragem](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/4a0e338c2a4f919b7095c3821339228b9a7c620b/docs/resultados_bpsad/relatorio_amostragem_pc1.json), sem corpus textual. Eles informam amostra 10.000, treino 8.000, teste 2.000, seed 42 no relatório de amostragem, versões, distribuição e hash SHA-256 da amostra na avaliação (`607fd459fdf7cb1721d154dce7322d9256d9dcd9d4cc712ccc589907eeb659b6`).
 
@@ -31,26 +37,30 @@ Uma checagem aritmética em JavaScript recalculou `acurácia = soma(diagonal)/to
 
 Isso confirma **consistência interna dos números recebidos**, sem verificar o hash contra o CSV, a execução relatada, a origem das previsões, independência do pré-treinamento ou a revisão efetivamente carregada. Não houve reprodução de inferência, benchmark controlado ou aceite da PO nesta frente. O tempo registrado inclui treino/carregamento e RSS após execução não é pico. Resultados abaixo da referência de ~80% continuam assunto de decisão formal, sem revisão unilateral da meta.
 
-## 4. Verificações efetivamente realizadas
+## 4. Operações e validações desta retomada
 
-| Comando / operação | Resultado e limite |
+| Operação / comando | Resultado e limite |
 | --- | --- |
-| `git fetch origin`; `git rev-parse origin/developer`; `git rev-parse HEAD` | Base e HEAD inicial coincidem em `1723a7d`; fetch precisou de acesso ao diretório Git compartilhado fora do worktree |
-| `git log -8 --oneline`; `git ls-tree -r --name-only origin/docs` e `origin/main` | Histórico e árvores inspecionados; sem edição dessas branches |
-| Conector GitHub: metadados #81/#83/#89 e issues #85/#86 | Estados descritos no Quadro de evidências; consulta não demonstra aceite nem checks verdes |
-| `gh issue list --repo FGA0138-MDS-Ajax/2026.2-T03-Liskov --state all --limit 100 --json number,title,state,body,milestone` | Backlog e calendário recuperados; consulta de rede executada com permissão ampliada após falha no sandbox |
-| `pdftotext -layout` e `pdfinfo` no formulário local | Extração integral de texto e identificação de 17 páginas A4; não valida margens visuais |
-| Leitura de código, testes, ADR, documentos e páginas primárias do checkpoint/artigos | Referências ligadas a caminhos/linhas e consulta bibliográfica datada; nenhum treinamento presumido |
-| Recalcular métricas dos JSONs de #89 em JavaScript | Consistência aritmética aprovada, conforme §3; sem modelo ou corpus |
-| `python3 /tmp/sentia-sol-high-validar.py` | Aprovado: 6 Markdown, 122 referências nomeadas, 149 links e 81 fontes com caminho/linha válidos; não verifica disponibilidade HTTP externa nem renderização |
-| `git diff --check` e conferência do diff preparado | Sem erros de whitespace; conferir novamente antes dos commits |
+| `git fetch origin`; `git rev-parse origin/developer origin/chore/inspecao-argon origin/inspecao/sol-medium` | Fontes atualizadas; base técnica e fontes de reconciliação fixadas nos SHAs citados |
+| `git show <SHA>:docs/inspecao/{PLANO_REGULARIZACAO,REGISTRO_PRE_INSPECAO,MATRIZ_EVIDENCIAS}.md` e relatório QA | Conteúdo das outras frentes consultado sem merge/cópia na branch High |
+| `pdftotext -layout` nos dois PDFs originais; leitura de todas as páginas extraídas | Visão 1–41 e Arquitetura 1–29, incluindo identificação/histórico, backlog, requisitos, processo, restrições, GQM/testes e bibliografia |
+| `pdfinfo`, `hashlib.sha256` e renderização seletiva com `pdftoppm`/visualização | Hashes/paginação conferidos; imagens das pp. 4/9/18 da Visão e 8/19/20/21/24/25/26 da Arquitetura inspecionadas; sem inferir medição integral de margens |
+| Conector GitHub: metadados PR #90/#92; jobs do run 43503741871; log do job 132155891920 | Estados remotos/logs consultados diretamente, não inferidos de YAML |
+| `python3 /tmp/sol-high-validar-reconciliacao.py` | Aprovado: 6 Markdown, 136 referências nomeadas, 173 links, 99 fontes Git fixadas, 18 IDs/14 aliases, hashes de 2 PDFs, tabelas, escopo e rastreio de matrículas; sem validação HTTP externa ou conformidade visual integral |
+| `git diff --check`; `git diff --cached --check`; `git diff --name-only` | Conferência de whitespace e escopo limitado aos seis documentos, antes dos commits |
 
-Suíte do produto, MongoDB real, download/inferência BERTweet, XFetch real, CI remota deste PR e renderização visual de Mermaid/PDF: **NÃO EXECUTADOS nesta frente documental**. Nenhum resultado de teste do produto foi inferido de contagens históricas. Mermaid recebeu conferência textual, sem atestar renderização.
+A verificação aritmética BPSAD do §3 é do envio inicial e continua identificada como tal; nesta retomada não foi necessário repetir inferência ou suíte sem mudança de código. Não houve acesso XFetch real, deploy ou publicação dos arquivos privados. A conferência visual dos Mermaid novos continua pendente de renderização final.
 
-Também foram consultadas as reviews e a discussão do PR #81 via conector: ambas retornaram listas vazias. Isso não demonstra inexistência de decisões em outros canais; não foi localizada nessas fontes evidência de aceite formal da PO para a pesquisa.
+## 5. Material ainda não recuperado e aceite
 
-## 5. Pendências e handoff
+**Material específico ainda não acessado nesta sessão:** Mini-tarefa GQM como arquivo independente e `PACOTE_PRE_INSPECAO_LISKOV.zip`. O conteúdo GQM incorporado à Visão foi lido. Não se afirma inexistência desses arquivos; sua localização continua necessária para auditar eventuais conteúdos adicionais. A cópia anotada da Visão tem auditoria de outra frente; a presente leitura direta é do original identificado, sem declaração de auditoria visual integral das anotações.
 
-Para concluir a missão integral: obter PDFs/pacote e reconciliar conteúdo; revisar bibliografia e apresentação final no editor; obter decisões da [pauta da PO](DECISOES_PENDENTES_PO.md); revisar por outro integrante e registrar nova versão apenas depois do aceite. Estado do critério de pronto: **parcial, bloqueado especificamente quanto às fontes históricas ausentes**; não há impedimento à revisão das propostas técnicas já entregues.
+**Estado da reconciliação:** I-01/I-02/I-03 e equivalência da PO resolvidos nos seis Markdown; leitura factual/textual integral de Visão/Arquitetura concluída. Edição final ABNT, margens, bibliografia final (incluindo obra efetiva de Cohn/acessos reais), revisão por outro integrante, aceite da PO e homologação do produto continuam pendentes e não são apresentados como concluídos.
 
-PR dirigido a `developer`, com o título prescrito `docs(visao-arquitetura): proposta de atualização rastreável para inspeção`, deve permanecer rascunho enquanto faltarem as fontes. O link efetivo é informado na entrega ao usuário. Na ausência de escrita remota, gerar patch somente destes arquivos e registrar o impedimento. Nenhum merge ou deploy integra esta entrega.
+**Draft:** o PR pode deixar Draft para revisão técnica da proposta reconciliada; os arquivos faltantes acima não impedem revisar os fatos já verificados. Mantido Draft nesta atualização, pois o pedido foi informar a prontidão, sem efetuar a transição. Isso não autoriza merge nem publicação final. Verificar CI no último commit antes de integrar, além de revisão independente e autorização humana.
+
+**Decisões ainda sem resposta datada:** PO-01a/b (modelo, ADR e testes), PO-02 (meta RNF01/reprodução), PO-03/04 (domínio/licença), PO-05a/b (pesquisa e governança #81), PO-06 (custos), PO-07/08 (acesso/persistência), PO-09/10 (datas/RNF02/T18), PO-11a/b (nuvem e propostas US19/US20), PO-12 (GQM/usabilidade), PO-13 (cenários e aceite por SHA) e PO-14a/b (deploy e publicação acadêmica/governança). Aliases e evidências estão na [pauta](DECISOES_PENDENTES_PO.md).
+
+[A1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/25f258786981f29552d2df2f1b4597ab7ef01c44/docs/inspecao/PLANO_REGULARIZACAO.md
+[Q2]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/84530e4b3d0ac1762b9100c4c728e6208ffca810/docs/qa/inspecao/RELATORIO_EXECUCAO.md
+[E1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/43503741871/job/132155891920
