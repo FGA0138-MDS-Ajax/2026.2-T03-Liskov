@@ -88,3 +88,54 @@ Responsáveis propostos: SM mantém registros de gestão; equipe estima; PO regi
 aceite; Ricardo/Gabriel executam avaliação; QA audita. Confirmação desses papéis e
 acesso a Projects permanecem pendentes. Não se atribui velocidade zero nem se
 calcula média de uma lista vazia.
+
+## Regularização da Mini-tarefa GQM
+
+Revisão documental sobre developer `c47ceaba7aee4f1f15318e29821f4b30bb6ab147`,
+após #91, em 14/11/2026. Não representa nova execução ML. As linhas R01–R16
+mantêm seus cortes históricos. #90 (Draft, head 6aa6a38), #92 (head 25f2587)
+e #89 (head 4a0e338) estavam abertos na nova consulta; somente #91 integrado.
+As fontes, hashes, páginas e links fixados estão no
+[plano atualizado](PLANO_GQM_VIGENTE.md#regularização-posterior-ao-pr-91-fontes-e-estado).
+
+| Registro | Evidência / resultado | Análise e ação |
+|---|---|---|
+| R17 / M2 e alerta por classe | Mini-tarefa §2.4, p. 9: F1 de qualquer classe <60%; §2.2, p. 7: M2 macro | Corrige a indicação anterior de limiar por classe N/D. O limiar histórico existe; ratificação de critério/aceite permanece pendente (PO-02/PO-12). |
+| R18 / M3 | §2.2, p. 7: diferença entre treinamentos consecutivos em pp; §2.3, p. 8: frequência a cada treino e marcos S3/S7 | Estado N/D: não há duas avaliações temporais comparáveis demonstradas. Diferença entre modelos BPSAD não é evolução temporal. Adaptação ao checkpoint em avaliações candidatas é proposta PO-01b/PO-12. |
+| R19 / faixas | §2.4: ≥80% e >90% se sobrepõem; 70–79% deixa fronteira decimal ambígua | Plano propõe [0,70), [70,80), [80,90], (90,100], sem arredondamento prévio; prioridade de auditoria e mudança do aceite automático dependem PO-02/PO-12. |
+| R20 / execução | Código em c47ceab mantém inferência de checkpoint, treino somente do baseline comparativo e testes com substitutos | Nenhuma evidência nova de fine-tuning, treinamento próprio BERTweet ou reprodução independente nesta tarefa. RF03–RF07/T04–T08 a ratificar em PO-01a/b; RNF01 em PO-02; aceite por SHA em PO-13. |
+
+Comparação do corte individual de 60% aos JSONs do #89, sem arredondamento
+para decidir (valores exibidos em % com quatro casas):
+
+| Modelo | F1 positivo | F1 negativo | F1 neutro | Alerta histórico por classe |
+|---|---:|---:|---:|---|
+| Baseline | 81,4532% | 60,7558% | 36,7288% | Neutro abaixo de 60% |
+| BERTweet | 79,8915% | 62,7204% | 23,6800% | Neutro abaixo de 60% |
+
+Ambos não satisfazem a referência de ausência de classe abaixo de 60% nos
+resultados declarados. Positivo/negativo ultrapassam o corte, sem implicar aceite.
+F1 macro de 59,6459%/55,4306% é outra medida e não determina qual classe falhou.
+Acurácia baseline 70,10% corresponde à categoria proposta Atenção; BERTweet
+67,70% à categoria proposta Crítico; nenhum alcança a meta original ~80%.
+Essas categorias são análise documental proposta, não decisão de replanejamento
+ou reprovação/aprovação formal da PO.
+
+Limitações: teste BPSAD de 2.000 registros, suporte 1371/319/310, avaliações de
+produtos e notas convertidas em sentimento; não extrapolar para tweets. Amostra
+10.000, seed 42, treino baseline 8.000; pesos BERTweet pré-treinados não foram
+ajustados nesses 8.000 por evidência disponível. Hash do CSV é declarado no
+JSON, sem corpus local para recalcular. Independência do pré-treinamento não
+comprovada; ausência de repetição independente e intervalos de incerteza impede
+atribuir homologação. Métricas/limiares e domínio de aceite dependem PO-02/PO-12.
+
+Validação desta regularização: links Markdown e âncoras locais dos dois arquivos
+conferidos por Python; matrizes recalculadas para F1 individual, regra estrita
+<60% (inclusive fronteira 60%), sinais/unidade de M3 e partição das categorias
+conferidos. Foram verificados 100.001 valores de acurácia em [0,100], mais
+fronteiras 70/79/80/90 e entradas inválidas: cada valor válido pertence a uma
+única categoria. Esses são testes aritméticos/documentais, não novas medições ML.
+`uv lock --check` e `make lint` concluíram com saída 0, usando o ambiente isolado
+`/tmp/sentia-sol-medium-venv`; `git diff --check` aprovado. Sem alteração de
+produção/testes e sem reexecução ML local; o resultado do CI do novo PR deve ser
+consultado por seu HEAD, sem reutilizar contagens de R01 como execução nova.
