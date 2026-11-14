@@ -1,10 +1,10 @@
 # SentIA — Documento de Visão: rascunho de revisão
 
-**Instituição:** Universidade de Brasília; MDS, turma T03, equipe Liskov, 2026.2. **Data:** 14/11/2026. **Estado:** minuta 0.2 para a issue [#86][I86], sem substituir v1.0.0. **Base técnica:** `developer`, `1723a7d62d55fa98fbf6eaf5cc9da80650dbe920`.
+**Instituição:** Universidade de Brasília; MDS, turma T03, equipe Liskov, 2026.2. **Data:** 14/11/2026. **Estado:** minuta 0.3 para a issue [#86][I86], sem substituir v1.0.0. **Base técnica:** `developer`, `1723a7d62d55fa98fbf6eaf5cc9da80650dbe920`.
 
 ## 1. Identificação, propósito e organização
 
-Esta minuta reconcilia o código e as issues com a leitura direta integral do texto da Visão v1.0.0 (30/09/2026, 41 páginas) e da Arquitetura v1.0.0 (07/10, 29 páginas). A identificação por hash e o alcance visual estão na [auditoria ABNT](REVISAO_ABNT.md#1-fontes-e-alcance-da-leitura-direta). Supera a ressalva de indisponibilidade do primeiro envio do PR #90, conforme I-01 do [Argon][A1]. O GQM histórico foi lido nas pp. 28–32 da Visão; a Mini-tarefa GQM separada e o ZIP de pré-inspeção ainda não foram recuperados nesta sessão.
+Esta minuta reconcilia o código e as issues com a leitura direta integral do texto da Visão v1.0.0 (30/09/2026, 41 páginas) e da Arquitetura v1.0.0 (07/10, 29 páginas). A identificação por hash e o alcance visual estão na [auditoria ABNT](REVISAO_ABNT.md#1-fontes-e-alcance-da-leitura-direta). Supera a ressalva de indisponibilidade do primeiro envio do PR #90, conforme I-01 do [Argon][A1]. O GQM histórico foi lido nas pp. 28–32 da Visão; a Mini-tarefa GQM separada foi posteriormente fornecida pelo usuário e lida integralmente (14 páginas). Identidade e conferência estão na [auditoria ABNT](REVISAO_ABNT.md#31-mini-tarefa-gqm-separada). Só o ZIP de pré-inspeção continua sem recuperação nesta sessão.
 
 A organização temática abaixo conserva a cobertura das seções originais, com rastreio explícito de suas divergências. Não reproduz nomes associados a matrículas, pontuações de participação ou anotações docentes. A revisão factual/textual integral dos dois documentos não equivale a PDF final normalizado, revisão humana ou aprovação da PO.
 
@@ -15,7 +15,7 @@ Os estados aqui descritos são técnicos. Critérios marcados ou issues fechadas
 | Identificação | Data | Responsabilidade | Situação |
 | --- | --- | --- | --- |
 | v1.0.0 histórica, p. 1 | 30/09/2026 | Autoria coletiva registrada como “Todos” | Original preservado; 41 páginas |
-| Minuta 0.1 → 0.2 | 14/11/2026 | Codex, frente Sol High; revisão humana pendente | 0.2 reconcilia PDFs, CI e IDs canônicos; base `1723a7d` |
+| Minuta 0.1 → 0.2 → 0.3 | 14/11/2026 | Codex, frente Sol High; revisão humana pendente | 0.2 reconcilia Visão/Arquitetura/CI/IDs; 0.3 incorpora a Mini-tarefa GQM; base `1723a7d` |
 | Próxima versão acadêmica | N/D | Héllen e equipe, conforme #86 | Somente após reconciliação, revisão e aceite |
 
 Fonte: esta revisão e [#86][I86]. O quadro distingue minuta de versão publicada.
@@ -164,9 +164,29 @@ O roteiro original pp. 35–39 contém T01 coleta (RF02), T02 importação (RF01
 
 Critério proposto para aceite do incremento: requisito/US e dados conhecidos → cenário e resultado esperado → execução com SHA, ambiente e dependências explícitos → revisão técnica → decisão da PO. Não aprovar requisito antigo de remoção de palavras com teste de preservação de palavras; registrar alteração de requisito antes. Para release/publicação, exigir configuração de acesso, segredos fora do Git, fluxos reais validados e autorização específica ([#58][I58], [#62][I62], [#86][I86]).
 
+### 8.1 Reconciliação da Mini-tarefa GQM separada
+
+A Mini-tarefa de 14 páginas detalha dois objetivos de medição, derivados da Visão: negocial (qualidade da classificação) e projeto (capacidade/previsibilidade). É um **plano**, sem resultados de experimento, SP coletados ou aceite da PO. A numeração M/Q reinicia por objetivo; não confundir M1 negocial com M1 de projeto. Fonte: PDF identificado pelo hash na [auditoria ABNT](REVISAO_ABNT.md#31-mini-tarefa-gqm-separada).
+
+**Quadro 7 — Correspondência da Mini-tarefa e decisões propostas**
+
+| Origem / páginas | Conteúdo histórico confirmado | Correspondência / tratamento nesta revisão |
+| --- | --- | --- |
+| Objetivo negocial, pp. 4–7 | Q1→M1 acurácia; Q2→M2 F1 macro; Q3→M3 variação da acurácia entre treinamentos, em pontos percentuais | G1/Q1.1 e Q1.2 do plano #91 cobrem M1/M2. M3 temporal exige registro próprio; Q1.5 compara modelos no mesmo teste e não o substitui. Propor `Δacc_pp = 100 × (acc_atual − acc_anterior)` apenas em avaliações comparáveis; sem par válido, N/D |
+| Coleta negocial, pp. 7–8 | Divisão estratificada 80/20 com seed fixa; treino apenas no conjunto de treino; ML mede, QA revisa; fim das Sprints 3/7 e a cada treinamento | Para BERTweet, adaptar treinamento a versão/avaliação do checkpoint sem alegar treino próprio. Baseline ajusta somente no treino; manter grupos sem vazamento, hashes e separação de domínio. Mudança depende de PO-01b/PO-12 |
+| Artefatos negociais, p. 8 | CSV planejado `docs/metricas/acuracia_modelo.csv`, notebook, matriz 3×3 e precisão/recall/F1 por classe | Destinos planejados não são evidência de arquivos/medições existentes. Usar scripts e JSONs rastreáveis do experimento atual; não fabricar CSV histórico nem série de evolução |
+| Análise negocial, pp. 8–9 | Meta ~80%; faixa esperada 75–90%; ≥80% “meta atingida”; 70–79% “atenção”; <70% “crítico”; >90% “suspeito”; F1 de qualquer classe <60% “desequilíbrio” | Critérios históricos agora recuperados, a ratificar em PO-02/PO-12. Resolver sobreposição >90%/≥80% e fronteira de 79–80%; propor auditoria antes de aceite e regra contínua sem lacunas. Limiar de 60% é **por classe**, não F1 macro |
+| Objetivo de projeto, pp. 9–11 | Q2→M1 velocidade (soma SP de histórias na DoD); Q1→M2 burndown; estimativa conjunta por Fibonacci, referência 3 e divisão de histórias de 13 | G2/Q2.1–Q2.2; velocidade não compara produtividade entre equipes. Sem estimativas/aceite contemporâneos, N/D; não atribuir pontos retroativos |
+| Coleta/análise de projeto, pp. 11–13 | Sprint 2 como base, variação desde S3; ±20% estável; abaixo de −20% alerta, por duas Sprints replaneja; acima de +20% revisar estimativa/DoD; burndown acompanha ideal e itens incompletos voltam ao backlog | Preservar regra histórica, sem presumir baseline medido. Variação relativa exige média anterior positiva; média zero/ausente → N/D. Duas Sprints em alerta têm precedência na análise proposta; coleta diária prospectiva e discussões nas reuniões |
+| Destinos e frequência, pp. 11–12 | Projects e CSV exemplificativo `docs/metricas/velocidade_equipe.csv`; burndown diário ou, no mínimo, nas reuniões | Destinos/cadências planejados, sem prova de execução. Diferenciar do burndown da Visão (formulação diária e atualização semanal); ratificar snapshot diário em PO-12 |
+
+Fonte: leitura direta da Mini-tarefa pp. 4–13, confrontada com o [plano operacional #91][Q1]. Este último, no commit `84530e4`, ainda afirma ausência da Mini-tarefa e marca limiar por classe como N/D: precisa incorporar o histórico de 60% e a M3 temporal, sem inventar medições. Esse encaminhamento é registrado aqui, respeitando a responsabilidade da outra frente.
+
+A regra de F1 por classe explica por que acurácia sozinha não basta. Nos JSONs declarados do PR #89, a classe neutra fica abaixo de 60% nos dois modelos (BERTweet 0,2368; baseline aproximadamente 0,3673), e a acurácia declarada do BERTweet (67,70%) fica na faixa histórica <70%. Isso exige análise/replanejamento **segundo o plano histórico**, sem classificar a severidade do formulário, reproduzir inferência ou alterar RNF01 automaticamente. Acima de 90% é motivo de auditoria, não prova isolada de vazamento. A Mini-tarefa usa “precisão (acurácia)” genericamente; o relatório deve separar acurácia global de precisão por classe.
+
 ## 9. Referências e pendências de publicação
 
-As referências técnicas fixam o código do corte. A bibliografia original das pp. 40–41 foi inventariada com conferência de citações na [revisão ABNT](REVISAO_ABNT.md), incluindo Cohn ausente, obras sem chamada localizada e datas em branco. A leitura factual/textual dos dois PDFs está concluída; publicação final ainda exige decisões da PO, revisão humana, testes/medições faltantes e diagramação/exportação sem dados pessoais. A Mini-tarefa GQM separada e o pacote de pré-inspeção não foram recuperados nesta sessão; isso não invalida a leitura do GQM incluído na Visão.
+As referências técnicas fixam o código do corte. A bibliografia original das pp. 40–41 foi inventariada com conferência de citações na [revisão ABNT](REVISAO_ABNT.md), incluindo Cohn ausente, obras sem chamada localizada e datas em branco. A leitura factual/textual dos dois PDFs está concluída; publicação final ainda exige decisões da PO, revisão humana, testes/medições faltantes e diagramação/exportação sem dados pessoais. A Mini-tarefa GQM separada foi lida e reconciliada no §8.1; sua bibliografia identifica Cohn (2005), referência proposta para completar a omissão da Visão. O pacote de pré-inspeção continua sem recuperação nesta sessão, sem afirmar inexistência.
 
 <!-- Referências fixadas no corte; PRs e issues consultados em 14/11/2026. -->
 [C1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/1723a7d62d55fa98fbf6eaf5cc9da80650dbe920/src/processamento/classificacao/bertweet.py#L15

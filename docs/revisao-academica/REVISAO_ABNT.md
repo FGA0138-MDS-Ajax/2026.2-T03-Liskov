@@ -1,6 +1,6 @@
 # Revisão de formatos, referências e controle editorial
 
-**Data:** 14/11/2026. **Base técnica:** `1723a7d62d55fa98fbf6eaf5cc9da80650dbe920`. **Revisão:** 0.2, reconciliação I-01–I-03 e catálogo do PR #92. Leitura factual/textual integral dos dois PDFs concluída; certificação visual/normativa e publicação final pendentes. Sem atribuição de nota ao grupo.
+**Data:** 14/11/2026. **Base técnica:** `1723a7d62d55fa98fbf6eaf5cc9da80650dbe920`. **Revisão:** 0.3, reconciliação I-01–I-03, catálogo do PR #92 e Mini-tarefa GQM. Leitura factual/textual integral dos três PDFs acadêmicos concluída; certificação visual/normativa e publicação final pendentes. Sem atribuição de nota ao grupo.
 
 ## 1. Fontes e alcance da leitura direta
 
@@ -10,13 +10,14 @@
 | --- | --- | --- |
 | Visão: `T03_Liskov -Documento de Visao do Produto e Projeto Escopo.pdf` | v1.0.0, 30/09/2026, 41 páginas | `9da7c31fa07a012bfa68e541dcbdc18453075256377737253a7a3b84506c7ccd` |
 | Arquitetura: `T03_Liskov - Documento de Arquitetura-1.pdf` | v1.0.0, histórico “07/10”, sem ano impresso nessa célula, 29 páginas | `8596fbb6e102da2d71919e0ccb75fffa9f7e94802280b49e66f2284958becd19` |
+| Mini-tarefa: `T03_Liskov - Tarefa GQM.pdf`, fornecido pelo usuário na raiz local | 14 páginas; contexto 2026/2; sem versão/data de revisão explícitas | `ecb629621eb253d4b85f78aa17f42db1012b4498369268681595782fc6cda0d4` |
 | Formulário do professor | Template 2026/2, 17 páginas | Identificado no relatório QA #91; lido integralmente no primeiro envio |
 
 Fonte: `pdftotext -layout`, leitura de todas as páginas dos dois textos, `pdfinfo` e `hashlib.sha256` nesta sessão. A Visão coincide com o hash publicado pelo [Sol Medium][Q2]. Arquivos de leitura privados em `/tmp/liskov_docs/inner/` e `/tmp/liskov_docs/arq_inner/`; extrações novas em `/tmp/sol-high-visao.txt` e `/tmp/sol-high-arquitetura.txt`. Os PDFs foram recuperados das cópias Liskov nos ZIPs locais de correções de Visão/Arquitetura, sem publicação dos arquivos ou identificação pessoal das páginas iniciais.
 
 Foram vistas imagens renderizadas das páginas 4, 9 e 18 da Visão e 8, 19, 20, 21, 24, 25 e 26 da Arquitetura, cobrindo as figuras históricas e suas legendas. Isso complementa a leitura textual integral, mas **não** é medição de todas as margens/fontes no editor nem auditoria visual integral das cópias anotadas. A cópia anotada da Visão foi auditada pela outra frente; esta revisão se ancora no original acima, não presume ter lido todas as anotações.
 
-A ressalva do primeiro envio do #90 sobre indisponibilidade de Visão/Arquitetura está superada. O GQM histórico incorporado à Visão, pp. 28–32, foi lido. Permanecem sem recuperação nesta sessão **a Mini-tarefa GQM em arquivo separado** e **`PACOTE_PRE_INSPECAO_LISKOV.zip`**; não se afirma que não existam. Os documentos `docs/inspecao/*` são acessíveis no [PR #92][A1], commit `25f2587`, e não são arquivos faltantes.
+A ressalva do primeiro envio do #90 sobre indisponibilidade de Visão/Arquitetura está superada. O GQM histórico incorporado à Visão, pp. 28–32, foi lido. A Mini-tarefa GQM separada foi posteriormente fornecida pelo usuário e lida em todas as 14 páginas; as pp. 3/9/13 também foram inspecionadas como imagem. Somente **`PACOTE_PRE_INSPECAO_LISKOV.zip`** permanece sem recuperação nesta sessão, sem afirmar inexistência. Os documentos `docs/inspecao/*` são acessíveis no [PR #92][A1], commit `25f2587`, e não são arquivos faltantes.
 
 ## 2. Checklist de apresentação e paginação
 
@@ -61,7 +62,7 @@ A página de **“exportar resumos” é 27**, §2.7, e a **bibliografia da Arqu
 | Pedregosa et al., 2011 | p. 41 | p. 5 | Correspondência presente para scikit-learn/baseline |
 | Salton; Buckley, 1988 | p. 41 | p. 5 | Correspondência presente para TF-IDF do baseline |
 | Sprinklr | p. 41 | Menção institucional p. 7, sem ano de chamada | `Acesso em: __ 2026`; normalizar chamada e acesso real |
-| **Cohn, 2005** (citação sem entrada) | Ausente nas pp. 40–41 | p. 28, Planning Poker | Solicitar a obra/edição efetivamente consultada e inserir referência completa; não inventar título a partir de autor/ano |
+| **Cohn, 2005** (citação sem entrada) | Ausente nas pp. 40–41 | p. 28, Planning Poker | A Mini-tarefa agora identifica Cohn, Agile Estimating and Planning (2005), p. 13. Propor essa referência para a Visão, confirmando com a autoria que é a obra citada; não apagar a omissão histórica |
 
 Fonte: Visão original com hash do §1, incluindo inspeção visual da Figura 2.1. A afirmação do Argon sobre “quatro obras não citadas” é refinada: Beck aparece na figura; o Guia tem menção por título; Sommerville e a entrada Krekel não têm chamada autor-data localizada. A extração textual sozinha não detecta todas as citações em figuras. A mistura de quatro referências numeradas com as demais sem numeração também deve ser uniformizada na edição final.
 
@@ -75,9 +76,32 @@ Fonte: Visão original com hash do §1, incluindo inspeção visual da Figura 2.
 
 Fonte: leitura direta do original. Não foram constatadas nesse inventário as mesmas lacunas de Cohn/datas em branco da Visão; não transferir defeitos entre documentos.
 
+### 3.1 Mini-tarefa GQM separada
+
+Arquivo do Quadro 1, 14 páginas; lidos integralmente introdução, objetivos negociais e de projeto, esquemas GQM, modelos de coleta/análise e bibliografia. As imagens das pp. 3/9/13 confirmam os títulos e as tabelas decisórias. O original contém matrículas na p. 2 e permanece **somente local**, conforme instrução expressa do usuário. Os resumos abaixo não reproduzem identificadores pessoais nem o PDF.
+
+**Quadro 5 — Auditoria do documento GQM adicional**
+
+| Aspecto / localização | Resultado verificável | Proposta / limite |
+| --- | --- | --- |
+| Identificação e histórico, pp. 1–2 | Título, equipe e funções; versão/data de revisão não explícitas | Registrar versão/histórico na edição futura; contexto 2026/2 não é data comprovada de publicação |
+| Sumário e títulos, pp. 3–6 | §3.3 duplicado no sumário; §2.1 aparece nas pp. 4 e 6; início de §2.3 na p. 7, embora sumário indique p. 8; métrica de projeto inicia p. 9, sumário indica p. 10 | Eliminar duplicações e regenerar sumário após normalizar estilos |
+| Quadros negociais, pp. 5–9 | Tabelas de comparação/GQM/coleta/decisão sem numeração e fonte individual; quadros de projeto 3.1–3.5 têm identificação e fontes nas pp. 10–13 | Uniformizar numeração, fonte e chamadas sem atribuir conformidade às margens não medidas |
+| Vocabulário e edição, pp. 4/6/9 | “duasmétricas”; “precisão (acurácia)” usa termos distintos como equivalentes; fragmento “x’Suspeito” antes de ação de auditoria | Corrigir edição e separar acurácia global de precisão por classe no relatório |
+| Bibliografia, pp. 13–14 | Basili/Caldiera/Rombach (1994) citados p. 4; Cohn (2005) citado p. 11; Visão Liskov v1.0.0 (2026) referida nas pp. 4–6/9/13 | As três entradas têm correspondência no texto; não herdam a falta de Cohn da bibliografia da Visão |
+| Critérios e fórmulas, pp. 8–13 | Limiar F1 por classe 60% presente; ≥80% e >90% se sobrepõem; “70% a 79%” não explicita frações até 80%; variação relativa depende de média anterior | Ratificar precedência, fronteiras e denominadores em PO-02/PO-12; não classificar ausência de dados como zero |
+
+Fonte: leitura direta e imagens do PDF com SHA-256 do Quadro 1. Esses achados não representam execução do plano ou aprovação da PO.
+
+Referências transcritas da bibliografia da Mini-tarefa (metadados do documento, sem verificação editorial externa das obras):
+
+- BASILI, Victor R.; CALDIERA, Gianluigi; ROMBACH, H. Dieter. The Goal Question Metric Approach. In: MARCINIAK, John J. (ed.). *Encyclopedia of Software Engineering*. New York: John Wiley & Sons, 1994. v. 1, p. 528–532. Chamada: p. 4.
+- COHN, Mike. *Agile Estimating and Planning*. Upper Saddle River: Prentice Hall, 2005. Chamada: p. 11; entrada: p. 13. Referência recuperada para propor a correção da Visão p. 28/pp. 40–41, após confirmar correspondência com a obra usada.
+- LISKOV. *SentIA – Análise de Sentimentos: Visão do Produto e do Projeto*. Versão 1.0.0. Brasília, DF: Universidade de Brasília, 2026. Entrada: p. 14; remissões ao documento e sua DoD no corpo.
+
 ## 4. Referências novas da revisão
 
-**Quadro 5 — Correspondência das fontes novas**
+**Quadro 6 — Correspondência das fontes novas**
 
 | ID | Fonte e metadados verificados | Uso efetivo nesta revisão | Correspondência e pendência |
 | --- | --- | --- | --- |
@@ -87,13 +111,13 @@ Fonte: leitura direta do original. Não foram constatadas nesse inventário as m
 | Local F1 | *Template de Inspeção — MDS — Semestre 2026/2*. Autoria nominal/data editorial N/D no texto extraído | Esta revisão, §§1–2, e cobertura dos Quadros 7/8 | Identificação editorial deve ser conferida no documento institucional; não deduzir autoria de metadado `python-docx` |
 | H1–H5, C1–C20, T1–T4 e I/P | Equipe Liskov. Código, documentação, testes, PRs e issues do SentIA | Afirmações de comportamento e estado técnico | Links de código fixados no SHA; PRs/issues são mutáveis e têm data de consulta explícita |
 
-Fonte: páginas primárias consultadas no primeiro envio e repositório fixado por SHA. Estes metadados novos não substituem o inventário dos originais. Não se reconstituiu por suposição a obra faltante de Cohn.
+Fonte: páginas primárias consultadas no primeiro envio e repositório fixado por SHA. Estes metadados novos não substituem o inventário dos originais. A identificação de Cohn foi recuperada da bibliografia da Mini-tarefa, sem deduzir título apenas de autor/ano.
 
 ## 5. Correções, publicação e limites remanescentes
 
 Efetuado nos seis Markdown: reconciliação com todas as seções textuais originais; controle de versões/autoria sem matrículas; backlog US01–US18 e acréscimos posteriores; fontes e páginas verificadas; CI real com MongoDB; catálogo canônico/aliases da PO; registro de defeitos bibliográficos/figuras/apêndice/sumário. Os originais não foram alterados.
 
-Antes da publicação acadêmica: decisões PO-01a/b sobre modelo/testes, PO-02/PO-12 sobre métricas e PO-14b sobre nova edição; revisão humana; confirmar obra de Cohn e chamadas bibliográficas; preencher acessos reais; normalizar legendas, numeração, sumário e estilos; renderizar Mermaid e exportar PDF sem matrículas/anotações. Medir margens/rodapés e revisar todas as páginas no editor/PDF final. A Mini-tarefa GQM separada e o pacote de pré-inspeção continuam a ser procurados, sem impedir reconhecer o GQM da Visão já lido.
+Antes da publicação acadêmica: decisões PO-01a/b sobre modelo/testes, PO-02/PO-12 sobre métricas e PO-14b sobre nova edição; revisão humana; confirmar a aplicação da referência de Cohn recuperada e ajustar chamadas bibliográficas; preencher acessos reais; normalizar legendas, numeração, sumário e estilos; renderizar Mermaid e exportar PDF sem matrículas/anotações. Medir margens/rodapés e revisar todas as páginas no editor/PDF final. A Mini-tarefa separada já foi lida; apenas o pacote de pré-inspeção continua sem recuperação nesta sessão. O confronto com o plano operacional #91 revelou critérios históricos a incorporar, registrados na Visão e em PO-02/PO-12.
 
 O PR #90 pode ser apresentado à revisão técnica como proposta factual reconciliada. Isso não é aceite do produto nem conformidade ABNT final. Cabe à PO/equipe aprovar a nova versão; merge e publicação dependem de autorização humana específica.
 

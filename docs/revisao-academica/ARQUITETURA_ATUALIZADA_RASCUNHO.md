@@ -1,19 +1,19 @@
 # SentIA — Documento de Arquitetura: rascunho de revisão
 
-**Projeto:** MDS/UnB, 2026.2, T03 Liskov. **Data:** 14/11/2026. **Minuta:** 0.2, sem aceite ou substituição da v1.0.0. **Base:** `developer`, `1723a7d62d55fa98fbf6eaf5cc9da80650dbe920`.
+**Projeto:** MDS/UnB, 2026.2, T03 Liskov. **Data:** 14/11/2026. **Minuta:** 0.3, sem aceite ou substituição da v1.0.0. **Base:** `developer`, `1723a7d62d55fa98fbf6eaf5cc9da80650dbe920`.
 
 ## 1. Identificação, propósito e escopo
 
 Esta arquitetura descreve componentes observados e suas fronteiras para aquisição, inferência, armazenamento e apresentação de sentimentos em português. Sustenta a [Visão proposta](VISAO_ATUALIZADA_RASCUNHO.md) e explicita diferenças entre o produto implementado, a demonstração com mocks e evoluções ainda sujeitas a decisão.
 
-Foram lidos diretamente os textos integrais dos PDFs de Arquitetura v1.0.0 (29 páginas, histórico de 07/10) e Visão v1.0.0 (41 páginas, 30/09/2026). A [revisão ABNT](REVISAO_ABNT.md#1-fontes-e-alcance-da-leitura-direta) identifica hashes e alcance visual. Superada a ressalva de indisponibilidade do primeiro envio do #90; o GQM contido na Visão também foi lido. A Mini-tarefa GQM separada e o pacote de pré-inspeção ainda não foram recuperados nesta sessão, sem afirmar inexistência. Os registros de inspeção estão acessíveis no [PR #92][A1]. A presente reconciliação factual/textual não certifica diagramação final nem homologa escopo.
+Foram lidos diretamente os textos integrais dos PDFs de Arquitetura v1.0.0 (29 páginas, histórico de 07/10) e Visão v1.0.0 (41 páginas, 30/09/2026). A [revisão ABNT](REVISAO_ABNT.md#1-fontes-e-alcance-da-leitura-direta) identifica hashes e alcance visual. Superada a ressalva de indisponibilidade do primeiro envio do #90; o GQM contido na Visão também foi lido. A Mini-tarefa GQM separada (14 páginas) foi fornecida pelo usuário e lida integralmente nesta revisão; só o pacote de pré-inspeção continua sem recuperação nesta sessão, sem afirmar inexistência. Os registros de inspeção estão acessíveis no [PR #92][A1]. A presente reconciliação factual/textual não certifica diagramação final nem homologa escopo.
 
 **Quadro 1 — Histórico e responsabilidade da revisão**
 
 | Artefato | Data | Responsabilidade | Estado |
 | --- | --- | --- | --- |
 | v1.0.0 histórica, p. 2 | 07/10 (ano não impresso no histórico) | “Todos(as)”; oito integrantes na tabela, sem matrículas nesta minuta | Preservar; 29 páginas |
-| Minuta 0.1 → 0.2 | 14/11/2026 | Codex, Sol High | Reconciliação direta dos PDFs, CI e IDs; revisão humana/aceite pendentes |
+| Minuta 0.1 → 0.2 → 0.3 | 14/11/2026 | Codex, Sol High | 0.2 reconcilia Visão/Arquitetura/CI/IDs; 0.3 incorpora a Mini-tarefa GQM; revisão humana/aceite pendentes |
 | Nova versão acadêmica | N/D | Héllen e equipe, issue #86 | Publicar somente após reconciliação e decisão |
 
 Fonte: esta revisão e [#86][I86]. O quadro não atribui autoria humana ou aprovação inexistente. As responsabilidades funcionais de dados, ML, UI e QA estão no Quadro 4 da Visão e foram conferidas nas tabelas originais, sem reproduzir matrículas ou pontuações.
@@ -198,6 +198,10 @@ Restrições verificadas: apresentação não importa processamento/dados direta
 O workflow instala dependências bloqueadas, confere lock e executa Ruff/pytest com `mongo:7`. A consulta direta ao run [43503741871 / job 132155891920][E1] confirma `success` em `1723a7d`, **814 PASS, 0 FAIL, 0 SKIP e 93% de cobertura** (2699 statements, 176 missing). É execução remota de 13/11 consultada nesta revisão, não execução local. Os testes de MongoDB que usam coleção exercitam banco real do CI; analisador e XFetch permanecem com dublês ([C14][C14], [T1][T1]–[T3][T3], [relatório QA][Q2]). Isso não comprova modelo real, API paga, desempenho sob carga ou navegador integrado.
 
 O [PR #89][P89] continua aberto no corte: resultados BPSAD declarados não foram reproduzidos nesta revisão e não pertencem automaticamente ao código integrado. Não confundir acurácia com F1 macro, memória RSS após execução com pico, ou tempos isolados com benchmark. RNF01 (~80%) permanece a meta original até decisão da PO ([I85][I85], [H4][H4]).
+
+A Mini-tarefa GQM pp. 6–9 ainda pressupõe scikit-learn, notebook e novo treinamento. Sua coleta 80/20 aplica-se ao baseline sob controle do projeto; não demonstra treinamento próprio do Transformer. A M3 histórica (diferença temporal de acurácia entre treinamentos/versões) precisa de avaliações comparáveis e não é a diferença BERTweet/baseline no mesmo experimento. Nenhum treinamento, CSV ou série temporal foi criado para cumprir o plano no papel.
+
+Os limiares históricos ~80%, >90% para auditoria e F1 por classe <60% foram recuperados e estão no [Quadro 7 da Visão](VISAO_ATUALIZADA_RASCUNHO.md#81-reconciliação-da-mini-tarefa-gqm-separada). Não são medidas de latência, cobertura ou segurança, nem autorizam aceite automático. PO-02/PO-12 devem ratificar as faixas e a adaptação ao checkpoint pré-treinado.
 
 ### 8.1 Conciliação das metas e restrições históricas
 

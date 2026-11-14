@@ -1,6 +1,6 @@
 # Relatório da frente Sol High — reconciliação do PR #90
 
-**Data:** 14/11/2026. **Branch:** `inspecao/sol-high`. **Base técnica:** `developer`, `1723a7d62d55fa98fbf6eaf5cc9da80650dbe920`, reconfirmada por fetch nesta retomada. **PR:** [#90](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90), destino `developer`.
+**Data de referência:** 14/11/2026; adendo posterior com a Mini-tarefa GQM fornecida pelo usuário. **Branch:** `inspecao/sol-high`. **Base técnica:** `developer`, `1723a7d62d55fa98fbf6eaf5cc9da80650dbe920`, reconfirmada por fetch nesta retomada. **PR:** [#90](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90), destino `developer`.
 
 ## 1. Entrega atual e histórico
 
@@ -46,16 +46,26 @@ Isso confirma **consistência interna dos números recebidos**, sem verificar o 
 | `pdftotext -layout` nos dois PDFs originais; leitura de todas as páginas extraídas | Visão 1–41 e Arquitetura 1–29, incluindo identificação/histórico, backlog, requisitos, processo, restrições, GQM/testes e bibliografia |
 | `pdfinfo`, `hashlib.sha256` e renderização seletiva com `pdftoppm`/visualização | Hashes/paginação conferidos; imagens das pp. 4/9/18 da Visão e 8/19/20/21/24/25/26 da Arquitetura inspecionadas; sem inferir medição integral de margens |
 | Conector GitHub: metadados PR #90/#92; jobs do run 43503741871; log do job 132155891920 | Estados remotos/logs consultados diretamente, não inferidos de YAML |
-| `python3 /tmp/sol-high-validar-reconciliacao.py` | Aprovado: 6 Markdown, 136 referências nomeadas, 173 links, 99 fontes Git fixadas, 18 IDs/14 aliases, hashes de 2 PDFs, tabelas, escopo e rastreio de matrículas; sem validação HTTP externa ou conformidade visual integral |
+| `python3 /tmp/sol-high-validar-reconciliacao.py` | Aprovado após a Mini-tarefa: 6 Markdown, 135 referências nomeadas, 180 links, 99 fontes Git fixadas, 18 IDs/14 aliases, hashes de 3 PDFs, tabelas, escopo e rastreio de matrículas; zero PDFs rastreados/preparados; sem validação HTTP externa ou conformidade visual integral |
 | `git diff --check`; `git diff --cached --check`; `git diff --name-only` | Conferência de whitespace e escopo limitado aos seis documentos, antes dos commits |
 
 A verificação aritmética BPSAD do §3 é do envio inicial e continua identificada como tal; nesta retomada não foi necessário repetir inferência ou suíte sem mudança de código. Não houve acesso XFetch real, deploy ou publicação dos arquivos privados. A conferência visual dos Mermaid novos continua pendente de renderização final.
 
+### 4.1 Adendo — Mini-tarefa GQM fornecida pelo usuário
+
+Lido diretamente `T03_Liskov - Tarefa GQM.pdf`, **14 páginas**, SHA-256 `ecb629621eb253d4b85f78aa17f42db1012b4498369268681595782fc6cda0d4`, mantido na raiz local sem rastreamento pelo Git. Comandos: `pdftotext -layout`, `pdfinfo`, SHA-256 com hashlib; leitura de todas as páginas e inspeção de imagens das pp. 3/9/13. Não foram publicados PDF, matrículas ou cópia integral da extração.
+
+Confronto com Visão pp. 28–32, Arquitetura e plano GQM do #91: recuperados limiares de F1 por classe <60%, auditoria >90%, faixas de acurácia, M3 temporal e gatilhos ±20%/duas Sprints da velocidade. A Mini-tarefa identifica Cohn (2005) como Agile Estimating and Planning. Novos achados D26–D29 e Quadro 7 da Visão preservam esses critérios como históricos a ratificar, sem criar dados ou mudar requisitos.
+
+**Não está tudo conforme:** faltam conciliar essas regras no plano #91 (limiar por classe ainda N/D e M3 temporal sem medida própria), resolver fronteiras/prioridades das faixas, adaptar treinamento/notebook ao BERTweet e corrigir títulos/sumário/quadros do documento acadêmico. São pendências PO-01a/b, PO-02, PO-12 e PO-14b. A frente High registra o encaminhamento sem editar os diretórios da frente Medium. Os destinos CSV citados pelo PDF são planejamento, não prova de coleta; SP e série temporal continuam N/D.
+
+Somente os seis Markdown desta frente foram atualizados. A validação documental foi repetida, incluindo hash/14 páginas da Mini-tarefa, integridade das faixas/IDs e verificação explícita de que **nenhum PDF está rastreado ou preparado para commit**. Não houve reexecução de ML, XFetch ou suíte do produto, pois não houve mudança de código.
+
 ## 5. Material ainda não recuperado e aceite
 
-**Material específico ainda não acessado nesta sessão:** Mini-tarefa GQM como arquivo independente e `PACOTE_PRE_INSPECAO_LISKOV.zip`. O conteúdo GQM incorporado à Visão foi lido. Não se afirma inexistência desses arquivos; sua localização continua necessária para auditar eventuais conteúdos adicionais. A cópia anotada da Visão tem auditoria de outra frente; a presente leitura direta é do original identificado, sem declaração de auditoria visual integral das anotações.
+**Material específico ainda não acessado nesta sessão:** `PACOTE_PRE_INSPECAO_LISKOV.zip`, sem afirmar inexistência. A Mini-tarefa GQM independente foi fornecida depois pelo usuário e lida integralmente, além do GQM incorporado à Visão; a ressalva anterior sobre esse PDF está superada. A cópia anotada da Visão tem auditoria de outra frente; a presente leitura direta é do original identificado, sem declaração de auditoria visual integral das anotações.
 
-**Estado da reconciliação:** I-01/I-02/I-03 e equivalência da PO resolvidos nos seis Markdown; leitura factual/textual integral de Visão/Arquitetura concluída. Edição final ABNT, margens, bibliografia final (incluindo obra efetiva de Cohn/acessos reais), revisão por outro integrante, aceite da PO e homologação do produto continuam pendentes e não são apresentados como concluídos.
+**Estado da reconciliação:** I-01/I-02/I-03 e equivalência da PO resolvidos nos seis Markdown; leitura factual/textual integral de Visão/Arquitetura concluída. Edição final ABNT, margens, bibliografia final (incluindo a referência de Cohn recuperada na Mini-tarefa e os acessos reais), revisão por outro integrante, aceite da PO e homologação do produto continuam pendentes e não são apresentados como concluídos.
 
 **Draft:** o PR pode deixar Draft para revisão técnica da proposta reconciliada; os arquivos faltantes acima não impedem revisar os fatos já verificados. Mantido Draft nesta atualização, pois o pedido foi informar a prontidão, sem efetuar a transição. Isso não autoriza merge nem publicação final. Verificar CI no último commit antes de integrar, além de revisão independente e autorização humana.
 
