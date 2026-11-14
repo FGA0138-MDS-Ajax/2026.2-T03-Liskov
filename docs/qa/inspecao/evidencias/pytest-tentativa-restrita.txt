@@ -1,0 +1,10 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.17, pytest-9.2.0, pluggy-1.7.0
+rootdir: <REPO>
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0, anyio-4.16.0
+collected 814 items
+
+tests/test_analisar_em_lotes.py .....                                    [  0%]
+tests/test_api.py

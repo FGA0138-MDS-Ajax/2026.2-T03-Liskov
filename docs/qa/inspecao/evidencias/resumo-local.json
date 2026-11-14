@@ -1,0 +1,346 @@
+{
+  "base_sha": "1723a7d62d55fa98fbf6eaf5cc9da80650dbe920",
+  "timestamp": "2026-11-14T19:00:37.310495-03:00",
+  "python": "3.11.17",
+  "pytest": "9.2.0",
+  "exit_code": 0,
+  "tests": 814,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 25,
+  "passed": 789,
+  "junit_time_seconds": 39.109,
+  "files": {
+    "test_analisar_em_lotes": {
+      "collected": 5,
+      "passed": 5,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_api": {
+      "collected": 17,
+      "passed": 17,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_api_administracao": {
+      "collected": 50,
+      "passed": 50,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_aquisicao": {
+      "collected": 25,
+      "passed": 25,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_auditoria_datasets": {
+      "collected": 3,
+      "passed": 3,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_avaliacao": {
+      "collected": 16,
+      "passed": 16,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_classificacao": {
+      "collected": 14,
+      "passed": 14,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_comparar_modelos": {
+      "collected": 5,
+      "passed": 5,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_consultas_api": {
+      "collected": 48,
+      "passed": 48,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_csv_importer": {
+      "collected": 96,
+      "passed": 96,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_database": {
+      "collected": 35,
+      "passed": 35,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_experimentos_bpsad": {
+      "collected": 14,
+      "passed": 14,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_importacao": {
+      "collected": 20,
+      "passed": 20,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_integracao_conjunta": {
+      "collected": 10,
+      "passed": 10,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_painel_administracao": {
+      "collected": 75,
+      "passed": 75,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_painel_arquitetura": {
+      "collected": 18,
+      "passed": 18,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_painel_config": {
+      "collected": 12,
+      "passed": 12,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_painel_filtros": {
+      "collected": 18,
+      "passed": 18,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_painel_fonte_api": {
+      "collected": 92,
+      "passed": 92,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_painel_fonte_mock": {
+      "collected": 7,
+      "passed": 7,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_painel_transformacoes": {
+      "collected": 11,
+      "passed": 11,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_painel_ui": {
+      "collected": 18,
+      "passed": 18,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_persistencia_leitura": {
+      "collected": 25,
+      "passed": 8,
+      "skipped": 17,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_pesquisa_hibrida": {
+      "collected": 9,
+      "passed": 9,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_pipeline": {
+      "collected": 19,
+      "passed": 19,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_qa_t09_t10": {
+      "collected": 19,
+      "passed": 19,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_repositorio": {
+      "collected": 72,
+      "passed": 64,
+      "skipped": 8,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_xfetch": {
+      "collected": 58,
+      "passed": 58,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    },
+    "test_xfetch_pipeline": {
+      "collected": 3,
+      "passed": 3,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0
+    }
+  },
+  "skip_cases": [
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_insere_e_le_de_volta_por_chave_natural",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_busca_inexistente_devolve_none",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_busca_por_object_id",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_mesmo_id_em_fontes_diferentes_nao_conflita",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_data_publicacao_ausente_continua_omitida",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_datas_voltam_como_datetime_e_serializam_em_utc",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_filtro_por_sentimento_e_fonte",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_filtro_periodo_publicacao_exclui_documentos_sem_data",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_filtro_sem_data_publicacao",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_filtro_sentimento_mais_periodo",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_filtro_por_modelo_e_periodo_de_processamento",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_contagem_por_sentimento_sempre_devolve_tres_classes",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_paginacao_mais_recentes_primeiro",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_listar_rejeita_paginacao_invalida[0-0]",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_listar_rejeita_paginacao_invalida[501-0]",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_listar_rejeita_paginacao_invalida[True-0]",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_persistencia_leitura",
+      "test": "test_listar_rejeita_paginacao_invalida[10--1]",
+      "reason": "MongoDB de teste indisponível (suba com docker run ... mongo:7)."
+    },
+    {
+      "module": "test_repositorio",
+      "test": "test_cria_os_quatro_indices_do_esquema",
+      "reason": "MongoDB local indisponível; ligue o Docker para rodar este teste."
+    },
+    {
+      "module": "test_repositorio",
+      "test": "test_criar_indices_de_novo_nao_da_erro",
+      "reason": "MongoDB local indisponível; ligue o Docker para rodar este teste."
+    },
+    {
+      "module": "test_repositorio",
+      "test": "test_salvar_analise_grava_e_nao_duplica",
+      "reason": "MongoDB local indisponível; ligue o Docker para rodar este teste."
+    },
+    {
+      "module": "test_repositorio",
+      "test": "test_mesmo_id_em_fontes_diferentes_nao_e_duplicata",
+      "reason": "MongoDB local indisponível; ligue o Docker para rodar este teste."
+    },
+    {
+      "module": "test_repositorio",
+      "test": "test_salvar_analise_nao_altera_o_dicionario_original",
+      "reason": "MongoDB local indisponível; ligue o Docker para rodar este teste."
+    },
+    {
+      "module": "test_repositorio",
+      "test": "test_datas_sao_gravadas_como_data_e_publicacao_ausente_e_omitida",
+      "reason": "MongoDB local indisponível; ligue o Docker para rodar este teste."
+    },
+    {
+      "module": "test_repositorio",
+      "test": "test_salvar_analises_conta_inseridos_e_duplicados",
+      "reason": "MongoDB local indisponível; ligue o Docker para rodar este teste."
+    },
+    {
+      "module": "test_repositorio",
+      "test": "test_lote_com_um_invalido_nao_grava_nada",
+      "reason": "MongoDB local indisponível; ligue o Docker para rodar este teste."
+    }
+  ],
+  "raw_junit_sha256": "1b7843629923ea1dd4ff4e3396f63ee2d26547f9bfb352f81c336039b1249a7c"
+}

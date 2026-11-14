@@ -21,6 +21,20 @@ Fórmulas, limites e cadência futura: [plano GQM](PLANO_GQM_VIGENTE.md).
 | R10 / G2 | Issues [#4](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/issues/4), [#17](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/issues/17), [#22](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/issues/22), [#26](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/issues/26), [#32](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/issues/32) solicitam SP a estimar, sem números nos corpos consultados | **SP, velocidade por Sprint, média de velocidades e burndown histórico: N/D.** Ausência de Planning estimado e snapshots diários verificáveis nas fontes acessadas. Número de issues/PRs não substitui SP. | Estimar no próximo Planning; coletar snapshots prospectivamente. Não reconstruir série com datas de merges. |
 | R11 / G3 | [PR #81](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/81) integrado em B; sua descrição declara 750 aprovados/8 pulados e também pede não mesclar antes de resolver aceite/custo | Código integrado não equivale a homologação. Divergência de governança documentada, sem presumir autorização ou reverter integração. | PO/equipe resolvem custo, relevância e aceite; gestão registra decisão. Nenhum XFetch real acionado nesta inspeção. |
 
+## Confronto com a Visão histórica e comentários do professor
+
+Fonte: Visão v1.0.0, 30/09/2026, seção 5.1, pp. 28–32; versão original e
+anotada identificadas no [relatório](../qa/inspecao/RELATORIO_EXECUCAO.md#fonte-histórica-recuperada).
+Nenhum resultado ausente foi preenchido com números das metas.
+
+| Registro | Dado documental e interpretação | Decisão / ação |
+|---|---|---|
+| R12 / gestão | Métrica 1.1 exige cálculo diário, mas prevê atualização semanal; 1.2 usa Sprint 2 como base e variação máxima de 20%. Sem SP/snapshots acessíveis: resultados N/D | Propor captura diária/análise semanal; base e variação atuais N/D, sem reconstituição da Sprint 2. Equipe deve fundamentar limites antes de ratificação. |
+| R13 / qualidade | Métrica 2.2 fala em tamanho de código e divide por US concluídas; 2.3 conta issues rotuladas como débito técnico. Não há cadastro completo de defeitos por Sprint, aceite de US nem snapshots de rótulos nas fontes verificadas | Densidade e evolução de débito: N/D. Os quatro casos deste dossiê não são censo de defeitos e não podem fornecer o numerador de todas as Sprints. |
+| R14 / cobertura | O2/Q4 histórico não tinha métrica correspondente; anotação do professor solicita esse vínculo. Coleta atual R01/E2 fornece 93% CI / 92% local em src, com limites distintos | Usar G3/Q3.2 do plano; não definir limiar novo de aceite por inferência. |
+| R15 / usabilidade | Métrica 3.1 estabelece 85% global e 70% por tarefa; O3/Q2 de concordância não tinha medida. Comentário do professor pede completar a correspondência e justificar referências | Taxa de sucesso e concordância atuais: N/D, sem sessões registradas nesta execução. G4 propõe coleta e protocolo; PO/QA devem ratificar. |
+| R16 / testes | Visão seção 6.2: T01=coleta, T02=importação, T08=RF07/classificação, T18=RNF02/responsividade. Backlog p. 27 escreve RF02 para responsividade | Matriz segue roteiro histórico e registra conflito RF02/RNF02 para PO, sem editar PDFs. T11–T13 continuam testes de sistema com critérios pela UI; aprovação de API é parcial. |
+
 ## Auditoria aritmética dos artefatos do PR #89
 
 Fontes imutáveis consultadas, fora de B:

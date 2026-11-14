@@ -7,11 +7,28 @@ substitui o GQM acadêmico original. A meta original **aproximadamente 80% de
 acurácia** permanece, conforme [#85](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/issues/85)
 e [#86](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/issues/86).
 
-O PDF histórico de GQM/Visão e `PACOTE_PRE_INSPECAO_LISKOV.zip` não foram
-localizados nos materiais acessíveis. Assim, a correspondência literal de todas
-as questões e métricas antigas é **N/D**. A referência à Métrica 2.1 é sustentada
-pelas issues [#17](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/issues/17)
-e #85. A equipe deve confrontar esta proposta com os originais antes de ratificá-la.
+A Visão v1.0.0 (30/09/2026), seção 5.1, pp. 28–32, foi recuperada do arquivo
+local `Correções Doc_Visao.zip`, junto da versão anotada pelo professor. Os
+hashes e a identificação estão no [relatório](../qa/inspecao/RELATORIO_EXECUCAO.md#fonte-histórica-recuperada).
+A Mini-tarefa GQM separada e `PACOTE_PRE_INSPECAO_LISKOV.zip` não foram localizados. O confronto abaixo usa
+o GQM contido na Visão e preserva suas metas originais até revisão formal.
+
+## Correspondência com o GQM histórico
+
+A numeração G/Q deste plano é operacional e não renumera o histórico. Objetivo 1
+histórico (projeto) corresponde a G2; Objetivo 2 (qualidade) a G1 e G3; Objetivo 3
+(usabilidade/confiança) é complementado por G4 abaixo.
+
+| Fonte histórica (Visão, seção 5.1) | Medida mantida / correspondência | Divergência e encaminhamento |
+|---|---|---|
+| O1/Q1 → 1.1 burndown, pp. 28–29 | G2/Q2.2; SP restantes por dia | Fórmula requer registro diário, mas a cadência escrita é semanal. Proposta: captura diária e análise semanal, sem criar snapshots passados. |
+| O1/Q2 → 1.2 velocidade, p. 29 | G2/Q2.1; SP de itens que atendem DoD | Meta histórica: Sprint 2 como base e variação máxima de 20% desde Sprint 3. Base/valores não demonstrados: N/D. Preservar meta como referência a fundamentar; não inventar baseline. |
+| O2/Q1 → 2.1 desempenho, p. 30 | G1/Q1.1–Q1.6; acurácia ~80%, acrescida de medidas por classe e proveniência | Histórico fala em novo treinamento e notebooks; código usa checkpoint pré-treinado/scripts. Atualização proposta acompanha versão/amostra e #86, sem atribuir treinamento próprio inexistente. |
+| O2/Q2 → 2.2 densidade de defeitos, pp. 30–31 | G3/Q3.4 abaixo | Definição diz tamanho do código, fórmula divide por histórias concluídas. Manter unidade defeitos/US, propor ajustar o nome/definição com PO, sem substituir por KLOC. |
+| O2/Q3 → 2.3 débito técnico, p. 31 | G3/Q3.5 abaixo | Preservar contagem de issues rotuladas e regra histórica de não crescer por duas Sprints; faltam snapshots e política de rótulo. |
+| O2/Q4 → cobertura, p. 30 | G3/Q3.2 | Questão sem métrica correspondente no histórico; anotação do professor, p. 28, pede completar a ligação. Medida de linhas proposta com escopo src explicitado. |
+| O3/Q1 → 3.1 sucesso em tarefas, p. 32 | G4/Q4.1 abaixo | Preservar 85% no total e mínimo de 70% por tarefa como referências históricas a fundamentar, sem inventar sessões. |
+| O3/Q2 → concordância dos usuários, p. 32 | G4/Q4.2 abaixo, nova medida proposta | Questão sem métrica histórica; anotação do professor, p. 28, pede ligação explícita. Não usar concordância como acurácia com verdade objetiva. |
 
 ## Objetivos, questões e medidas
 
@@ -51,6 +68,16 @@ decisões de revisão e integração, sob a perspectiva QA/equipe, por SHA.
 | Q3.1: a suíte aplicável executa? → PASS/FAIL/ERROR/SKIP | Contagens do pytest por execução, SHA e ambiente | Log, JUnit e [relatório](../qa/inspecao/RELATORIO_EXECUCAO.md) | Cada PR e push em developer; autor executa e QA verifica | SKIP é pendência de execução. Nenhum limiar autoriza ignorar falhas; distinguir serviços reais de mocks. |
 | Q3.2: que código foi exercitado? → cobertura de linhas | `linhas cobertas/linhas executáveis` em `src`, com denominador >0 | pytest-cov/coverage, versão e módulos ausentes | Mesma execução de Q3.1; QA | Não mede acurácia, segurança, qualidade de asserts nem cobertura de scripts fora de src. Não há meta nova imposta por este plano. Usar lacunas por módulo para priorizar cenários. |
 | Q3.3: defeitos tiveram reteste? → cadeia de evidência | Registro por defeito de falha → correção → execução posterior | [Defeitos e correções](../qa/inspecao/DEFEITOS_E_CORRECOES.md), PR, teste e log | Cada correção; autor + QA | Antes sem log: N/D para reprodução do defeito. CI verde do conjunto não prova execução do produto com todos os serviços. |
+
+Complementos às questões históricas de qualidade e usabilidade:
+
+| Objetivo → questão → métrica | Fórmula / fonte | Frequência / responsável proposto | Limites / decisão esperada |
+|---|---|---|---|
+| G3/Q3.4 / O2-Q2 histórico → incidência de defeitos → 2.2 defeitos por US concluída | `defeitos únicos registrados na Sprint / US que atendem DoD na Sprint`; registro de defeitos/Issues e aceite por US | Fim de Sprint; QA e desenvolvedores | Denominador zero/aceite ausente: N/D. Sem contar funcionalidade futura como defeito. Critério histórico: queda e nenhum crítico aberto; cadastro/estados datados são necessários para avaliar. |
+| G3/Q3.5 / O2-Q3 histórico → evolução de débito → 2.3 issues técnicas adiadas | Contar issues abertas com rótulo de débito técnico no snapshot de fechamento | Refinamento/Planning e snapshot no fim da Sprint; SM/equipe | Rótulo e data de referência precisam de definição; dados atuais N/D. Se crescer por duas Sprints conforme referência histórica, discutir capacidade de pagamento; não rotular itens retroativamente para fabricar série. |
+| G4/Q4.1: validar usabilidade/confiança do dashboard, perspectiva usuário/PO → O3-Q1 → 3.1 sucesso em tarefas | `tarefas concluídas corretamente sem ajuda / tentativas válidas * 100`; idem por tarefa; planilha anonimizada de observação | Cada sessão de candidato de UI; PO, frontend e QA | Denominador zero: N/D. Roteiro histórico: distribuição, predominância, filtro de período, sentimento e resumo; duas últimas só se implementadas. Metas históricas 85% global/70% por tarefa preservadas, fundamento pendente; nenhuma sessão atual. Corrigir obstáculos observados e repetir. |
+| G4/Q4.2 → O3-Q2 → concordância de usuário com previsão (proposta nova) | `julgamentos concordantes / pares texto-julgamento válidos * 100`; registrar tamanho, amostragem, rótulos, discordâncias e revisão de instrução | Sessão com textos controlados; PO/QA/ML | Valor/meta N/D. Definir protocolo e agregação entre avaliadores, proteger dados e não publicar identidades. Não equivale a verdade anotada independente; usar discordâncias para investigar confiança e comunicação. |
+
 
 ## Procedimento de coleta e interpretação
 
