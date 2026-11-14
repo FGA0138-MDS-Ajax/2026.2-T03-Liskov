@@ -18,7 +18,7 @@
 | **3.4 Métricas (`i–iv`, 25%)** — Quadro 6 | Plano GQM vigente (O1–O3), medições de cobertura/experimentos e análise crítica | Métricas / QA (Renato & equipe ML) | Falta validar ajustes docentes no GQM (`O2 Q4`, `O3 Q2` e justificativas); usabilidade (`#63`) não executada (Sprint 7); PR `#89` (BPSAD por classe) ainda aberto e não reproduzido | [PLANO_GQM_VIGENTE.md (PR `#91`)](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/inspecao/sol-medium/docs/metricas/PLANO_GQM_VIGENTE.md) · [REGISTRO_E_ANALISE.md (PR `#91`)](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/inspecao/sol-medium/docs/metricas/REGISTRO_E_ANALISE.md) |
 | **3.5 Testes de Software (25%)** | Plano de testes, matriz `T01–T18`, relatório no SHA `1723a7d` (CI `43503741871`: 814 passed, 0 skipped, 93%; local sem Mongo: 789 passed, 25 skipped, 92%) | QA / Desenvolvedores | BERTweet, XFetch e UI HTTP usam dublês na suíte offline; `T14` parcial, `T15–T17` pendentes (Sprint 6), `T18` visual em navegador atual não reexecutado | [PLANO_TESTES_ATUAL.md (PR `#91`)](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/inspecao/sol-medium/docs/qa/inspecao/PLANO_TESTES_ATUAL.md) · [MATRIZ_RASTREABILIDADE.md (PR `#91`)](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/inspecao/sol-medium/docs/qa/inspecao/MATRIZ_RASTREABILIDADE.md) · [RELATORIO_EXECUCAO.md (PR `#91`)](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/inspecao/sol-medium/docs/qa/inspecao/RELATORIO_EXECUCAO.md) |
 | **Quadro 8 — Arquitetura (`i–iv`)** | Minuta atualizada (`ARQUITETURA_ATUALIZADA_RASCUNHO.md`), arquitetura técnica, contrato único `#19`, esquema MongoDB e `CONTRATO-API.md` | Arquitetura / Frentes (Julia, Maria Eduarda, Gabriel, Ricardo, Héllen, Juliana, Breno, Renato) | v1.0.0 PDF descreve `scikit-learn`/`.pkl`/`requirements.txt`/`main`; `ADR-001` sem ratificação PO; administração/pesquisa ainda em RAM; `/analises` sem login obrigatório | [ARQUITETURA_ATUALIZADA_RASCUNHO.md (PR `#90`)](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/inspecao/sol-high/docs/revisao-academica/ARQUITETURA_ATUALIZADA_RASCUNHO.md) · [../contratos-dados.md](../contratos-dados.md) · [../arquitetura.md](../arquitetura.md) |
-| **Quadro 9 — Defeitos pré-mapeados** | Catálogo explícito de não conformidades técnicas, testes e pauta `PO-01..PO-14` | Toda a equipe / PO | Itens abertos priorizados para correção nas Sprints 6 e 7 e deliberação pós-inspeção | [DEFEITOS_E_CORRECOES.md (PR `#91`)](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/inspecao/sol-medium/docs/qa/inspecao/DEFEITOS_E_CORRECOES.md) · [PLANO_REGULARIZACAO.md](PLANO_REGULARIZACAO.md) |
+| **Quadro 9 — Defeitos pré-mapeados** | Catálogo explícito de não conformidades técnicas, testes e pauta unificada `PO-01..PO-14 ↔ PO01..PO14` | Toda a equipe / PO | Itens abertos priorizados para correção nas Sprints 6 e 7 e deliberação pós-inspeção; conciliação inter-PRs registrada | [DEFEITOS_E_CORRECOES.md (PR `#91`)](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/inspecao/sol-medium/docs/qa/inspecao/DEFEITOS_E_CORRECOES.md) · [MATRIZ_DIVERGENCIAS.md (PR `#90`)](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/inspecao/sol-high/docs/revisao-academica/MATRIZ_DIVERGENCIAS.md) · [PLANO_REGULARIZACAO.md](PLANO_REGULARIZACAO.md) |
 
 ---
 
@@ -32,7 +32,7 @@ O objetivo da demonstração na inspeção é provar ao grupo **LAMPORT** que os
    git log -1 --oneline origin/developer
    ```
    *(Esperado na linha de base: `1723a7d` — Merge PR `#81`.)*
-2. Mostrar no GitHub a execução verde da CI no mesmo SHA ([run `43503741871`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/43503741871)) com o serviço `mongo:7` e os 4 PRs abertos (`#83`, `#89`, `#90`, `#91`, mais o PR desta frente).
+2. Mostrar no GitHub a execução verde da CI no mesmo SHA ([run `43503741871`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/43503741871)) com o serviço `mongo:7` e os PRs abertos de inspeção (`#90`, `#91`, `#92`, `#93`) e paralelos (`#83`, `#89`).
 3. Destacar explicitamente os dois pontos de governança já registrados pela própria equipe: o merge prematuro do PR `#81` (`GESTAO_CONFIGURACAO.md`) e o bloqueio de publicação dos PDFs brutos por conterem matrículas (`REGISTRO_PRE_INSPECAO.md`).
 
 ### Etapa 2 (1:30 – 4:00) — Verificação automatizada (`lint`, `lock`, `pytest` e pipeline BSON offline)
@@ -85,9 +85,41 @@ O objetivo da demonstração na inspeção é provar ao grupo **LAMPORT** que os
 
 | PR / Branch | Destino | Pré-condições para Merge | Ordem |
 | --- | --- | --- | --- |
-| PR `#83` (`docs-qa-walkthrough-testes`) | `developer` | Decidir pelo fechamento (conteúdo superado por `#91`) ou atualização para `1723a7d` | 1º |
-| PR [`#90`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90) (`inspecao/sol-high`) | `developer` | Revisão humana de conteúdo + CI verde (`SUCCESS` `43646136042`) | 2º |
-| PR [`#91`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/91) (`inspecao/sol-medium`) | `developer` | Revisão humana + CI verde; conferir evidências anexadas | 3º |
-| PR `chore/inspecao-argon` (este dossiê) | `developer` | Revisão humana + CI verde + conferência de que não há arquivos locais não versionáveis ou PDFs com matrículas | 4º |
-| PR `chore/inspecao-mkdocs` | **`docs`** | Revisão humana + conferência de links externos para `developer` (sem tocar manualmente em `gh-pages`) | 5º |
-| PR [`#89`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/89) (`feat/issue-85-avaliacao-bertweet`) | `developer` | Reprodução empírica independente com `--group ml` + decisão **PO-02** sobre `RNF01` (trilha ML separada) | Independente |
+| PR `#83` (`docs-qa-walkthrough-testes`) | `developer` | Fechar como superado por `#91` ou atualizar integralmente para `1723a7d` (`B-04`) | 1º |
+| PR [`#90`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90) (`inspecao/sol-high`) | `developer` | Revisão humana + CI verde (`43646136042`) + adendo/alinhamento dos pontos `I-01` a `I-03` (`B-03`) | 2º |
+| PR [`#91`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/91) (`inspecao/sol-medium`) | `developer` | Revisão humana + CI verde (`43647361017`); conferir evidências anexadas | 3º |
+| PR [`#92`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92) (`chore/inspecao-argon`) | `developer` | Revisão humana + CI verde no último commit + auditoria LGPD (`B-01`, `B-02`) | 4º |
+| Micro-PR pós-merge em `developer` | `developer` | Converter links de `inspecao/sol-high` e `inspecao/sol-medium` para links relativos antes de apagar branches (`B-06`) | 5º |
+| PR [`#93`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/93) (`chore/inspecao-mkdocs`) | **`docs`** | Revisão humana + conferência dos links canônicos pós-merge em `blob/developer/docs/...` (`B-06`) | 6º |
+| PR [`#89`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/89) (`feat/issue-85-avaliacao-bertweet`) | `developer` | Reprodução empírica independente com `--group ml` + decisão **PO-02** sobre `RNF01` (`B-05`) | Trilha ML separada |
+
+---
+
+## 4. Checklist Executável de Inspeção e Integração (`#90`, `#91`, `#92`, `#93`)
+
+Use os comandos e verificações abaixo na ordem exata antes de cada etapa:
+
+### 4.1 Fase Pré-Merge (auditoria dos 4 PRs abertos)
+- [ ] **Conferir integridade da linha de base e PRs abertos (sem merges indevidos):**
+  ```bash
+  git fetch origin && git rev-parse origin/developer
+  gh pr list --repo FGA0138-MDS-Ajax/2026.2-T03-Liskov --state open \
+    --json number,title,headRefName,baseRefName,reviewDecision
+  ```
+  *Critério de aceite:* `origin/developer` em `1723a7d...`; PRs `#90`, `#91`, `#92` (`→ developer`) e `#93` (`→ docs`) com CI verde e mínimo `1` revisão humana `APPROVED` externa ao autor (`B-01`).
+- [ ] **Conferir higiene de privacidade e ausência de arquivos proibidos (`B-02`):**
+  Verificar nos diffs dos 4 PRs ausência de `.pdf` originais com matrículas, `.env`, corpora brutos ou diretórios internos de instrução.
+- [ ] **Aplicar bloqueios documentais (`B-03` e `B-04`):** resolver/alinhar pontos `I-01` a `I-03` no PR `#90` e deliberar fechamento/atualização do PR `#83` (`fe83ad0`).
+
+### 4.2 Fase Demonstração Técnica na Sessão (`LAMPORT → LISKOV`, 5–10 min)
+- [ ] **Validar ambiente, lockfile e lint:** `uv sync --locked && uv lock --check && make lint` (saída `0`).
+- [ ] **Validar suíte automatizada local + apontar CI `mongo:7` (`43503741871`):**
+  `make test` → esperado local sem MongoDB: `789 passed, 0 failed, 25 skipped (92% src)`; na CI (`mongo:7`): `814 passed, 0 failed, 0 skipped (93% src)`.
+- [ ] **Validar pipeline BSON offline:** `make demo` (conferir preservação de `texto_original`, UTC e formato BSON sem credenciais).
+- [ ] **Demonstrar API real em memória + Painel UI:** iniciar API (`SENTIA_ARMAZENAMENTO=memoria uv run uvicorn src.servico.main:app --host 127.0.0.1 --port 8000`), consultar `GET /health` e `GET /analises/resumo`, e exibir Streamlit (`make run` modo `mock`) deixando explícito o que falta na Sprint 6 (`#27–#30`) e Sprint 7 (`#62`, `#63`, `#86`).
+- [ ] **Percorrer evidências por critério (`MATRIZ_EVIDENCIAS.md §9` e `PLANO_REGULARIZACAO.md §2`):** apontar separação **Completo / Parcial / Pendente** e registrar novos achados da equipe inspetora **LAMPORT**.
+
+### 4.3 Fase Pós-Merge Imediata (somente após autorização de merge)
+- [ ] Integrar na sequência **`#90` → `#91` → `#92` em `developer`** (preservando **`#89` isolado**, item `B-05`).
+- [ ] Executar verificação de links e abrir micro-PR convertendo URLs `blob/inspecao/sol-high/...` e `blob/inspecao/sol-medium/...` em caminhos relativos (`../revisao-academica/*`, `../metricas/*`, `../qa/inspecao/*`) antes de remover branches (`B-06`).
+- [ ] Integrar **`#93` em `docs`** após a fusão de `#90–#92` em `developer` e conferir o deploy gerado na branch `gh-pages`.
