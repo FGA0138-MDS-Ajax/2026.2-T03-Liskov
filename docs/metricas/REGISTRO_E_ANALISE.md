@@ -139,3 +139,20 @@ fronteiras 70/79/80/90 e entradas inválidas: cada valor válido pertence a uma
 `/tmp/sentia-sol-medium-venv`; `git diff --check` aprovado. Sem alteração de
 produção/testes e sem reexecução ML local; o resultado do CI do novo PR deve ser
 consultado por seu HEAD, sem reutilizar contagens de R01 como execução nova.
+
+## Ajuste após revisão independente do PR #94
+
+A revisão comunicada pelo usuário classificou o PR como apto com ressalvas,
+sem bloqueantes. Este ajuste registra somente os dois pontos solicitados:
+
+| Registro | Correção e fonte | Estado / limite |
+|---|---|---|
+| R21 / O1 → G2/Q2.1 | Mini-tarefa §§3.3–3.4, pp. 11–13, e D28 do #90: `δs=100*(Vs-μs)/μs`, com μs calculada somente sobre Sprints anteriores válidas; duas Sprints consecutivas com δs < −20% acionam historicamente replanejamento | Média zero/indisponível, SP ou aceite ausentes: N/D; se faltar uma variação, gatilho não verificável. Sem novas estimativas, séries ou decisão da PO; ratificação PO-12/PO-13 permanece pendente. |
+| R22 / O2 → G1/Q1.7 | Identificador próprio Q1.7 para M3, com link à definição existente em pontos percentuais e condições temporais; Q1.5 preservada como diferença BERTweet/baseline | M3 continua N/D. O1→G2, O2→G1/G3 e O3→G4 preservados, sem renumerar objetivos históricos. |
+
+Validação documental deste ajuste: links/âncoras locais e unicidade dos
+identificadores conferidos; fórmula usa a média anterior no denominador, com
+checagens aritméticas de sinal, zero/ausência e fronteira estrita −20% para duas
+Sprints consecutivas. Valores usados nessas checagens são sintéticos, não dados
+do projeto. `git diff --check`, `uv lock --check` e `make lint` aprovados; nenhum
+código de produção, teste ou arquivo fora destes dois Markdown foi alterado.
