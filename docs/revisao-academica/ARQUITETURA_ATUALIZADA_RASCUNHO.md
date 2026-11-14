@@ -1,22 +1,36 @@
 # SentIA — Documento de Arquitetura: rascunho de revisão
 
-**Projeto:** MDS/UnB, 2026.2, T03 Liskov. **Data:** 14/11/2026. **Minuta:** 0.1, sem aceite ou substituição da v1.0.0. **Base:** `developer`, `1723a7d62d55fa98fbf6eaf5cc9da80650dbe920`.
+**Projeto:** MDS/UnB, 2026.2, T03 Liskov. **Data:** 14/11/2026. **Minuta:** 0.2, sem aceite ou substituição da v1.0.0. **Base:** `developer`, `1723a7d62d55fa98fbf6eaf5cc9da80650dbe920`.
 
 ## 1. Identificação, propósito e escopo
 
 Esta arquitetura descreve componentes observados e suas fronteiras para aquisição, inferência, armazenamento e apresentação de sentimentos em português. Sustenta a [Visão proposta](VISAO_ATUALIZADA_RASCUNHO.md) e explicita diferenças entre o produto implementado, a demonstração com mocks e evoluções ainda sujeitas a decisão.
 
-Os PDFs de Arquitetura, Visão e GQM e o pacote de pré-inspeção não foram localizados. A revisão integral de seus textos, integrantes, figuras e bibliografia permanece pendente. A estrutura abaixo cobre as visões requeridas no Quadro 8 do formulário lido, mas não comprova preservação exata da estrutura original. A [matriz](MATRIZ_DIVERGENCIAS.md) conserva a proveniência indireta de alegações sobre os PDFs.
+Foram lidos diretamente os textos integrais dos PDFs de Arquitetura v1.0.0 (29 páginas, histórico de 07/10) e Visão v1.0.0 (41 páginas, 30/09/2026). A [revisão ABNT](REVISAO_ABNT.md#1-fontes-e-alcance-da-leitura-direta) identifica hashes e alcance visual. Superada a ressalva de indisponibilidade do primeiro envio do #90; o GQM contido na Visão também foi lido. A Mini-tarefa GQM separada e o pacote de pré-inspeção ainda não foram recuperados nesta sessão, sem afirmar inexistência. Os registros de inspeção estão acessíveis no [PR #92][A1]. A presente reconciliação factual/textual não certifica diagramação final nem homologa escopo.
 
 **Quadro 1 — Histórico e responsabilidade da revisão**
 
 | Artefato | Data | Responsabilidade | Estado |
 | --- | --- | --- | --- |
-| v1.0.0 histórica | N/D | Autores/revisores a conferir no PDF | Preservar |
-| Minuta 0.1 | 14/11/2026 | Preparação técnica: Codex, Sol High | Revisão humana e aceite pendentes |
+| v1.0.0 histórica, p. 2 | 07/10 (ano não impresso no histórico) | “Todos(as)”; oito integrantes na tabela, sem matrículas nesta minuta | Preservar; 29 páginas |
+| Minuta 0.1 → 0.2 | 14/11/2026 | Codex, Sol High | Reconciliação direta dos PDFs, CI e IDs; revisão humana/aceite pendentes |
 | Nova versão acadêmica | N/D | Héllen e equipe, issue #86 | Publicar somente após reconciliação e decisão |
 
-Fonte: esta revisão e [#86][I86]. O quadro não atribui autoria humana ou aprovação inexistente. As responsabilidades funcionais de dados, ML, UI e QA estão no Quadro 4 da Visão; a tabela completa de integrantes depende do original.
+Fonte: esta revisão e [#86][I86]. O quadro não atribui autoria humana ou aprovação inexistente. As responsabilidades funcionais de dados, ML, UI e QA estão no Quadro 4 da Visão e foram conferidas nas tabelas originais, sem reproduzir matrículas ou pontuações.
+
+### 1.1 Correspondência com o original
+
+| Estrutura original / páginas | Cobertura e tratamento nesta minuta |
+| --- | --- |
+| 1.1–1.2, pp. 4–5: propósito e escopo | §1 e Visão revisada; manter vínculo com backlog |
+| 2.1–2.3, pp. 6–13: estilo, justificativas e componentes | §§2, 4–5; separação apresentação/API/processamento/dados mantida; baseline isolado |
+| 2.4, pp. 13–17: metas/restrições | §§2, 5, 7–8 e conciliação abaixo; não retirar metas silenciosamente |
+| 2.5.1, pp. 18–21: UC01–UC11 e atividades | §§3 e 6; catálogo histórico preservado e estado atual separado |
+| 2.5.2–2.5.3, pp. 21–26: lógica, pacotes e estrutura | §§4–6; fluxos BERTweet e armazenamento efetivos |
+| 2.6–2.7, pp. 26–28: implantação e FURPS | §§7–8; exemplos de provedores são proposta histórica, não implantação comprovada |
+| 3, p. 29: bibliografia | §10 e auditoria ABNT; sumário da p. 3 está desatualizado |
+
+Fonte: leitura direta do PDF identificado pelo hash na revisão ABNT. A apresentação reorganizada não altera por si os critérios de aceite.
 
 ## 2. Definições e decisões estruturantes
 
@@ -30,7 +44,7 @@ O baseline cria uma pipeline scikit-learn com limpeza mínima, `TfidfVectorizer`
 
 ## 3. Visão de casos de uso e interfaces do usuário
 
-As denominações UC abaixo são descritivas e locais desta minuta; a numeração definitiva deve ser reconciliada com o diagrama original. A Visão e a [#61][I61] referem UC01–UC03, mas esta revisão não dispõe de todo o catálogo histórico.
+O catálogo original foi conferido nas pp. 18–19 e no diagrama iniciado na p. 20: UC01 importar dataset (RF01), UC02 coletar (RF02), UC03 executar análise (associado a RF08), UC04 preparar (RF03–RF06, incluído em UC03), UC05 classificar (RF07, incluído em UC03), UC06 dashboard (RF13/RF14), UC07 consultar (RF10, incluído em UC06), UC08 período (RF11), UC09 sentimento (RF12), UC10 resumo (RF15) e UC11 nuvem (RF16). UC08–UC11 estendem UC06. O Quadro 2 a seguir agrupa os fluxos observados, sem substituir ou renumerar UC01–UC11. Login e pesquisa são evoluções posteriores sujeitas ao catálogo canônico da [PO](DECISOES_PENDENTES_PO.md).
 
 **Quadro 2 — Casos de uso e fronteiras**
 
@@ -181,17 +195,27 @@ Uma implantação com múltiplos processos requer decisão sobre sessões e trab
 
 Restrições verificadas: apresentação não importa processamento/dados diretamente (teste estático); classificador preserva entrada na fronteira do wrapper (teste com dublê); chave natural evita duplicação de análises no repositório; valores de datas e probabilidades são validados em camadas distintas. Os validadores do repositório não equivalem, por si, a um validador `$jsonSchema` ativo no servidor MongoDB ([T1][T1], [T4][T4], [C3][C3], [C6][C6]).
 
-O workflow instala dependências bloqueadas, confere lock, executa Ruff e pytest, com serviço `mongo:7`. Os testes de analisador e XFetch inspecionados usam dublês; a previsão de serviço no YAML não comprova sucesso do run nem integração real BERTweet/XFetch ([C14][C14], [T1][T1]–[T3][T3]). Esta revisão documental não executou a suíte do produto nem mediu inferência. Há evidência histórica distinta em `docs/qa/`; não atribuir suas contagens ao corte atual.
+O workflow instala dependências bloqueadas, confere lock e executa Ruff/pytest com `mongo:7`. A consulta direta ao run [43503741871 / job 132155891920][E1] confirma `success` em `1723a7d`, **814 PASS, 0 FAIL, 0 SKIP e 93% de cobertura** (2699 statements, 176 missing). É execução remota de 13/11 consultada nesta revisão, não execução local. Os testes de MongoDB que usam coleção exercitam banco real do CI; analisador e XFetch permanecem com dublês ([C14][C14], [T1][T1]–[T3][T3], [relatório QA][Q2]). Isso não comprova modelo real, API paga, desempenho sob carga ou navegador integrado.
 
 O [PR #89][P89] continua aberto no corte: resultados BPSAD declarados não foram reproduzidos nesta revisão e não pertencem automaticamente ao código integrado. Não confundir acurácia com F1 macro, memória RSS após execução com pico, ou tempos isolados com benchmark. RNF01 (~80%) permanece a meta original até decisão da PO ([I85][I85], [H4][H4]).
 
+### 8.1 Conciliação das metas e restrições históricas
+
+A Arquitetura original prevê na p. 13 resposta de 95% das consultas em até 2 s e reutilização do modelo, e nas pp. 27–28 leitura pública P1, login P2 e compatibilidade com Chrome/Firefox/Safari/Edge. Preservam-se essas metas como requisitos pendentes de medição/aceite; a CI funcional não é benchmark nem teste de todos os navegadores. O wrapper é carregado sob cache, mas isso não substitui medição de latência.
+
+Há contradição histórica entre a p. 15 (autenticação completa futura) e a p. 28 (login obrigatório P2); a implementação atual e a decisão PO-07 devem orientar a nova redação. A expressão “exportar resumos” consta em **§2.7, p. 27**, sem US19/US20 na Visão. Essa paginação corrige a referência à p. 26 no [plano do Argon][A1].
+
+As pp. 16 e 23 exigiam texto tratado e data de publicação, enquanto o contrato atual aceita publicação ausente e não exige texto tratado antes do BERTweet; data de processamento é obrigatória. Preservar a divergência sob PO-09. As quantidades históricas TweetSentBR (15.000; classes 6.648/4.426/3.926; treino/teste 12.999/2.001, pp. 9–10) descrevem o corpus citado no original, sem comprovar disponibilidade local ou independência dos dados. PO-03/PO-04 tratam domínio/proveniência/licença.
+
+As pp. 14–17 preveem modularidade, lote, registro de eventos, teste e reprodutibilidade com `requirements.txt`/`.pkl`/Colab. O código passou a `uv.lock` e modelo pré-treinado; o baseline ainda pode produzir artefato próprio. O padrão PEP 8 é citado com remissão ao **Apêndice A na p. 16**, mas o original termina na p. 29 sem esse apêndice. A política de configuração deve ser vinculada à documentação real e a edição final deve regenerar sumário/figuras, sem inventar apêndice histórico.
+
 ## 9. Evolução e decisões abertas
 
-Antes de consolidar a arquitetura: obter PDFs/pacote; ratificar ADR-001/RF03–RF07; confirmar revisão dos pesos; validar banco e modelo reais; definir autorização para `/analises`; decidir persistência da administração; limitar custos XFetch; tratar busca semântica como evolução independente; escolher infraestrutura de publicação e registrar aceite. A [pauta de decisões](DECISOES_PENDENTES_PO.md) contém perguntas e evidências necessárias. O merge de #81 deve ser contextualizado pela governança, sem presumir autorização nem executar reversão nesta frente.
+Antes da publicação final: ratificar ADR-001/RF03–RF07 (PO-01a/b), confirmar revisão dos pesos, reproduzir avaliação real (PO-02), validar E2E com UI/banco/modelo, definir autorização para `/analises` (PO-07), persistência administrativa (PO-08), limites XFetch (PO-06), escopo da pesquisa (PO-05a/b), infraestrutura (PO-14a) e publicação acadêmica (PO-14b). A consulta dos PDFs e a evidência de MongoDB no CI já foram realizadas. A [pauta de decisões](DECISOES_PENDENTES_PO.md) contém perguntas e evidências necessárias. O merge de #81 deve ser contextualizado pela governança, sem presumir autorização nem executar reversão nesta frente.
 
 ## 10. Referências
 
-As referências de código abaixo fixam o SHA inspecionado. As referências acadêmicas novas utilizadas são R1 e R2; a bibliografia histórica não pôde ser auditada. A [revisão ABNT](REVISAO_ABNT.md) separa consistência textual verificável de inspeção visual/normativa pendente.
+As referências de código abaixo fixam o SHA inspecionado. As referências acadêmicas novas utilizadas são R1 e R2. A bibliografia histórica foi conferida diretamente na p. 29: Bass/Clements/Kazman (2021), Visão Liskov (2026) e Brum/Nunes (2018), com chamadas no corpo; não fica nas pp. 28–29, como resume o Argon. A [revisão ABNT](REVISAO_ABNT.md) separa consistência textual verificável de inspeção visual/normativa pendente.
 
 <!-- Referências fixadas no corte; PRs e issues consultados em 14/11/2026. -->
 [C1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/1723a7d62d55fa98fbf6eaf5cc9da80650dbe920/src/processamento/classificacao/bertweet.py#L15
@@ -228,3 +252,6 @@ As referências de código abaixo fixam o SHA inspecionado. As referências acad
 [T1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/1723a7d62d55fa98fbf6eaf5cc9da80650dbe920/tests/test_classificacao.py#L94
 [T3]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/1723a7d62d55fa98fbf6eaf5cc9da80650dbe920/tests/test_xfetch.py#L1
 [T4]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/1723a7d62d55fa98fbf6eaf5cc9da80650dbe920/tests/test_painel_arquitetura.py#L1
+[A1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/25f258786981f29552d2df2f1b4597ab7ef01c44/docs/inspecao/PLANO_REGULARIZACAO.md
+[E1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/43503741871/job/132155891920
+[Q2]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/84530e4b3d0ac1762b9100c4c728e6208ffca810/docs/qa/inspecao/RELATORIO_EXECUCAO.md
