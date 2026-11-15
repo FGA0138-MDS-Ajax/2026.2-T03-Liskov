@@ -253,7 +253,7 @@ Administrador informa o assunto, a meta de textos e se o X pode completar a meta
   `@menções` antes de exibir.
 
 **Versão de teste (branch `feat/pesquisa-hibrida-admin`, ainda sem issue):** a "base" fica na
-memória da API, no lugar do MongoDB (#20), e a busca na base é por palavras (sem acento e por radical; consultas
+memória da API para os textos brutos de datasets importados e pesquisas anteriores, e a busca na base é por palavras (sem acento e por radical; consultas
 de até 3 palavras exigem todas no texto), no lugar da busca semântica com embeddings. Cada
 consulta ao XFetch é **paga**; a chave fica só no `.env` da API (`XFETCH_API_KEY`). Sem ela, a
 pesquisa usa só a base.
@@ -270,8 +270,14 @@ o backend continuar a partir delas (#58):
   várias tentativas erradas.
 - CSV de até `SENTIA_LIMITE_CSV_MB` (padrão 10 MB) e até `SENTIA_LIMITE_COLETA` textos do
   TweetSentBR por coleta (padrão 1000).
-- **Limitação:** datasets, coletas, análises e sessões ficam na memória da API, no lugar do
-  MongoDB (#20), e se perdem quando ela reinicia.
+- Os resultados classificados por `POST /analises` e pelas coletas administrativas são
+  gravados na collection MongoDB `sentia.analises` pelo repositório canônico
+  `src/dados/repositorio.py`. `GET /analises` e `GET /analises/resumo` consultam essa mesma
+  collection; por isso análises persistidas por coleta aparecem no dashboard após nova
+  conexão.
+- **Limitação:** datasets brutos importados e o estado/progresso das coletas continuam
+  em memória e se perdem ao reiniciar a API. A sessão administrativa também é transitória.
+  Persistência durável desses dados não faz parte desta alteração.
 - **Memória:** o BERTweet na placa de vídeo, com `--reload`, passou de 5 GB numa máquina de
   6,7 GB. No processador ficou perto de 1,7 GB:
   `env CUDA_VISIBLE_DEVICES= SENTIA_LIMITE_COLETA=300 uv run --group ml uvicorn src.servico.main:app --port 8000`.
@@ -299,7 +305,8 @@ Erros de conexão, tempo esgotado, 404 e respostas fora do contrato seguem a tab
 4. Responsável pelo backend: as issues #23, #24 e #25 estão sem responsável.
 5. Manter ou não as escolhas da implementação de referência: token opaco, sessão de 60 minutos,
    bloqueio de tentativas e CSV de até 10 MB.
-6. Guardar datasets, coletas e análises no MongoDB (#20), no lugar da memória.
+6. Guardar datasets brutos e estado das coletas no MongoDB (#20), no lugar da memória.
+   Análises classificadas já usam o repositório MongoDB canônico compartilhado com a API.
 7. Quais fontes externas a coleta oferece além do TweetSentBR, como o X (XFetch).
 8. Pesquisa híbrida: limite de gasto com o XFetch, critério de relevância da busca na base e
    quando trocar a busca por palavras pela busca semântica (Vector Search).

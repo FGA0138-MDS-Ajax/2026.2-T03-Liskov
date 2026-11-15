@@ -8,6 +8,7 @@ import os
 import traceback
 from datetime import UTC, datetime
 from unittest.mock import Mock
+from uuid import uuid4
 
 import pytest
 from bson import ObjectId
@@ -27,8 +28,7 @@ from src.dados.repositorio import (
     validar_analise,
 )
 
-URI_TESTE = "mongodb://localhost:27017"
-BANCO_TESTE = "sentia_teste_repositorio"
+URI_TESTE = os.getenv("MONGODB_URI_TESTE", "mongodb://localhost:27017")
 
 
 def criar_documento(id_origem="teste_001", **mudancas):
@@ -54,11 +54,11 @@ def colecao():
         client = connect_to_mongodb(URI_TESTE, timeout_ms=1000)
     except ErroConexaoMongoDB:
         pytest.skip("MongoDB local indisponível; ligue o Docker para rodar este teste.")
-    client.drop_database(BANCO_TESTE)
-    colecao_teste = obter_colecao(client, BANCO_TESTE)
+    nome_banco_teste = f"sentia_teste_repositorio_{uuid4().hex}"
+    colecao_teste = obter_colecao(client, nome_banco_teste)
     criar_indices(colecao_teste)
     yield colecao_teste
-    client.drop_database(BANCO_TESTE)
+    client.drop_database(nome_banco_teste)
     client.close()
 
 

@@ -1,8 +1,4 @@
-"""Autenticação e rotas de administração da API (issues #58 a #61).
-
-O classificador é substituído por um falso: estes testes verificam as rotas, não
-o BERTweet. A persistência ainda é em memória (issue #20).
-"""
+"""Autenticação e rotas administrativas; o classificador é substituído por falso."""
 
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -94,13 +90,25 @@ class PipelineFalso:
 def _contexto(tmp_path: Path, **opcoes) -> ContextoAdministracao:
     opcoes.setdefault("criar_pipeline", PipelineFalso)
     opcoes.setdefault("caminho_tweetsentbr", tmp_path / "nao-existe.csv")
+    opcoes.setdefault(
+        "persistir_analises",
+        lambda documentos: {"inseridos": len(documentos), "duplicados": 0},
+    )
     configuracao = opcoes.pop("configuracao", ConfiguracaoAdmin(USUARIO, HASH))
     return ContextoAdministracao(Autenticador(configuracao), **opcoes)
 
 
 @pytest.fixture
 def contexto(tmp_path):
-    return _contexto(tmp_path)
+    persistidas = []
+
+    def persistir(documentos):
+        persistidas.extend(dict(documento) for documento in documentos)
+        return {"inseridos": len(documentos), "duplicados": 0}
+
+    contexto = _contexto(tmp_path, persistir_analises=persistir)
+    contexto.analises_persistidas_teste = persistidas
+    return contexto
 
 
 @pytest.fixture
@@ -305,7 +313,7 @@ def test_coleta_analisa_todos_os_textos_do_dataset(cliente, contexto):
     assert situacao["situacao"] == "concluida"
     assert situacao["textos_coletados"] == situacao["textos_analisados"] == 2
     assert situacao["mensagem"] is None
-    assert len(contexto.repositorio.analises) == 2
+    assert len(contexto.analises_persistidas_teste) == 2
 
 
 def test_coleta_do_tweetsentbr_respeita_o_limite(tmp_path):

@@ -9,16 +9,21 @@ MongoDB. Cada texto analisado é salvo como um documento contendo o texto,
 seus metadados e o resultado da classificação de sentimento. Serve como contrato entre as frentes de Banco, Dados, Machine
 Learning e API.
 
-O banco é acessado somente pelo módulo de Persistência (pymongo), conforme a
-seção 2.4.2 do Documento de Arquitetura. A API consulta esses documentos para
-alimentar o dashboard, aplicando os filtros por período (RF11) e por
-sentimento (RF12) diretamente na consulta ao banco.
+O banco é acessado pelo repositório canônico `src/dados/repositorio.py`, que
+centraliza validação, gravação, índices, listagem e resumo. `src/servico/main.py`
+usa essa implementação para as rotas de análise; a administração encaminha os
+resultados de coletas para a mesma persistência. A API consulta os documentos
+para alimentar o dashboard, aplicando filtros por período (RF11) e sentimento
+(RF12) diretamente no MongoDB.
 
 
 
-**Escopo:** apenas documenta e define o esquema. A
-implementação da persistência (pymongo, gravação e consultas) pertence à
-Sprint 4, e a configuração do ambiente e da conexão pertence à issue #12.
+**Escopo:** documenta o contrato BSON e as operações implementadas. O módulo
+`src/dados/repositorio.py` é responsável pelo acesso à coleção `analises`; os
+módulos de serviço podem chamá-lo, e a interface não acessa o banco diretamente.
+`src/persistencia/leitura.py` permanece como adaptador de compatibilidade que
+delega consultas auxiliares ao repositório canônico. A conexão usa
+`src/dados/database.py` e `MONGODB_URI`.
 
 | Item | Valor |
 |---|---|
@@ -34,10 +39,22 @@ Datasets / coletas ─► Aquisição e importação ─► Classificação ─�
                                    Dashboard (Streamlit) ◄─ API (FastAPI) ◄─────────┘
 ```
 
-- **Quem grava:** somente o módulo de Persistência, ao receber o resultado da
-  Classificação (texto, metadados, sentimento e identificação do modelo).
-- **Quem lê:** somente o módulo de Persistência, a pedido da API. A interface
-  nunca acessa o banco diretamente.
+- **Quem grava:** `RepositorioAnalises.salvar_analises`, ao receber resultados
+  classificados. `POST /analises` grava diretamente; a coleta administrativa
+  persiste cada lote classificado usando uma conexão própria, adequada à tarefa
+  em segundo plano.
+- **Quem lê:** `RepositorioAnalises.listar_analises` e
+  `RepositorioAnalises.resumir_analises`, chamados pelas rotas da API. A
+  interface nunca acessa o banco diretamente.
+- **Entrada:** documentos que passam por `validar_analise`, incluindo origem,
+  texto, sentimento, nome do modelo e data de processamento; publicação é
+  opcional. **Saída:** documentos paginados e totais por sentimento, conforme
+  os esquemas HTTP da API.
+- **Falhas:** a API converte falhas de conexão e operações MongoDB em HTTP 503
+  com mensagem segura. A coleta administrativa registra estado `falhou` e
+  mensagem sem detalhes internos. Como a coleta grava em lotes sem transação
+  global, lotes confirmados antes de uma falha permanecem disponíveis; a chave
+  única evita duplicá-los em uma nova tentativa.
 - **Preparação do texto:** o classificador BERTweet realiza a própria
   tokenização. Um pré-processamento externo (limpeza, stopwords, stemming,
   TF-IDF) só existe em modelos alternativos, como o baseline.
@@ -104,8 +121,9 @@ Datasets / coletas ─► Aquisição e importação ─► Classificação ─�
 
 ### 2.2 Ambiente
 
-A configuração do MongoDB (local ou Atlas) e o teste de conexão via pymongo
-são tratados na issue #12. Este esquema vale para os dois ambientes.
+A configuração do MongoDB local ou Atlas é fornecida por `MONGODB_URI`; a
+conexão é validada por `src/dados/database.py`. Os testes de integração usam
+bancos isolados contra MongoDB `mongo:7` na CI.
 
 ## 3. Campos do documento
 

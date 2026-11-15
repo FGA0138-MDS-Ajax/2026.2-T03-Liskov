@@ -6,11 +6,7 @@ from pymongo.errors import PyMongoError
 
 from src.dados.repositorio import (
     ErroAnaliseInvalida,
-    listar_analises,
-    listar_analises_memoria,
-    resumir_analises,
-    resumir_analises_memoria,
-    salvar_analises,
+    RepositorioAnalises,
 )
 
 from src.processamento.pipeline import (
@@ -24,12 +20,7 @@ from src.servico.esquemas import (
     ResultadoProcessamento, ResumoAnalisesSaida,
 )
 
-from .administracao import (
-    NaoAutenticado,
-    RepositorioAdministracao,
-    responder_nao_autenticado,
-    roteador,
-)
+from .administracao import NaoAutenticado, responder_nao_autenticado, roteador
 
 app = FastAPI(title="SentIA API")
 app.add_exception_handler(NaoAutenticado, responder_nao_autenticado)
@@ -50,19 +41,13 @@ def health():
 def processar_analises(
     lote: LoteEntrada,
     pipeline: Annotated[PipelineClassificacao, Depends(obter_pipeline)],
-    colecao: Annotated[
-    Collection | RepositorioAdministracao,
-    Depends(obter_colecao_analises, scope="function"),
-],
+    colecao: Annotated[Collection, Depends(obter_colecao_analises, scope="function")],
 ):
     registros = [registro.model_dump(exclude_none=True) for registro in lote.registros]
 
     try:
         documentos = pipeline.processar_registros(registros)
-        if isinstance(colecao, RepositorioAdministracao):
-            resumo = colecao.salvar_analises(documentos)
-        else:
-            resumo = salvar_analises(colecao, documentos)
+        resumo = RepositorioAnalises(colecao).salvar_analises(documentos)
     except ErroInferencia as erro:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -88,13 +73,7 @@ def consultar_analises(
     colecao: Annotated[Collection, Depends(obter_colecao_analises, scope="function")],
 ):
     try:
-        if isinstance(colecao, RepositorioAdministracao):
-            return listar_analises_memoria(
-                colecao.obter_analises(),
-                **consulta.model_dump(),
-            )
-
-        return listar_analises(colecao, **consulta.model_dump())
+        return RepositorioAnalises(colecao).listar_analises(**consulta.model_dump())
     except PyMongoError as erro:
         raise HTTPException(
             503, "Banco de dados indisponível."
@@ -107,13 +86,7 @@ def consultar_resumo(
     colecao: Annotated[Collection, Depends(obter_colecao_analises, scope="function")],
 ):
     try:
-        if isinstance(colecao, RepositorioAdministracao):
-            return resumir_analises_memoria(
-                colecao.obter_analises(),
-                **filtros.model_dump(),
-            )
-
-        return resumir_analises(colecao, **filtros.model_dump())
+        return RepositorioAnalises(colecao).resumir_analises(**filtros.model_dump())
     except PyMongoError as erro:
         raise HTTPException(
             503, "Banco de dados indisponível."
