@@ -1,0 +1,119 @@
+{
+  "dataset": "BPSAD",
+  "arquivo": "data/BPSAD/amostra_pc1.csv",
+  "sha256_amostra": "607fd459fdf7cb1721d154dce7322d9256d9dcd9d4cc712ccc589907eeb659b6",
+  "treino": 8000,
+  "teste": 2000,
+  "distribuicao_treino": {
+    "positivo": 5485,
+    "negativo": 1275,
+    "neutro": 1240
+  },
+  "distribuicao_teste": {
+    "positivo": 1371,
+    "negativo": 319,
+    "neutro": 310
+  },
+  "tamanho_lote": 32,
+  "semente_particao": "consultar JSON da amostragem; não inferida do CSV",
+  "versoes": {
+    "python": "3.12.10",
+    "pandas": "3.1.1",
+    "scikit-learn": "1.9.1",
+    "psutil": "7.2.2",
+    "pysentimiento": "0.7.3",
+    "torch": "2.15.0+cpu"
+  },
+  "independencia_pre_treinamento": "não comprovada",
+  "tempos": "wall clock inclui treino ou carregamento; comparação não controlada",
+  "modelos": {
+    "baseline": {
+      "acuracia": 0.701,
+      "f1_macro": 0.5964593556860648,
+      "matriz_confusao": [
+        [
+          1065,
+          101,
+          205
+        ],
+        [
+          56,
+          209,
+          54
+        ],
+        [
+          123,
+          59,
+          128
+        ]
+      ],
+      "metricas_por_classe": {
+        "positivo": {
+          "precision": 0.8561093247588425,
+          "recall": 0.7768052516411379,
+          "f1-score": 0.8145315487571702,
+          "support": 1371.0
+        },
+        "negativo": {
+          "precision": 0.5663956639566395,
+          "recall": 0.6551724137931034,
+          "f1-score": 0.6075581395348837,
+          "support": 319.0
+        },
+        "neutro": {
+          "precision": 0.330749354005168,
+          "recall": 0.4129032258064516,
+          "f1-score": 0.3672883787661406,
+          "support": 310.0
+        }
+      },
+      "relatorio": "              precision    recall  f1-score   support\n\n    positivo       0.86      0.78      0.81      1371\n    negativo       0.57      0.66      0.61       319\n      neutro       0.33      0.41      0.37       310\n\n    accuracy                           0.70      2000\n   macro avg       0.58      0.61      0.60      2000\nweighted avg       0.73      0.70      0.71      2000\n",
+      "tempo_segundos": 0.6395417000003363,
+      "memoria_rss_gb_apos_execucao": 0.19216156005859375
+    },
+    "pysentimiento/bertweet-pt-sentiment": {
+      "acuracia": 0.677,
+      "f1_macro": 0.5543063931312299,
+      "matriz_confusao": [
+        [
+          1031,
+          136,
+          204
+        ],
+        [
+          33,
+          249,
+          37
+        ],
+        [
+          146,
+          90,
+          74
+        ]
+      ],
+      "metricas_por_classe": {
+        "positivo": {
+          "precision": 0.8520661157024794,
+          "recall": 0.7520058351568198,
+          "f1-score": 0.7989151491669896,
+          "support": 1371.0
+        },
+        "negativo": {
+          "precision": 0.5242105263157895,
+          "recall": 0.780564263322884,
+          "f1-score": 0.6272040302267002,
+          "support": 319.0
+        },
+        "neutro": {
+          "precision": 0.23492063492063492,
+          "recall": 0.23870967741935484,
+          "f1-score": 0.2368,
+          "support": 310.0
+        }
+      },
+      "relatorio": "              precision    recall  f1-score   support\n\n    positivo       0.85      0.75      0.80      1371\n    negativo       0.52      0.78      0.63       319\n      neutro       0.23      0.24      0.24       310\n\n    accuracy                           0.68      2000\n   macro avg       0.54      0.59      0.55      2000\nweighted avg       0.70      0.68      0.68      2000\n",
+      "tempo_segundos": 148.53262369999902,
+      "memoria_rss_gb_apos_execucao": 1.0777053833007812
+    }
+  }
+}

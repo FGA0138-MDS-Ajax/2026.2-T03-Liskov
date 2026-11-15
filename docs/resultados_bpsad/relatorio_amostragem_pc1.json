@@ -1,0 +1,40 @@
+{
+  "arquivo_origem": "data/BPSAD/concatenated.csv",
+  "linhas_processadas": 2786092,
+  "linhas_descartadas": 19,
+  "duplicatas_agrupadas": 373143,
+  "grupos_com_rotulos_conflitantes": 9744,
+  "grupos_validos_por_classe": {
+    "negativo": 383026,
+    "neutro": 372565,
+    "positivo": 1647595
+  },
+  "amostra_total": 10000,
+  "treino": 8000,
+  "teste": 2000,
+  "distribuicao_amostra": {
+    "positivo": 6856,
+    "negativo": 1594,
+    "neutro": 1550
+  },
+  "distribuicao_treino": {
+    "positivo": 5485,
+    "negativo": 1275,
+    "neutro": 1240
+  },
+  "distribuicao_teste": {
+    "positivo": 1371,
+    "negativo": 319,
+    "neutro": 310
+  },
+  "semente": 42,
+  "fracao_teste": 0.2,
+  "tamanho_bloco": 50000,
+  "algoritmo": "grupos NFKC/casefold/espaços; conflitos excluídos; cotas exatas min2; reservatório v2",
+  "versoes": {
+    "python": "3.12.10",
+    "pandas": "3.1.1",
+    "scikit-learn": "1.9.1"
+  },
+  "independencia_pre_treinamento": "não comprovada"
+}

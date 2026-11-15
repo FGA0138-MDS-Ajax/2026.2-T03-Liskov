@@ -53,7 +53,22 @@ def avaliar(y_real: list[str], y_previsto: list[str]) -> dict:
             "y_real e y_previsto devem ter o mesmo tamanho"
         )
     
-    # Calcula as métrica usando a mesma ordem fixa de sentimentos
+    relatorio_detalhado = classification_report(
+        y_real,
+        y_previsto,
+        labels=list(ROTULOS),
+        zero_division=0,
+        output_dict=True,
+    )
+
+    metricas_por_classe = {
+        rotulo: {
+            metrica: relatorio_detalhado[rotulo][metrica]
+            for metrica in ("precision", "recall", "f1-score", "support")
+        }
+        for rotulo in ROTULOS
+    }
+
     return {
         "acuracia": accuracy_score(y_real, y_previsto),
         "f1_macro": f1_score(
@@ -68,6 +83,7 @@ def avaliar(y_real: list[str], y_previsto: list[str]) -> dict:
             y_previsto,
             labels=list(ROTULOS),
         ).tolist(),
+        "metricas_por_classe": metricas_por_classe,
         "relatorio": classification_report(
             y_real,
             y_previsto,
