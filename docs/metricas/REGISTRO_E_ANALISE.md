@@ -93,8 +93,10 @@ calcula média de uma lista vazia.
 
 Revisão documental sobre developer `c47ceaba7aee4f1f15318e29821f4b30bb6ab147`,
 após #91, em 14/11/2026. Não representa nova execução ML. As linhas R01–R16
-mantêm seus cortes históricos. #90 (Draft, head 6aa6a38), #92 (head 25f2587)
-e #89 (head 4a0e338) estavam abertos na nova consulta; somente #91 integrado.
+mantêm seus cortes históricos. À época da nova consulta, #90 (Draft, head `6aa6a38`),
+#92 (head `25f2587`) e #89 (head `4a0e338`) estavam abertos e apenas #91 integrado;
+subsequentemente, #90, #92 e este ajuste (#94) foram integrados à `developer`,
+permanecendo #89 em aberto.
 As fontes, hashes, páginas e links fixados estão no
 [plano atualizado](PLANO_GQM_VIGENTE.md#regularização-posterior-ao-pr-91-fontes-e-estado).
 

@@ -26,10 +26,10 @@ O Quadro 1 permite registrar uma decisão por tema, preservando a diferença ent
 | PO-10 (alias PO12, T18) / média | Confirma C06/RNF02 para US18 e as resoluções mínimas de T18? | Visão p. 27 traz C06/RF02, p. 39 traz C06/RNF02; Arquitetura p. 14 usa RNF02 | Corrigir código sem renumeração silenciosa; executar inspeção visual atual em desktop/tablet/mobile |
 | PO-11a (alias PO12, RF16) / média | Inclui ou adia a nuvem de palavras Could? | Visão p. 27 RF16/US17 e p. 39 T17; issue #30 | Decisão de escopo/prazo sem alterar entradas do BERTweet nem comprometer Musts |
 | PO-13 (alias PO12, aceite) / alta | Quais requisitos/fluxos têm aceite por SHA e qual conciliação de C01–C06/Sprints aprova? | Visão pp. 11–12/23/25–27: divergências de Sprints, inclusive RF08→S3 no backlog; CI [E1][E1] verde não substitui DoD | Ratificar cenários/calendário e aceite por requisito/cenário/SHA; encaminhar higiene de issues sem fechamento automático |
-| PO-12 (alias PO13) / média | Aprova a reconciliação GQM, a justificativa dos limiares e o protocolo de usabilidade? | Visão pp. 28–32 e Mini-tarefa pp. 7–13: F1 por classe <60%, M3 temporal, acurácia >90% sob auditoria e regras ±20%/duas Sprints; [plano #91][Q1] ainda precisa dessa conciliação | Ratificar os critérios recuperados e M3 temporal comparável; decidir fronteiras/prioridades, média zero e cadência diária; manter cobertura/concordância e protocolo de usabilidade; coletar resultados reais |
+| PO-12 (alias PO13) / média | Aprova a reconciliação GQM, a justificativa dos limiares e o protocolo de usabilidade? | Visão pp. 28–32 e Mini-tarefa pp. 7–13: F1 por classe <60%, M3 temporal, acurácia >90% sob auditoria e regras ±20%/duas Sprints; [plano GQM vigente][Q1] atualizado pelo [PR #94](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/94) | Ratificar os critérios recuperados e M3 temporal (`G1/Q1.7`) comparável; decidir fronteiras/prioridades, média zero e cadência diária; manter cobertura/concordância e protocolo de usabilidade; coletar resultados reais |
 | PO-14b (alias PO14) / alta | Autoriza a edição final de Visão/Arquitetura sem matrículas/anotações e o plano de promoção controlada após revisão? | [#86][I86]; originais lidos diretamente, reconciliação textual concluída; [ABNT](REVISAO_ABNT.md) registra pendências de edição; [Argon][A1] inclui governança de promoção | Decidir exportação/autoria/versão, revisão humana e governança da promoção; merge/deploy continuam a exigir autorização do usuário |
 
-Fonte: leitura direta dos originais, consultas de 14/11/2026, código fixado no SHA e catálogo canônico do [Argon][A1], §§2.1–2.2 (commit `25f2587`). Os IDs atuais são canônicos; aliases preservam a pauta inicial do #90. Estas perguntas não alteram o backlog nem autorizam gastos, deploy ou merge.
+Fonte: leitura direta dos originais, consultas de 14/11/2026, código fixado no SHA e catálogo canônico do [Argon][A1], §§2.1–2.2 (integrado na `developer`, originalmente commit `25f2587` do PR #92). Os IDs atuais são canônicos; aliases preservam a pauta inicial do #90. Estas perguntas não alteram o backlog nem autorizam gastos, deploy ou merge.
 
 A Mini-tarefa foi lida integralmente; seus limites são históricos/propostos, sem respostas da PO ou medições novas. A [reconciliação](VISAO_ATUALIZADA_RASCUNHO.md#81-reconciliação-da-mini-tarefa-gqm-separada) distingue aprovação do modelo, auditoria, desequilíbrio por classe e replanejamento. Os IDs canônicos abaixo foram preservados; não foi aberto um catálogo concorrente.
 
@@ -88,7 +88,7 @@ Primeiro ratificar abordagem do modelo e escopo da pesquisa; em seguida definir 
 [P81]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/81
 [P89]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/89
 [T1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/1723a7d62d55fa98fbf6eaf5cc9da80650dbe920/tests/test_classificacao.py#L94
-[A1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/25f258786981f29552d2df2f1b4597ab7ef01c44/docs/inspecao/PLANO_REGULARIZACAO.md
+[A1]: ../inspecao/PLANO_REGULARIZACAO.md
 [C19]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/1723a7d62d55fa98fbf6eaf5cc9da80650dbe920/src/servico/esquemas.py#L8
 [E1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/43503741871/job/132155891920
-[Q1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/84530e4b3d0ac1762b9100c4c728e6208ffca810/docs/metricas/PLANO_GQM_VIGENTE.md
+[Q1]: ../metricas/PLANO_GQM_VIGENTE.md

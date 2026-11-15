@@ -6,7 +6,7 @@
 
 Esta arquitetura descreve componentes observados e suas fronteiras para aquisição, inferência, armazenamento e apresentação de sentimentos em português. Sustenta a [Visão proposta](VISAO_ATUALIZADA_RASCUNHO.md) e explicita diferenças entre o produto implementado, a demonstração com mocks e evoluções ainda sujeitas a decisão.
 
-Foram lidos diretamente os textos integrais dos PDFs de Arquitetura v1.0.0 (29 páginas, histórico de 07/10) e Visão v1.0.0 (41 páginas, 30/09/2026). A [revisão ABNT](REVISAO_ABNT.md#1-fontes-e-alcance-da-leitura-direta) identifica hashes e alcance visual. Superada a ressalva de indisponibilidade do primeiro envio do #90; o GQM contido na Visão também foi lido. A Mini-tarefa GQM separada (14 páginas) foi fornecida pelo usuário e lida integralmente nesta revisão; só o pacote de pré-inspeção continua sem recuperação nesta sessão, sem afirmar inexistência. Os registros de inspeção estão acessíveis no [PR #92][A1]. A presente reconciliação factual/textual não certifica diagramação final nem homologa escopo.
+Foram lidos diretamente os textos integrais dos PDFs de Arquitetura v1.0.0 (29 páginas, histórico de 07/10) e Visão v1.0.0 (41 páginas, 30/09/2026). A [revisão ABNT](REVISAO_ABNT.md#1-fontes-e-alcance-da-leitura-direta) identifica hashes e alcance visual. Superada a ressalva de indisponibilidade do primeiro envio do #90; o GQM contido na Visão também foi lido. A Mini-tarefa GQM separada (14 páginas) foi fornecida pelo usuário e lida integralmente nesta revisão; só o pacote de pré-inspeção continua sem recuperação nesta sessão, sem afirmar inexistência. Os registros de inspeção (integrados via PR #92) estão acessíveis no [plano de regularização][A1]. A presente reconciliação factual/textual não certifica diagramação final nem homologa escopo.
 
 **Quadro 1 — Histórico e responsabilidade da revisão**
 
@@ -256,6 +256,6 @@ As referências de código abaixo fixam o SHA inspecionado. As referências acad
 [T1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/1723a7d62d55fa98fbf6eaf5cc9da80650dbe920/tests/test_classificacao.py#L94
 [T3]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/1723a7d62d55fa98fbf6eaf5cc9da80650dbe920/tests/test_xfetch.py#L1
 [T4]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/1723a7d62d55fa98fbf6eaf5cc9da80650dbe920/tests/test_painel_arquitetura.py#L1
-[A1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/25f258786981f29552d2df2f1b4597ab7ef01c44/docs/inspecao/PLANO_REGULARIZACAO.md
+[A1]: ../inspecao/PLANO_REGULARIZACAO.md
 [E1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/43503741871/job/132155891920
-[Q2]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/84530e4b3d0ac1762b9100c4c728e6208ffca810/docs/qa/inspecao/RELATORIO_EXECUCAO.md
+[Q2]: ../qa/inspecao/RELATORIO_EXECUCAO.md
