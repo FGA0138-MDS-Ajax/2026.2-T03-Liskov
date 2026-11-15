@@ -1,12 +1,12 @@
-"""Testes da gravação de análises no MongoDB.
+"""Testes da gravação e consulta canônica de análises em src/dados/repositorio.py.
 
-Os testes de validação rodam sem banco. Os que usam o MongoDB local são
-pulados quando ele não está disponível (por exemplo, no CI do GitHub).
+Os testes de validação e sanitização rodam sem banco. Os que usam MongoDB real
+lêem MONGODB_URI_TESTE (obrigatório quando CI está definido).
 """
 
 import os
 import traceback
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from unittest.mock import Mock
 
 import pytest
@@ -18,16 +18,20 @@ from src.dados.repositorio import (
     ErroAnaliseInvalida,
     ErroConsultaInvalida,
     ErroLeituraAnalises,
+    RepositorioAnalises,
     buscar_por_id,
     buscar_por_id_origem,
     criar_indices,
+    listar_analises,
+    listar_registros_base,
     obter_colecao,
+    resumir_analises,
     salvar_analise,
     salvar_analises,
     validar_analise,
 )
 
-URI_TESTE = "mongodb://localhost:27017"
+URI_TESTE = os.getenv("MONGODB_URI_TESTE", "mongodb://127.0.0.1:27017")
 BANCO_TESTE = "sentia_teste_repositorio"
 
 
@@ -53,6 +57,8 @@ def colecao():
     try:
         client = connect_to_mongodb(URI_TESTE, timeout_ms=1000)
     except ErroConexaoMongoDB:
+        if os.getenv("CI"):
+            pytest.fail("MongoDB de teste indisponível no CI.")
         pytest.skip("MongoDB local indisponível; ligue o Docker para rodar este teste.")
     client.drop_database(BANCO_TESTE)
     colecao_teste = obter_colecao(client, BANCO_TESTE)
@@ -298,3 +304,89 @@ def test_falha_de_busca_sanitiza_mensagem_e_traceback(busca, erro_driver):
     assert "SENHA_NAO_EXPOR" not in "".join(traceback.format_exception(capturada.value))
     assert capturada.value.__suppress_context__ is True
     colecao_falsa.find_one.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "chamada",
+    [
+        lambda c: listar_analises(c, pagina=0),
+        lambda c: listar_analises(c, pagina=True),
+        lambda c: listar_analises(c, tamanho=0),
+        lambda c: listar_analises(c, tamanho=101),
+        lambda c: listar_analises(c, tamanho=True),
+        lambda c: listar_analises(c, sentimento="feliz"),
+        lambda c: listar_analises(c, inicio=date(2026, 11, 2), fim=date(2026, 11, 1)),
+        lambda c: listar_analises(c, inicio=datetime(2026, 11, 1, tzinfo=UTC)),
+        lambda c: resumir_analises(c, sentimento="POS"),
+        lambda c: resumir_analises(c, inicio=date(2026, 11, 2), fim=date(2026, 11, 1)),
+    ],
+)
+def test_consulta_invalida_nao_consulta_banco(chamada):
+    colecao_falsa = Mock()
+    with pytest.raises(ErroConsultaInvalida):
+        chamada(colecao_falsa)
+    colecao_falsa.find.assert_not_called()
+    colecao_falsa.count_documents.assert_not_called()
+    colecao_falsa.aggregate.assert_not_called()
+
+
+def test_falha_em_listagem_resumo_e_base_sanitiza_erro():
+    segredo = "mongodb://admin:SENHA_NAO_EXPOR@servidor/sentia"
+    colecao_falsa = Mock()
+    colecao_falsa.count_documents.side_effect = ServerSelectionTimeoutError(segredo)
+    colecao_falsa.aggregate.side_effect = OperationFailure(segredo)
+    colecao_falsa.find.side_effect = ServerSelectionTimeoutError(segredo)
+    repo = RepositorioAnalises(colecao_falsa)
+
+    for acao in (
+        repo.listar_analises,
+        repo.resumir_analises,
+        repo.listar_registros_base,
+    ):
+        with pytest.raises(ErroLeituraAnalises) as erro:
+            acao()
+        assert str(erro.value) == "Falha ao consultar o MongoDB; verifique a conexão."
+        assert "SENHA_NAO_EXPOR" not in str(erro.value)
+        assert erro.value.__suppress_context__ is True
+
+
+def test_listar_registros_base_filtra_documentos_incompletos():
+    colecao_falsa = Mock()
+    colecao_falsa.find.return_value = [
+        {
+            "id_origem": "ok1",
+            "fonte": "X",
+            "texto_original": "Texto válido",
+            "rotulo_original": "positivo",
+        },
+        {"id_origem": "sem-texto", "fonte": "X", "texto_original": "   "},
+        {"id_origem": "sem-fonte", "texto_original": "Falta fonte"},
+    ]
+    registros = listar_registros_base(colecao_falsa)
+    assert registros == [
+        {
+            "id_origem": "ok1",
+            "fonte": "X",
+            "texto_original": "Texto válido",
+            "rotulo_original": "positivo",
+        }
+    ]
+
+
+def test_repositorio_analises_integra_escrita_consulta_e_resumo(colecao):
+    repo = RepositorioAnalises(colecao)
+    pub = datetime(2026, 11, 9, 10, 0, tzinfo=UTC)
+    assert repo.salvar_analise(criar_documento("r1", sentimento="positivo", data_publicacao=pub))
+    assert repo.salvar_analises([criar_documento("r2", sentimento="negativo")]) == {
+        "inseridos": 1,
+        "duplicados": 0,
+    }
+    pagina = repo.listar_analises()
+    assert pagina["total"] == 2
+    assert {item["id_origem"] for item in pagina["itens"]} == {"r1", "r2"}
+    assert all("_id" not in item for item in pagina["itens"])
+    assert repo.resumir_analises(inicio=date(2026, 11, 1), fim=date(2026, 11, 30)) == {
+        "total": 1,
+        "por_sentimento": {"positivo": 1, "negativo": 0, "neutro": 0},
+        "sem_data_publicacao": 1,
+    }

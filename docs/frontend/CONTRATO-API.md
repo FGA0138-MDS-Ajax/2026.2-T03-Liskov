@@ -270,8 +270,10 @@ o backend continuar a partir delas (#58):
   várias tentativas erradas.
 - CSV de até `SENTIA_LIMITE_CSV_MB` (padrão 10 MB) e até `SENTIA_LIMITE_COLETA` textos do
   TweetSentBR por coleta (padrão 1000).
-- **Limitação:** datasets, coletas, análises e sessões ficam na memória da API, no lugar do
-  MongoDB (#20), e se perdem quando ela reinicia.
+- **Limitação:** as análises classificadas nas coletas são persistidas no MongoDB
+  (`src/dados/repositorio.py`), mas os datasets importados em *staging*, o andamento
+  das coletas e as sessões autenticadas ficam na memória da API e se perdem quando
+  ela reinicia.
 - **Memória:** o BERTweet na placa de vídeo, com `--reload`, passou de 5 GB numa máquina de
   6,7 GB. No processador ficou perto de 1,7 GB:
   `env CUDA_VISIBLE_DEVICES= SENTIA_LIMITE_COLETA=300 uv run --group ml uvicorn src.servico.main:app --port 8000`.
@@ -299,7 +301,7 @@ Erros de conexão, tempo esgotado, 404 e respostas fora do contrato seguem a tab
 4. Responsável pelo backend: as issues #23, #24 e #25 estão sem responsável.
 5. Manter ou não as escolhas da implementação de referência: token opaco, sessão de 60 minutos,
    bloqueio de tentativas e CSV de até 10 MB.
-6. Guardar datasets, coletas e análises no MongoDB (#20), no lugar da memória.
+6. Guardar também datasets em *staging*, coletas em andamento e sessões no MongoDB, no lugar da memória (as análises já são persistidas em `analises`).
 7. Quais fontes externas a coleta oferece além do TweetSentBR, como o X (XFetch).
 8. Pesquisa híbrida: limite de gasto com o XFetch, critério de relevância da busca na base e
    quando trocar a busca por palavras pela busca semântica (Vector Search).

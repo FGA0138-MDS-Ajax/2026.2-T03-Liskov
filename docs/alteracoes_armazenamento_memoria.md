@@ -1,40 +1,33 @@
-# Alterações: armazenamento em memória e ajustes na API
+# Unificação da persistência de análises no MongoDB
 
-## Objetivo
+## Contexto histórico
 
-Permitir que a API do SentIA trabalhe tanto com MongoDB quanto com armazenamento em memória, mantendo as mesmas rotas de consulta e processamento.
+Em uma etapa intermediária do projeto, foi introduzido o modo alternativo em memória selecionado pela variável `SENTIA_ARMAZENAMENTO=memoria`, além do módulo auxiliar `src/persistencia/leitura.py` duplicando funções de consulta que já pertenciam ao repositório principal.
 
-## O que foi alterado
+Essa bifurcação criava dois fluxos distintos entre a API principal (`src/servico/main.py`) e a administração (`src/servico/administracao.py`), fazendo com que análises processadas por coletas administrativas não fossem gravadas na coleção `analises` consultada pelo dashboard.
 
-- **Seleção do armazenamento:** a variável `SENTIA_ARMAZENAMENTO` permite escolher `mongodb` ou `memoria`. O padrão continua sendo `mongodb`.
-- **Integração com a API:** as rotas de processamento, listagem e resumo identificam o tipo de repositório e chamam a implementação correspondente.
-- **Consultas em memória:** foram adicionadas funções para listar e resumir análises, com filtros por período e sentimento e paginação na listagem.
-- **Deduplicação:** o repositório em memória valida as análises e evita inserir novamente registros com a mesma combinação de `fonte` e `id_origem`. O salvamento informa quantos registros foram inseridos e quantos eram duplicados.
-- **Lotes e exemplos:** o tamanho do lote de análise foi alterado de 32 para 100, e o limite de exemplos foi alterado de 10 para 100.
+## Estado atual (canônico)
 
-## Como usar
+- **Implementação única de persistência:** [`src/dados/repositorio.py`](../src/dados/repositorio.py) (`RepositorioAnalises` e funções associadas) concentra gravação, deduplicação, busca pontual, listagem paginada, resumo por sentimento e listagem de registros base sobre a coleção MongoDB `analises`.
+- **Remoção do modo em memória para análises e do módulo duplicado:**
+  - `src/persistencia/leitura.py` foi removido; todas as consultas e integrações com MongoDB passam diretamente por `src/dados/repositorio.py`.
+  - A variável `SENTIA_ARMAZENAMENTO` e os helpers `*_memoria` em `src/dados/repositorio.py` foram removidos de `src/servico/dependencias.py` e `src/servico/main.py`.
+- **Integração com a administração:**
+  - `executar_coleta()` em [`src/servico/administracao.py`](../src/servico/administracao.py) persiste os lotes classificados via `ContextoAdministracao.salvar_analises()` → `RepositorioAnalises` na mesma coleção `analises` lida por `GET /analises` e `GET /analises/resumo`.
+  - `ContextoAdministracao.registros_da_base()` também consulta `RepositorioAnalises.listar_registros_base()`, preservando o histórico da base após reinícios do servidor.
+  - `RepositorioAdministracao` preserva em RAM apenas o estado operacional transitório do processo (`datasets` CSV importados como *staging*, status de execução de `coletas` e sessões autenticadas).
 
-1. Configure o armazenamento no arquivo `.env`:
-   - `SENTIA_ARMAZENAMENTO=memoria` para usar o repositório em memória.
-   - `SENTIA_ARMAZENAMENTO=mongodb` para usar o MongoDB.
-2. Para usar o modo MongoDB, mantenha também as configurações de conexão do banco preenchidas conforme o ambiente.
-3. Inicie a API:
+## Como executar localmente
 
-   ```powershell
+1. Inicie uma instância do MongoDB 7 (por exemplo, `docker run -d --rm -p 27017:27017 mongo:7`) e configure `MONGODB_URI` no `.env` ou ambiente.
+2. Inicie a API:
+
+   ```bash
    uv run uvicorn src.servico.main:app --reload
    ```
 
-4. Inicie a interface, em outro terminal:
+3. Inicie o painel em outro terminal:
 
-   ```powershell
-   uv run streamlit run src/apresentacao/app.py
+   ```bash
+   SENTIA_FONTE_DADOS=api SENTIA_API_URL=http://127.0.0.1:8000 uv run streamlit run src/apresentacao/app.py
    ```
-
-5. Utilize as rotas existentes da API. O modo de armazenamento é selecionado pela configuração; não é necessário usar endpoints diferentes.
-
-## Observações
-
-- O modo em memória mantém os dados no processo da aplicação; eles não devem ser considerados persistentes após reiniciar a API.
-- O modo MongoDB continua disponível e é o padrão quando `SENTIA_ARMAZENAMENTO` não está definido.
-- Os testes de API executados durante o desenvolvimento (`tests/test_api.py` e `tests/test_consultas_api.py`) passaram: 65 testes aprovados e 1 aviso.
-

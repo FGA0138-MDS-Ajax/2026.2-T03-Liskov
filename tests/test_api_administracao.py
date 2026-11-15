@@ -1,14 +1,20 @@
 """Autenticação e rotas de administração da API (issues #58 a #61).
 
-O classificador é substituído por um falso: estes testes verificam as rotas, não
-o BERTweet. A persistência ainda é em memória (issue #20).
+O classificador e a coleção do MongoDB são substituídos por duplas em memória:
+estes testes verificam as rotas e regras de administração sem depender de
+serviços externos. A integração com MongoDB real fica em test_persistencia_leitura.py.
 """
 
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
+from pymongo.errors import BulkWriteError
+
+from src.dados.database import ErroConexaoMongoDB
 
 from src.apresentacao.contrato import ErroAutenticacao, ErroFonteDados
 from src.apresentacao.fontes.administracao_api import AdministracaoApi
@@ -91,9 +97,48 @@ class PipelineFalso:
 
 
 
+class ColecaoAnalisesFalsa:
+    """Dupla leve da coleção MongoDB ``analises`` para testes unitários."""
+
+    def __init__(self) -> None:
+        self.documentos: list[dict] = []
+
+    def create_indexes(self, _indices) -> None:
+        return None
+
+    def insert_many(self, documentos, ordered=False):
+        chaves = {(item["fonte"], item["id_origem"]) for item in self.documentos}
+        inseridos = 0
+        falhas = []
+        ids = []
+        for copia in [dict(doc) for doc in documentos]:
+            chave = (copia["fonte"], copia["id_origem"])
+            if chave in chaves:
+                falhas.append({"code": 11000})
+                continue
+            chaves.add(chave)
+            self.documentos.append(copia)
+            inseridos += 1
+            ids.append(f"fake-{len(self.documentos)}")
+        if falhas:
+            raise BulkWriteError({"nInserted": inseridos, "writeErrors": falhas})
+        return Mock(inserted_ids=ids)
+
+    def find(self, filtro=None, projecao=None):
+        itens = []
+        for doc in self.documentos:
+            if not projecao:
+                itens.append(dict(doc))
+                continue
+            itens.append({k: v for k, v in doc.items() if projecao.get(k)})
+        return itens
+
+
 def _contexto(tmp_path: Path, **opcoes) -> ContextoAdministracao:
     opcoes.setdefault("criar_pipeline", PipelineFalso)
     opcoes.setdefault("caminho_tweetsentbr", tmp_path / "nao-existe.csv")
+    if "provedor_colecao" not in opcoes:
+        opcoes.setdefault("colecao_analises", ColecaoAnalisesFalsa())
     configuracao = opcoes.pop("configuracao", ConfiguracaoAdmin(USUARIO, HASH))
     return ContextoAdministracao(Autenticador(configuracao), **opcoes)
 
@@ -305,7 +350,31 @@ def test_coleta_analisa_todos_os_textos_do_dataset(cliente, contexto):
     assert situacao["situacao"] == "concluida"
     assert situacao["textos_coletados"] == situacao["textos_analisados"] == 2
     assert situacao["mensagem"] is None
-    assert len(contexto.repositorio.analises) == 2
+    with contexto.repositorio_analises() as repo:
+        assert len(repo.listar_registros_base()) == 2
+
+
+def test_coleta_registra_falha_segura_quando_banco_indisponivel(tmp_path):
+    @contextmanager
+    def provedor_quebrado():
+        raise ErroConexaoMongoDB("Falha ao conectar ao MongoDB")
+        yield
+
+    contexto = _contexto(tmp_path, provedor_colecao=provedor_quebrado)
+    app.dependency_overrides[obter_contexto] = lambda: contexto
+    try:
+        cliente = TestClient(app)
+        cabecalho = _entrar(cliente)
+        id_dataset = _importar(cliente, cabecalho).json()["id_dataset"]
+        id_coleta = cliente.post(
+            "/coletas", headers=cabecalho, json={"fonte": id_dataset}
+        ).json()["id"]
+        situacao = cliente.get(f"/coletas/{id_coleta}", headers=cabecalho).json()
+    finally:
+        app.dependency_overrides.clear()
+
+    assert situacao["situacao"] == "falhou"
+    assert situacao["mensagem"] == "Banco de dados indisponível ao consultar ou salvar análises."
 
 
 def test_coleta_do_tweetsentbr_respeita_o_limite(tmp_path):

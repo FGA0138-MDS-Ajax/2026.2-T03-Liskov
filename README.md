@@ -19,9 +19,9 @@ Plataforma em desenvolvimento para análise de sentimentos em textos em portugu�
 - **Processamento e classificação (`src/processamento/classificacao/` e `pipeline.py`):**
   - Adaptador `ClassificadorBertweet` para `pysentimiento/bertweet-pt-sentiment` preservando texto bruto (decisão arquitetural proposta em [`docs/decisoes/ADR-001-nao-remover-stopwords-no-bertweet.md`](docs/decisoes/ADR-001-nao-remover-stopwords-no-bertweet.md)), além do baseline isolado TF-IDF + Regressão Logística (`baseline.py`) e métricas (`avaliacao.py`).
   - `PipelineClassificacao` em lote preservando `texto_original`, `id_origem`, `fonte`, separando anotação humana da classe prevista (`sentimento`) e emitindo documentos compatíveis com BSON.
-- **Persistência e leitura MongoDB (`src/dados/` e `src/persistencia/leitura.py`, PRs `#43`, `#47`, `#78`, `#84`, `#87`):**
-  - Conexão PyMongo explícita (`database.py`), índices únicos e compostos (`uq_fonte_id_origem`, `idx_sentimento_data_publicacao`, `idx_data_publicacao`, `idx_data_processamento`), inserção em lote com deduplicação (`repositorio.py`), consultas pontuais, paginação e agregação por sentimento (`leitura.py`).
-  - Integrado com o serviço `mongo:7` na CI; para desenvolvimento isolado, `SENTIA_ARMAZENAMENTO=memoria` oferece alternativa em RAM (`dependencias.py`).
+- **Persistência e leitura MongoDB (`src/dados/`, PRs `#43`, `#47`, `#78`, `#84` e unificação canônica):**
+  - Conexão PyMongo explícita (`database.py`), índices únicos e compostos (`uq_fonte_id_origem`, `idx_sentimento_data_publicacao`, `idx_data_publicacao`, `idx_data_processamento`), inserção em lote com deduplicação, consultas paginadas, agregação por sentimento e recuperação de registros base centralizados em `RepositorioAnalises` (`src/dados/repositorio.py`).
+  - Integrado com o serviço `mongo:7` na CI; tanto as rotas `/analises*` quanto a coleta administrativa (`POST /coletas`) compartilham a coleção `analises` no MongoDB.
 - **Serviço HTTP FastAPI (`src/servico/main.py`, `administracao.py`, `autenticacao.py`, `pesquisa.py`):**
   - **Rotas de análise (`main.py`):** `GET /health`, `POST /analises` (201, classifica lote via pipeline e persiste), `GET /analises` (paginado e filtrado por `inicio`, `fim`, `sentimento`) e `GET /analises/resumo` (totais e `sem_data_publicacao`). *Observação: essas rotas não exigem login administrativo.*
   - **Rotas administrativas autenticadas (`administracao.py`, token `Bearer` com hash `scrypt`, expiração e bloqueio por tentativas):** `POST /auth/login`, `POST /auth/logout` (204), `POST /datasets` (upload CSV, 201), `GET /coletas/fontes`, `POST /coletas` (processamento em segundo plano, 202) e `GET /coletas/{id_coleta}`.
@@ -32,8 +32,8 @@ Plataforma em desenvolvimento para análise de sentimentos em textos em portugu�
 ### 2. O que opera em modo mock, em memória ou em caráter experimental
 
 - **Modo padrão do painel (`SENTIA_FONTE_DADOS=mock`):** sem configurar `SENTIA_FONTE_DADOS=api`, o Streamlit usa `17` análises fictícias (`FonteMock`) e administração simulada (`admin` / `senha-de-exemplo` em `AdministracaoMock`).
-- **Estado administrativo em memória (`RepositorioAdministracao`):** mesmo quando `/analises*` usa MongoDB, **sessões ativas, datasets CSV importados via painel, jobs de coleta e o índice da pesquisa híbrida ficam apenas na RAM do processo** (reiniciar a API encerra sessões e apaga esse estado).
-- **Pesquisa híbrida por assunto (`src/servico/pesquisa.py`, PR `#81`):** implementa busca lexical normalizada com radical de 5 caracteres sobre textos em memória e complemento opcional pago via XFetch (`POST /coletas` com `fonte="pesquisa"`). Não utiliza Vector Search nem embeddings no MongoDB (`docs/pesquisa_hibrida_mongodb_xfetch.md` permanece proposta) e **ainda aguarda ratificação formal da PO**, definição de teto financeiro do XFetch e criação de issue dedicada.
+- **Estado operacional em memória (`RepositorioAdministracao`):** as análises classificadas passam a ser persistidas no MongoDB (`analises`) e reaproveitadas por `registros_da_base()`, mas **sessões ativas, datasets CSV importados via painel e o status de jobs de coleta em andamento ficam apenas na RAM do processo** (reiniciar a API encerra sessões e apaga esse estado operacional transitório).
+- **Pesquisa híbrida por assunto (`src/servico/pesquisa.py`, PR `#81`):** implementa busca lexical normalizada com radical de 5 caracteres sobre a base disponível (TweetSentBR, datasets importados e análises já persistidas no MongoDB) e complemento opcional pago via XFetch (`POST /coletas` com `fonte="pesquisa"`). Não utiliza Vector Search nem embeddings no MongoDB (`docs/pesquisa_hibrida_mongodb_xfetch.md` permanece proposta) e **ainda aguarda ratificação formal da PO**, definição de teto financeiro do XFetch e criação de issue dedicada.
 - **Testes automatizados sem dependências externas reais:** na CI, MongoDB roda contra `mongo:7` real, enquanto inferência do `ClassificadorBertweet`, API XFetch e chamadas HTTP nos testes do painel usam dublês/mocks em processo.
 
 ### 3. O que segue pendente (Sprints 5–7 e decisões abertas)
@@ -46,7 +46,7 @@ Plataforma em desenvolvimento para análise de sentimentos em textos em portugu�
 
 ## Arquitetura resumida
 
-`src/apresentacao` (Streamlit) → `src/servico` (FastAPI) → `src/processamento` (aquisição, pipeline e classificação) → `src/dados` & `src/persistencia` (MongoDB / repositório em memória).
+`src/apresentacao` (Streamlit) → `src/servico` (FastAPI) → `src/processamento` (aquisição, pipeline e classificação) → `src/dados` (MongoDB — `database.py` e `repositorio.py`).
 
 Detalhes completos em [`docs/arquitetura.md`](docs/arquitetura.md) e [`docs/contratos-dados.md`](docs/contratos-dados.md).
 
@@ -84,11 +84,10 @@ Acesse `http://localhost:8501` (ou execute `make run`). Os cenários simulados a
 
 ### 2. API FastAPI (análises e administração)
 
-Com `MONGODB_URI` configurado (ou usando `SENTIA_ARMAZENAMENTO=memoria` para testes locais sem banco):
+Com `MONGODB_URI` configurado no ambiente ou no `.env`:
 
 ```bash
-# Modo com armazenamento em memória (sem MongoDB local):
-SENTIA_ARMAZENAMENTO=memoria uv run uvicorn src.servico.main:app --host 127.0.0.1 --port 8000
+uv run uvicorn src.servico.main:app --host 127.0.0.1 --port 8000
 
 # Verificação de saúde:
 curl --fail http://127.0.0.1:8000/health

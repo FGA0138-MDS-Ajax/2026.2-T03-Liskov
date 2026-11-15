@@ -2,10 +2,9 @@
 
 Implementa a seção "Administração" de docs/frontend/CONTRATO-API.md (issues #58 a #61).
 
-LIMITAÇÃO: enquanto a persistência no MongoDB (issue #20) não existir, datasets
-importados, coletas e análises ficam na memória do processo e se perdem quando a
-API reinicia. ``RepositorioAdministracao`` concentra esse armazenamento para que
-a troca pelo banco não mude as rotas.
+Datasets importados, coletas em andamento e sessões ficam na memória do processo,
+enquanto as análises geradas são persistidas no MongoDB por meio de
+``RepositorioAnalises`` (``src/dados/repositorio.py``).
 """
 
 from __future__ import annotations
@@ -14,8 +13,8 @@ import logging
 import os
 import tempfile
 import threading
-from src.dados.repositorio import validar_analise
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from functools import lru_cache
@@ -25,6 +24,21 @@ from typing import Annotated, Any
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Request, UploadFile
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
+from pymongo.collection import Collection
+from pymongo.errors import PyMongoError
+
+from src.dados.database import (
+    ErroConexaoMongoDB,
+    ErroConfiguracaoMongoDB,
+    connect_to_mongodb,
+    disconnect_from_mongodb,
+)
+from src.dados.repositorio import (
+    ErroLeituraAnalises,
+    RepositorioAnalises,
+    criar_indices,
+    obter_colecao,
+)
 
 from src.processamento.aquisicao import (
     CAMINHO_PADRAO_TWEETSENTBR,
@@ -115,11 +129,10 @@ class Coleta:
 
 @dataclass
 class RepositorioAdministracao:
-    """Armazenamento em memória de datasets, coletas e análises (até a issue #20)."""
+    """Armazenamento em memória de datasets importados e coletas em andamento."""
 
     datasets: dict[str, Dataset] = field(default_factory=dict)
     coletas: dict[str, Coleta] = field(default_factory=dict)
-    analises: list[dict[str, Any]] = field(default_factory=list)
     _trava: threading.Lock = field(default_factory=threading.Lock, repr=False)
     _sequencia: int = 0
 
@@ -175,42 +188,16 @@ class RepositorioAdministracao:
         with self._trava:
             self.coletas[id_coleta] = replace(self.coletas[id_coleta], **campos)
 
-    def salvar_analises(
-        self, documentos: Iterable[dict[str, Any]]
-    ) -> dict[str, int]:
-        copias = [dict(documento) for documento in documentos]
 
-        for documento in copias:
-            validar_analise(documento)
-
-        inseridos = 0
-        duplicados = 0
-
-        with self._trava:
-            chaves = {
-                (item["fonte"], item["id_origem"])
-                for item in self.analises
-            }
-
-            for documento in copias:
-                chave = (documento["fonte"], documento["id_origem"])
-
-                if chave in chaves:
-                    duplicados += 1
-                    continue
-
-                self.analises.append(documento)
-                chaves.add(chave)
-                inseridos += 1
-
-        return {
-            "inseridos": inseridos,
-            "duplicados": duplicados,
-        }
-
-    def obter_analises(self) -> list[dict[str, Any]]:
-        with self._trava:
-            return [dict(analise) for analise in self.analises]
+@contextmanager
+def _abrir_colecao_analises() -> Iterator[Collection]:
+    client = connect_to_mongodb()
+    try:
+        colecao = obter_colecao(client)
+        criar_indices(colecao)
+        yield colecao
+    finally:
+        disconnect_from_mongodb(client)
 
 
 def _buscar_x_padrao(termo: str, quantidade: int) -> list[dict[str, Any]]:
@@ -230,7 +217,7 @@ def _criar_pipeline_padrao() -> Any:
 
 
 class ContextoAdministracao:
-    """Reúne autenticação, armazenamento e configuração das rotas de administração."""
+    """Reúne autenticação, estado operacional e persistência das rotas de administração."""
 
     def __init__(
         self,
@@ -242,6 +229,8 @@ class ContextoAdministracao:
         limite_coleta: int = LIMITE_COLETA_PADRAO,
         caminho_tweetsentbr: Path = CAMINHO_PADRAO_TWEETSENTBR,
         buscar_x: Callable[[str, int], list[dict[str, Any]]] | None = None,
+        colecao_analises: Collection | None = None,
+        provedor_colecao: Callable[[], AbstractContextManager[Collection]] = _abrir_colecao_analises,
     ) -> None:
         self.autenticador = autenticador
         self.repositorio = repositorio or RepositorioAdministracao()
@@ -253,7 +242,21 @@ class ContextoAdministracao:
         self.caminho_tweetsentbr = caminho_tweetsentbr
         # Sem função de busca (sem XFETCH_API_KEY), a busca no X fica desligada.
         self.buscar_x = buscar_x
+        self._colecao_analises = colecao_analises
+        self._provedor_colecao = provedor_colecao
         self._tweetsentbr: list[dict[str, Any]] | None = None
+
+    @contextmanager
+    def repositorio_analises(self) -> Iterator[RepositorioAnalises]:
+        if self._colecao_analises is not None:
+            yield RepositorioAnalises(self._colecao_analises)
+            return
+        with self._provedor_colecao() as colecao:
+            yield RepositorioAnalises(colecao)
+
+    def salvar_analises(self, documentos: list[dict[str, Any]]) -> dict[str, int]:
+        with self.repositorio_analises() as repositorio:
+            return repositorio.salvar_analises(documentos)
 
     @classmethod
     def do_ambiente(cls) -> ContextoAdministracao:
@@ -285,7 +288,7 @@ class ContextoAdministracao:
         return fontes
 
     def registros_da_base(self) -> list[dict[str, Any]]:
-        """Tudo o que a API já tem: datasets importados, buscas no X e o TweetSentBR."""
+        """Tudo o que a API já tem: TweetSentBR, datasets importados e análises persistidas."""
         if self._tweetsentbr is None:
             self._tweetsentbr = (
                 list(iterar_tweetsentbr(self.caminho_tweetsentbr, modo_estrito=False))
@@ -295,6 +298,8 @@ class ContextoAdministracao:
         registros = list(self._tweetsentbr)
         for dataset in self.repositorio.listar_datasets():
             registros.extend(dataset.registros)
+        with self.repositorio_analises() as repositorio:
+            registros.extend(repositorio.listar_registros_base())
         return registros
 
     def registros_da_fonte(self, fonte: str) -> list[dict[str, Any]]:
@@ -512,7 +517,7 @@ def executar_coleta(contexto: ContextoAdministracao, id_coleta: str) -> None:
         for inicio in range(0, len(registros), TAMANHO_LOTE_ANALISE):
             lote = registros[inicio : inicio + TAMANHO_LOTE_ANALISE]
             documentos = pipeline.processar_registros(lote)
-            repositorio.salvar_analises(documentos)
+            contexto.salvar_analises(documentos)
             for posicao, documento in enumerate(documentos, start=inicio):
                 sentimento = documento.get("sentimento")
                 if sentimento in por_sentimento:
@@ -542,6 +547,18 @@ def executar_coleta(contexto: ContextoAdministracao, id_coleta: str) -> None:
     except ErroXFetch as erro:
         # As mensagens do módulo XFetch não trazem chave, cabeçalhos nem consulta.
         repositorio.atualizar_coleta(id_coleta, situacao="falhou", mensagem=str(erro))
+    except (
+        ErroConfiguracaoMongoDB,
+        ErroConexaoMongoDB,
+        PyMongoError,
+        ErroLeituraAnalises,
+    ):
+        logger.exception("Falha de persistência na coleta %s", id_coleta)
+        repositorio.atualizar_coleta(
+            id_coleta,
+            situacao="falhou",
+            mensagem="Banco de dados indisponível ao consultar ou salvar análises.",
+        )
     except Exception:  # A coleta roda em segundo plano e não pode derrubar a API.
         logger.exception("Falha na coleta %s", id_coleta)
         repositorio.atualizar_coleta(
