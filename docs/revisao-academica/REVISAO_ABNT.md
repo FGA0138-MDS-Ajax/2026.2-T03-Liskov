@@ -17,7 +17,7 @@ Fonte: `pdftotext -layout`, leitura de todas as páginas dos dois textos, `pdfin
 
 Foram vistas imagens renderizadas das páginas 4, 9 e 18 da Visão e 8, 19, 20, 21, 24, 25 e 26 da Arquitetura, cobrindo as figuras históricas e suas legendas. Isso complementa a leitura textual integral, mas **não** é medição de todas as margens/fontes no editor nem auditoria visual integral das cópias anotadas. A cópia anotada da Visão foi auditada pela outra frente; esta revisão se ancora no original acima, não presume ter lido todas as anotações.
 
-A ressalva do primeiro envio do #90 sobre indisponibilidade de Visão/Arquitetura está superada. O GQM histórico incorporado à Visão, pp. 28–32, foi lido. A Mini-tarefa GQM separada foi posteriormente fornecida pelo usuário e lida em todas as 14 páginas; as pp. 3/9/13 também foram inspecionadas como imagem. Somente **`PACOTE_PRE_INSPECAO_LISKOV.zip`** permanece sem recuperação nesta sessão, sem afirmar inexistência. Os documentos `docs/inspecao/*` são acessíveis no [PR #92][A1], commit `25f2587`, e não são arquivos faltantes.
+A ressalva do primeiro envio do #90 sobre indisponibilidade de Visão/Arquitetura está superada. O GQM histórico incorporado à Visão, pp. 28–32, foi lido. A Mini-tarefa GQM separada foi posteriormente fornecida pelo usuário e lida em todas as 14 páginas; as pp. 3/9/13 também foram inspecionadas como imagem. Somente **`PACOTE_PRE_INSPECAO_LISKOV.zip`** permanece sem recuperação nesta sessão, sem afirmar inexistência. Os documentos `docs/inspecao/*` (originalmente do [PR #92][A1], commit `25f2587`) e `docs/qa/inspecao/*` ([PR #91][Q2]) encontram-se integrados na `developer`.
 
 ## 2. Checklist de apresentação e paginação
 
@@ -117,9 +117,9 @@ Fonte: páginas primárias consultadas no primeiro envio e repositório fixado p
 
 Efetuado nos seis Markdown: reconciliação com todas as seções textuais originais; controle de versões/autoria sem matrículas; backlog US01–US18 e acréscimos posteriores; fontes e páginas verificadas; CI real com MongoDB; catálogo canônico/aliases da PO; registro de defeitos bibliográficos/figuras/apêndice/sumário. Os originais não foram alterados.
 
-Antes da publicação acadêmica: decisões PO-01a/b sobre modelo/testes, PO-02/PO-12 sobre métricas e PO-14b sobre nova edição; revisão humana; confirmar a aplicação da referência de Cohn recuperada e ajustar chamadas bibliográficas; preencher acessos reais; normalizar legendas, numeração, sumário e estilos; renderizar Mermaid e exportar PDF sem matrículas/anotações. Medir margens/rodapés e revisar todas as páginas no editor/PDF final. A Mini-tarefa separada já foi lida; apenas o pacote de pré-inspeção continua sem recuperação nesta sessão. O confronto com o plano operacional #91 revelou critérios históricos a incorporar, registrados na Visão e em PO-02/PO-12.
+Antes da publicação acadêmica: decisões PO-01a/b sobre modelo/testes, PO-02/PO-12 sobre métricas e PO-14b sobre nova edição; revisão humana; confirmar a aplicação da referência de Cohn recuperada e ajustar chamadas bibliográficas; preencher acessos reais; normalizar legendas, numeração, sumário e estilos; renderizar Mermaid e exportar PDF sem matrículas/anotações. Medir margens/rodapés e revisar todas as páginas no editor/PDF final. A Mini-tarefa separada já foi lida; apenas o pacote de pré-inspeção continua sem recuperação nesta sessão. O confronto com o plano operacional #91 revelou critérios históricos encaminhados e posteriormente incorporados pelo [PR #94](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/94) em [`PLANO_GQM_VIGENTE.md`](../metricas/PLANO_GQM_VIGENTE.md), dependendo ainda de ratificação da PO em PO-02/PO-12.
 
-O PR #90 pode ser apresentado à revisão técnica como proposta factual reconciliada. Isso não é aceite do produto nem conformidade ABNT final. Cabe à PO/equipe aprovar a nova versão; merge e publicação dependem de autorização humana específica.
+O material do PR #90 encontra-se integrado à `developer` como proposta factual reconciliada. Isso não é aceite do produto nem conformidade ABNT final. Cabe à PO/equipe aprovar a nova versão; publicação final e promoção para `main` dependem de autorização humana específica.
 
-[A1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/25f258786981f29552d2df2f1b4597ab7ef01c44/docs/inspecao/PLANO_REGULARIZACAO.md
-[Q2]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/84530e4b3d0ac1762b9100c4c728e6208ffca810/docs/qa/inspecao/RELATORIO_EXECUCAO.md
+[A1]: ../inspecao/PLANO_REGULARIZACAO.md
+[Q2]: ../qa/inspecao/RELATORIO_EXECUCAO.md

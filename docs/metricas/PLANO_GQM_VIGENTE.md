@@ -21,12 +21,14 @@ revisão formal.
 Base desta alteração: `c47ceaba7aee4f1f15318e29821f4b30bb6ab147`, após
 [merge do #91](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/91).
 Os registros originais da inspeção em B continuam históricos, não novas medições.
-Em 14/11/2026, #89, #90 e #92 permanecem abertos; #90 está em Draft. Foram
+Na consulta inicial de 14/11/2026 (#89, #90 em Draft e #92 então abertos), foram
 consultados os documentos acadêmicos do
-[#90 no SHA 6aa6a38](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/6aa6a386146d26b8ed861a24881afcf9e25f6d70/docs/revisao-academica/MATRIZ_DIVERGENCIAS.md)
+[#90 (`MATRIZ_DIVERGENCIAS.md`, originalmente SHA `6aa6a38`)](../revisao-academica/MATRIZ_DIVERGENCIAS.md)
 (D26–D29) e o catálogo do
-[#92 no SHA 25f2587](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/25f258786981f29552d2df2f1b4597ab7ef01c44/docs/inspecao/PLANO_REGULARIZACAO.md).
-São propostas em revisão, sem inferir integração ou aprovação da PO.
+[#92 (`PLANO_REGULARIZACAO.md`, originalmente SHA `25f2587`)](../inspecao/PLANO_REGULARIZACAO.md).
+Posteriormente, #90, #91, #92 e esta regularização (#94) foram integrados à
+`developer`; permanecem abertos #83 e #89 (contra `developer`) e #93 (contra
+`docs`), mantendo-se as propostas sem inferir aprovação automática da PO.
 
 Fontes locais lidas por extração textual, sem republicar PDFs ou dados pessoais:
 

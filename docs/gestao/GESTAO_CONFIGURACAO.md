@@ -58,11 +58,11 @@ No *Documento de Arquitetura v1.0.0* (pp. 16 e 28), o grupo previa `requirements
 
 ## 3. Auditoria de Cumprimento das Políticas (Critério *ii* do Quadro 5 — GC)
 
-Os dados a seguir foram extraídos diretamente de `git log origin/developer`, da lista completa de 45 Pull Requests (`#15` a `#91`) e da API de proteção de branches do GitHub em **14/11/2026**.
+Os dados a seguir foram extraídos diretamente de `git log origin/developer`, da lista completa de 45 Pull Requests (`#15` a `#91`) no corte pré-inspeção de **14/11/2026** *(com nota de atualização pós-merge relativa aos PRs `#90`, `#91`, `#92` e `#94`)* e da API de proteção de branches do GitHub.
 
 ### 3.1 Conformidade de Commits (Critério *ii*)
 
-- **Universo auditado:** 95 commits não-merge no histórico de `origin/developer`.
+- **Universo auditado (corte `1723a7d`):** 95 commits não-merge no histórico de `origin/developer`.
 - **Aderentes ao padrão Conventional Commits:** **88 de 95 (`92,6%`)** seguem rigorosamente `feat|fix|docs|chore|test|refactor|ci...`.
 - **Exceções observadas (7 de 95):**
   - 2 commits iniciais do repositório em `07/09/2026` (`87ad596 Initial commit`, `e72a609 Initialize developer`);
@@ -73,7 +73,7 @@ Os dados a seguir foram extraídos diretamente de `git log origin/developer`, da
 
 | Indicador Auditado | Resultado Observado | Interpretação Técnica / Risco de Governança |
 | --- | --- | --- |
-| **Total de PRs analisados (`#15`–`#91`)** | **45 PRs** (`38 MERGED`, `3 CLOSED`, `4 OPEN`: `#83`, `#89`, `#90`, `#91`) | Todo código relevante ingressou por PR; não foram identificados commits diretos fora de PRs após 02/11. |
+| **Total de PRs analisados no corte (`#15`–`#91`)** | **45 PRs** (`38 MERGED`, `3 CLOSED`; no corte inicial havia `4 OPEN`: `#83`, `#89`, `#90`, `#91` — após o corte, `#90`, `#91`, `#92` e `#94` foram **`MERGED`** na `developer`, restando `#83` e `#89` `OPEN` contra `developer` e `#93` `OPEN` contra `docs`) | Todo código relevante ingressou por PR; não foram identificados commits diretos fora de PRs após 02/11. |
 | **CI na ponta atual da `developer` (`1723a7d`)** | **`SUCCESS`** (run [`43503741871`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/43503741871), job `132155891920`, `mongo:7`) | Suíte completa e lint aprovados no corte (`814 passed, 0 skipped, 93% cobertura` conforme relatório QA). |
 | **PRs com `APPROVED` ativo antes do merge** | **5 de 38** `MERGED` no total; **4 de 28** direcionados à `developer` (`#65`, `#69`, `#71`, `#76`, além de `#15` na `main`) | **Achado relevante de GC:** em 24 dos 28 merges para `developer`, o merge ocorreu sem aprovação formal `APPROVED` vigente na interface do GitHub (`#72` e `#73` perderam aprovação por `dismiss_stale_reviews` após sync). |
 | **Bypass administrativo (`enforce_admins: false`)** | **`enabled: false`** em `developer` e `main` | Permitiu ao mantenedor (`Figueirin`) concluir **13 merges de PRs de outros autores** sem clicar em *Approve* e **11 merges próprios** sem revisão externa registrada (acelerando a entrega na semana do PC1 e pós-PC1, mas enfraquecendo a rastreabilidade de dupla revisão prevista na DoD). |

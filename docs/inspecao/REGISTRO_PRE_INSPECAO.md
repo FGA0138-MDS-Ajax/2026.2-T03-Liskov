@@ -20,18 +20,19 @@
 
 ### 1.2 Branches remotas abertas ou legadas observadas (`git branch -r`)
 
-- **Abertas com PR ativo em 14/11/2026:**
-  - `origin/docs-qa-walkthrough-testes` (`7009500`, PR `#83` aberto em 11/11);
-  - `origin/feat/issue-85-avaliacao-bertweet` (`4a0e338`, PR `#89` aberto em 14/11);
-  - `origin/inspecao/sol-high` (`d645d75`, PR `#90` aberto em 14/11);
-  - `origin/inspecao/sol-medium` (`84530e4`, PR `#91` aberto em 14/11).
+- **Abertas com PR ativo no corte inicial (14/11/2026, antes dos merges em `developer`):**
+  - `origin/docs-qa-walkthrough-testes` (`7009500`, PR `#83` aberto em 11/11 — segue **`OPEN`**);
+  - `origin/feat/issue-85-avaliacao-bertweet` (`4a0e338`, PR `#89` aberto em 14/11 — segue **`OPEN`**);
+  - `origin/inspecao/sol-high` (`6aa6a38` após reconciliação, PR `#90` — **`MERGED`** em `6bc1c17`);
+  - `origin/inspecao/sol-medium` (`84530e4`, PR `#91` — **`MERGED`** em `c47ceab`).
+  *(Nota pós-merge: na sequência do corte, também foram integrados à `developer` os PRs `#94` em `e64eea7` e `#92` em `95438fd`; permanece aberto o PR `#93` na branch `chore/inspecao-mkdocs → docs`.)*
 - **Branches antigas já integradas ou históricas não removidas no remoto:** `origin/feat/23-24-25-consultas-filtros-api`, `origin/feat/issue-21-adaptador-ml`, `origin/feat/issue-21-api-analises`, `origin/feat/pages`, `origin/feat/sentia-modelo`, `origin/fix/84-imports-testes-branch-julia`, `origin/xfetch`. Recomenda-se limpeza após encerramento da inspeção (mantendo histórico rastreável via PRs).
 
 ---
 
-## 2. Inventário de Pull Requests (`#15` a `#91`)
+## 2. Inventário de Pull Requests (`#15` a `#91`, com atualização pós-merge `#90–#94`)
 
-Foram recuperados **45 Pull Requests** no repositório (`#15`, `#33–#48`, `#55–#56`, `#64–#84`, `#87–#91`; os números faltantes na sequência correspondem às *Issues*, já que o contador no GitHub é compartilhado): **38 `MERGED`**, **3 `CLOSED` sem merge** (`#33`, `#41`, `#66`) e **4 `OPEN`** (`#83`, `#89`, `#90`, `#91`).
+No corte inicial da auditoria foram recuperados **45 Pull Requests** no repositório (`#15`, `#33–#48`, `#55–#56`, `#64–#84`, `#87–#91`; os números faltantes na sequência correspondem às *Issues*, já que o contador no GitHub é compartilhado): à época havia **38 `MERGED`**, **3 `CLOSED` sem merge** (`#33`, `#41`, `#66`) e **4 `OPEN`** (`#83`, `#89`, `#90`, `#91`). Posteriormente, em 14/11/2026, foram integrados à `developer` os PRs **`#91`** (`c47ceab`), **`#94`** (`e64eea7`), **`#90`** (`6bc1c17`) e **`#92`** (`95438fd`), permanecendo abertos **`#83`**, **`#89`** (`→ developer`) e **`#93`** (`→ docs`).
 
 ### 2.1 PRs integrados por fase (`MERGED`, 38 PRs)
 
@@ -51,8 +52,8 @@ Foram recuperados **45 Pull Requests** no repositório (`#15`, `#33–#48`, `#55
 | `#66` | `CLOSED` | `feat/painel-filtros-admin → developer` | `Cliciah` | Versão WIP substituída pelos PRs `#70` e `#71`. |
 | **`#83`** | **`OPEN`** | `docs-qa-walkthrough-testes → developer` | `Figueirin` | Aberto em 11/11 sobre `fe83ad0` (707 testes); **sem conclusão de check registrada** no rollup e **superado pelo PR `#91`**. |
 | **`#89`** | **`OPEN`** | `feat/issue-85-avaliacao-bertweet → developer` | `Ricardo-909-Leal` | Aberto em 14/11 (`18:58 UTC`); CI **`SUCCESS`** (run `43629551002`). Traz resultados declarados no BPSAD (10k amostra: BERTweet 67,70% acc vs. baseline 70,10% acc); **aguarda reprodução independente e decisão da PO sobre `RNF01`**. |
-| **`#90`** | **`OPEN`** | `inspecao/sol-high → developer` | `Figueirin` | Aberto em 14/11 (`22:04 UTC`); CI **`SUCCESS`** (run `43646136042`). Frente acadêmica/ABNT (`docs/revisao-academica/`). |
-| **`#91`** | **`OPEN`** | `inspecao/sol-medium → developer` | `Figueirin` | Aberto em 14/11 (`22:18 UTC`); frente GQM/métricas e QA (`docs/metricas/` e `docs/qa/inspecao/`). |
+| **`#90`** | **`MERGED`** *(era `OPEN` no corte)* | `inspecao/sol-high → developer` | `Figueirin` | Aberto em 14/11 (`22:04 UTC`); CI **`SUCCESS`** (run `43646136042`); reconciliado em `6aa6a38` e integrado em `6bc1c17`. Frente acadêmica/ABNT (`docs/revisao-academica/`). |
+| **`#91`** | **`MERGED`** *(era `OPEN` no corte)* | `inspecao/sol-medium → developer` | `Figueirin` | Aberto em 14/11 (`22:18 UTC`); integrado em `c47ceab` (seguido do PR `#94`, `e64eea7`). Frente GQM/métricas e QA (`docs/metricas/` e `docs/qa/inspecao/`). |
 
 ---
 
@@ -83,7 +84,7 @@ Foram recuperadas **46 issues** cadastradas no GitHub (`#1–#4`, `#5–#14`, `#
 - **`1723a7d` (`push` em `developer`, 13/11/2026):** Run [`43503741871`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/43503741871) — **`success`** (executa `uv sync --locked`, `uv lock --check`, Ruff e `pytest` com `mongo:7`).
 - **`936728d`, `29f2996`, `fe83ad0`, `a1c62fe`, `81f552c` (`push` em `developer`, 11–13/11):** todos **`success`**.
 - **Falhas anteriores registradas em PRs antes de correção:** PR `#84` (`43100185858`, 11/11 — corrigida em `#88`/`#87` em 13/11) e PR `#81` (`43126136575`, 12/11 — corrigida em `8afed74` no run `43129680851`).
-- **PRs abertos no corte:** PR `#89` (`43629551002` **`success`**), PR `#90` (`43646136042` **`success`**), PR `#83` (`43098475188` sem conclusão no rollup).
+- **PRs no corte e integração posterior:** PR `#89` (`43629551002` **`success`**, permanece aberto), PR `#83` (`43098475188` sem conclusão no rollup, permanece aberto), PR `#90` (`43646136042` **`success`**, posteriormente integrado em `6bc1c17`), além dos PRs `#91` (`c47ceab`), `#94` (`e64eea7`) e `#92` (`95438fd`), também integrados à `developer`.
 
 ### 4.2 Registro detalhado do merge prematuro do PR `#81`
 

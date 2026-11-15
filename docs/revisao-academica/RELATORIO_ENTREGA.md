@@ -1,6 +1,6 @@
 # Relatório da frente Sol High — reconciliação do PR #90
 
-**Data de referência:** 14/11/2026; adendo posterior com a Mini-tarefa GQM fornecida pelo usuário. **Branch:** `inspecao/sol-high`. **Base técnica:** `developer`, `1723a7d62d55fa98fbf6eaf5cc9da80650dbe920`, reconfirmada por fetch nesta retomada. **PR:** [#90](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90), destino `developer`.
+**Data de referência:** 14/11/2026; adendo posterior com a Mini-tarefa GQM fornecida pelo usuário e consolidação pós-merge. **Branch de origem:** `inspecao/sol-high`. **Base técnica:** `developer`, `1723a7d62d55fa98fbf6eaf5cc9da80650dbe920`, reconfirmada por fetch na retomada. **PR:** [#90](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90), destino `developer` (**integrado**).
 
 ## 1. Entrega atual e histórico
 
@@ -8,7 +8,7 @@ Os cinco documentos pedidos e este relatório estão em `docs/revisao-academica/
 
 O envio inicial (`ad1eebd`, `d645d75`) registrou falta de acesso às fontes acadêmicas e não consultou os logs de CI. Essas ressalvas foram **superadas nesta retomada**, sem apagar o histórico Git. O nome `docs/inspecao-sol-high` continuou inviável por já existir a referência `docs`; preservada a branch exclusiva `inspecao/sol-high`, sem renomear ou excluir branches.
 
-Foram consultados os três registros de inspeção do Argon e a tabela de equivalência, fixados no commit `25f258786981f29552d2df2f1b4597ab7ef01c44` do [PR #92][A1], e a evidência QA do commit `84530e4b3d0ac1762b9100c4c728e6208ffca810` do [PR #91][Q2]. Esses arquivos estão acessíveis em suas branches, mesmo sem integrar a base `developer`; não são materiais inexistentes.
+Foram consultados originalmente na retomada os três registros de inspeção do Argon e a tabela de equivalência (commit `25f258786981f29552d2df2f1b4597ab7ef01c44` do [PR #92][A1]), e a evidência QA (commit `84530e4b3d0ac1762b9100c4c728e6208ffca810` do [PR #91][Q2]). Na consolidação pós-merge, `#90`, `#91`, `#92` e `#94` encontram-se integrados à `developer`, e as referências locais apontam diretamente para os arquivos vigentes na branch.
 
 ## 2. Reconciliação factual concluída
 
@@ -57,7 +57,7 @@ Lido diretamente `T03_Liskov - Tarefa GQM.pdf`, **14 páginas**, SHA-256 `ecb629
 
 Confronto com Visão pp. 28–32, Arquitetura e plano GQM do #91: recuperados limiares de F1 por classe <60%, auditoria >90%, faixas de acurácia, M3 temporal e gatilhos ±20%/duas Sprints da velocidade. A Mini-tarefa identifica Cohn (2005) como Agile Estimating and Planning. Novos achados D26–D29 e Quadro 7 da Visão preservam esses critérios como históricos a ratificar, sem criar dados ou mudar requisitos.
 
-**Não está tudo conforme:** faltam conciliar essas regras no plano #91 (limiar por classe ainda N/D e M3 temporal sem medida própria), resolver fronteiras/prioridades das faixas, adaptar treinamento/notebook ao BERTweet e corrigir títulos/sumário/quadros do documento acadêmico. São pendências PO-01a/b, PO-02, PO-12 e PO-14b. A frente High registra o encaminhamento sem editar os diretórios da frente Medium. Os destinos CSV citados pelo PDF são planejamento, não prova de coleta; SP e série temporal continuam N/D.
+**Estado histórico no corte `#90` vs. regularização pós-merge no `#94`:** no corte inicial do `#90`, faltava conciliar essas regras no plano `#91`; em seguida, o [PR #94](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/94) incorporou tecnicamente em [`PLANO_GQM_VIGENTE.md`](../metricas/PLANO_GQM_VIGENTE.md) e [`REGISTRO_E_ANALISE.md`](../metricas/REGISTRO_E_ANALISE.md) (`R17–R22`) o limiar de `F1 < 60%` por classe, `M3` (`G1/Q1.7`), as faixas e a regra `±20%` (`R21`). Permanecem abertas a resolução final de fronteiras/prioridades pela PO, adaptação de treinamento/notebook ao BERTweet e correção de títulos/sumário/quadros do documento acadêmico (`PO-01a/b`, `PO-02`, `PO-12` e `PO-14b`). Os destinos CSV citados pelo PDF são planejamento, não prova de coleta; SP e série temporal continuam N/D.
 
 Somente os seis Markdown desta frente foram atualizados. A validação documental foi repetida, incluindo hash/14 páginas da Mini-tarefa, integridade das faixas/IDs e verificação explícita de que **nenhum PDF está rastreado ou preparado para commit**. Não houve reexecução de ML, XFetch ou suíte do produto, pois não houve mudança de código.
 
@@ -67,10 +67,10 @@ Somente os seis Markdown desta frente foram atualizados. A validação documenta
 
 **Estado da reconciliação:** I-01/I-02/I-03 e equivalência da PO resolvidos nos seis Markdown; leitura factual/textual integral de Visão/Arquitetura concluída. Edição final ABNT, margens, bibliografia final (incluindo a referência de Cohn recuperada na Mini-tarefa e os acessos reais), revisão por outro integrante, aceite da PO e homologação do produto continuam pendentes e não são apresentados como concluídos.
 
-**Draft:** o PR pode deixar Draft para revisão técnica da proposta reconciliada; os arquivos faltantes acima não impedem revisar os fatos já verificados. Mantido Draft nesta atualização, pois o pedido foi informar a prontidão, sem efetuar a transição. Isso não autoriza merge nem publicação final. Verificar CI no último commit antes de integrar, além de revisão independente e autorização humana.
+**Draft (registro histórico do envio do `#90`, posteriormente integrado em `developer`):** o PR deixou o estado de revisão para análise técnica da proposta reconciliada e foi integrado à `developer` em `6bc1c17`; os arquivos faltantes acima não impediram revisar os fatos já verificados. Isso não autoriza publicação final automática sem revisão da nova edição e decisão da PO.
 
 **Decisões ainda sem resposta datada:** PO-01a/b (modelo, ADR e testes), PO-02 (meta RNF01/reprodução), PO-03/04 (domínio/licença), PO-05a/b (pesquisa e governança #81), PO-06 (custos), PO-07/08 (acesso/persistência), PO-09/10 (datas/RNF02/T18), PO-11a/b (nuvem e propostas US19/US20), PO-12 (GQM/usabilidade), PO-13 (cenários e aceite por SHA) e PO-14a/b (deploy e publicação acadêmica/governança). Aliases e evidências estão na [pauta](DECISOES_PENDENTES_PO.md).
 
-[A1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/25f258786981f29552d2df2f1b4597ab7ef01c44/docs/inspecao/PLANO_REGULARIZACAO.md
-[Q2]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/84530e4b3d0ac1762b9100c4c728e6208ffca810/docs/qa/inspecao/RELATORIO_EXECUCAO.md
+[A1]: ../inspecao/PLANO_REGULARIZACAO.md
+[Q2]: ../qa/inspecao/RELATORIO_EXECUCAO.md
 [E1]: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/43503741871/job/132155891920

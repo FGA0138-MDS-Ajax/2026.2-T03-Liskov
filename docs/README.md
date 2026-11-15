@@ -14,14 +14,12 @@
 - [Planejamento, Acompanhamento de Sprints e Replanejamentos](gestao/PLANEJAMENTO_E_REPLANEJAMENTOS.md)
 - [Gestão de Configuração e Auditoria de Governança](gestao/GESTAO_CONFIGURACAO.md)
 
-### Entregas paralelas em revisão (PRs abertos na `developer` e `docs`)
+### Frentes de inspeção integradas na `developer` e portal MkDocs
 
-- **Revisão Acadêmica e ABNT ([PR `#90`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90), `inspecao/sol-high`, CI `SUCCESS` `43646136042`):** rascunhos rastreáveis de Visão e Arquitetura, matriz de divergências, revisão ABNT e decisões PO em [`docs/revisao-academica/`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/inspecao/sol-high/docs/revisao-academica) *(a integrar em `docs/revisao-academica/`; ver conciliação em [`PLANO_REGULARIZACAO.md`](inspecao/PLANO_REGULARIZACAO.md))*.
-- **Métricas GQM e QA / Testes ([PR `#91`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/91), `inspecao/sol-medium`, CI `SUCCESS` `43647361017`):** plano GQM vigente, medições e análises, plano de testes atual, matriz `T01–T18`, relatório de execução em `1723a7d` e registro de defeitos em [`docs/metricas/`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/inspecao/sol-medium/docs/metricas) e [`docs/qa/inspecao/`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/inspecao/sol-medium/docs/qa/inspecao) *(a integrar em `developer`)*.
-- **Orquestração, Gestão e Dossiê ([PR `#92`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92), `chore/inspecao-argon`):** documentos em [`docs/inspecao/`](inspecao/README.md), [`docs/gestao/`](gestao/PLANEJAMENTO_E_REPLANEJAMENTOS.md) e [`README.md`](../README.md).
-- **Portal MkDocs ([PR `#93`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/93), `chore/inspecao-mkdocs` → `docs`):** atualização da navegação e página inicial do portal com rotas pós-merge para `developer`.
-
-*(Nota: os links externos acima apontam para as branches dos PRs `#90` e `#91` enquanto aguardam autorização de merge e serão convertidos em links relativos locais em `developer` após a fusão — item `B-06`.)*
+- **Revisão Acadêmica e ABNT (integrada — [PR `#90`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90), `inspecao/sol-high`):** rascunhos rastreáveis de [Visão](revisao-academica/VISAO_ATUALIZADA_RASCUNHO.md) e [Arquitetura](revisao-academica/ARQUITETURA_ATUALIZADA_RASCUNHO.md), [matriz de divergências](revisao-academica/MATRIZ_DIVERGENCIAS.md), [revisão ABNT](revisao-academica/REVISAO_ABNT.md), [decisões PO](revisao-academica/DECISOES_PENDENTES_PO.md) e [relatório da frente](revisao-academica/RELATORIO_ENTREGA.md) *(ver conciliação em [`PLANO_REGULARIZACAO.md`](inspecao/PLANO_REGULARIZACAO.md))*.
+- **Métricas GQM e QA / Testes (integrada — [PR `#91`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/91) e [PR `#94`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/94)):** [plano GQM vigente](metricas/PLANO_GQM_VIGENTE.md) *(atualizado pelo PR `#94` com a Mini-tarefa GQM)*, [medições e análises](metricas/REGISTRO_E_ANALISE.md), [plano de testes atual](qa/inspecao/PLANO_TESTES_ATUAL.md), [matriz `T01–T18`](qa/inspecao/MATRIZ_RASTREABILIDADE.md), [relatório de execução em `1723a7d`](qa/inspecao/RELATORIO_EXECUCAO.md) e [registro de defeitos](qa/inspecao/DEFEITOS_E_CORRECOES.md).
+- **Orquestração, Gestão e Dossiê (integrada — [PR `#92`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92), `chore/inspecao-argon`):** documentos em [`docs/inspecao/`](inspecao/README.md), [`docs/gestao/`](gestao/PLANEJAMENTO_E_REPLANEJAMENTOS.md) e [`README.md`](../README.md), consolidados pós-merge na `developer`.
+- **Portal MkDocs ([PR `#93`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/93), `chore/inspecao-mkdocs` → `docs`, aberto):** atualização da navegação e página inicial do portal com links canônicos pós-merge apontando para `developer`.
 
 ---
 
