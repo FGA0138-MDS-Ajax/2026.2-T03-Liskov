@@ -234,10 +234,10 @@ Administrador informa o assunto, a meta de textos e se o X pode completar a meta
 4. classifica tudo com o BERTweet; o painel acompanha por `GET /coletas/{id}`.
 
 ```json
-{ "fonte": "pesquisa", "termo": "custo de vida", "quantidade": 5, "complementar_com_x": true }
+{ "fonte": "pesquisa", "termo": "custo de vida", "quantidade": 5, "complementar_com_x": true, "forcar_atualizacao": false }
 ```
 
-- `termo`: texto não vazio de até 100 caracteres. `quantidade`: meta de 1 a 100, um máximo.
+- `termo`: texto não vazio de até 100 caracteres. `quantidade`: meta de 1 a 100, um máximo. `forcar_atualizacao` (opcional, padrão `false`): quando `true`, ignora o cache persistente da pesquisa na coleção `pesquisas` e consulta o X novamente sem remover registros históricos.
 - A coleta devolvida inclui `termo` e `origem`, e cada item de `exemplos` traz `origem`:
 
 ```json
@@ -252,11 +252,7 @@ Administrador informa o assunto, a meta de textos e se o X pode completar a meta
 - Todas as coletas devolvem `por_sentimento` e até 10 `exemplos`; o painel mascara
   `@menções` antes de exibir.
 
-**Versão de teste (branch `feat/pesquisa-hibrida-admin`, ainda sem issue):** a "base" fica na
-memória da API, no lugar do MongoDB (#20), e a busca na base é por palavras (sem acento e por radical; consultas
-de até 3 palavras exigem todas no texto), no lugar da busca semântica com embeddings. Cada
-consulta ao XFetch é **paga**; a chave fica só no `.env` da API (`XFETCH_API_KEY`). Sem ela, a
-pesquisa usa só a base.
+**Base persistida no MongoDB e cache de pesquisas (`src/dados/repositorio.py`):** a "base" combina `registros` (CSVs importados, `TweetSentBR` e pesquisas anteriores no X) e `analises`, evitando duplicatas pela chave `(fonte, id_origem)`. Consultas equivalentes já concluídas reutilizam a base e o cache em `pesquisas` para evitar novas chamadas pagas ao XFetch (a menos que `forcar_atualizacao` seja `true`). A busca na base continua lexical por palavras normalizadas (sem acento e por radical; consultas de até 3 palavras exigem todas no texto), enquanto busca semântica com embeddings permanece evolução futura. Cada consulta nova ao XFetch é **paga**; a chave fica só no `.env` da API (`XFETCH_API_KEY`). Sem ela, a pesquisa usa só a base.
 
 ### Implementação de referência
 
@@ -270,8 +266,11 @@ o backend continuar a partir delas (#58):
   várias tentativas erradas.
 - CSV de até `SENTIA_LIMITE_CSV_MB` (padrão 10 MB) e até `SENTIA_LIMITE_COLETA` textos do
   TweetSentBR por coleta (padrão 1000).
-- **Limitação:** datasets, coletas, análises e sessões ficam na memória da API, no lugar do
-  MongoDB (#20), e se perdem quando ela reinicia.
+- **Persistência e limitação restante:** datasets CSV importados, o corpus `TweetSentBR`,
+  o cache das pesquisas híbridas, os registros normalizados e as análises classificadas são
+  persistidos no MongoDB (`src/dados/repositorio.py`, coleções `datasets`, `registros`,
+  `pesquisas` e `analises`), sobrevivendo a reinícios da API. Apenas o andamento em tempo
+  real dos jobs `Coleta` em segundo plano e as sessões autenticadas permanecem na memória do processo.
 - **Memória:** o BERTweet na placa de vídeo, com `--reload`, passou de 5 GB numa máquina de
   6,7 GB. No processador ficou perto de 1,7 GB:
   `env CUDA_VISIBLE_DEVICES= SENTIA_LIMITE_COLETA=300 uv run --group ml uvicorn src.servico.main:app --port 8000`.
@@ -299,7 +298,7 @@ Erros de conexão, tempo esgotado, 404 e respostas fora do contrato seguem a tab
 4. Responsável pelo backend: as issues #23, #24 e #25 estão sem responsável.
 5. Manter ou não as escolhas da implementação de referência: token opaco, sessão de 60 minutos,
    bloqueio de tentativas e CSV de até 10 MB.
-6. Guardar datasets, coletas e análises no MongoDB (#20), no lugar da memória.
+6. Avaliar se o andamento em tempo real de jobs `Coleta` e sessões autenticadas também precisará migrar da RAM para o MongoDB (datasets em *staging*, `TweetSentBR`, cache de pesquisa híbrida em `pesquisas`, `registros` e `analises` já são persistidos no MongoDB).
 7. Quais fontes externas a coleta oferece além do TweetSentBR, como o X (XFetch).
 8. Pesquisa híbrida: limite de gasto com o XFetch, critério de relevância da busca na base e
    quando trocar a busca por palavras pela busca semântica (Vector Search).

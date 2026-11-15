@@ -2,10 +2,9 @@
 
 Implementa a seção "Administração" de docs/frontend/CONTRATO-API.md (issues #58 a #61).
 
-LIMITAÇÃO: enquanto a persistência no MongoDB (issue #20) não existir, datasets
-importados, coletas e análises ficam na memória do processo e se perdem quando a
-API reinicia. ``RepositorioAdministracao`` concentra esse armazenamento para que
-a troca pelo banco não mude as rotas.
+Datasets importados, corpus TweetSentBR, cache de pesquisa híbrida, registros e
+análises geradas são persistidos no MongoDB por meio de ``RepositorioAnalises``
+(``src/dados/repositorio.py``); coletas em andamento e sessões ficam na memória do processo.
 """
 
 from __future__ import annotations
@@ -14,8 +13,8 @@ import logging
 import os
 import tempfile
 import threading
-from src.dados.repositorio import validar_analise
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from functools import lru_cache
@@ -25,6 +24,25 @@ from typing import Annotated, Any
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Request, UploadFile
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
+from pymongo.collection import Collection
+from pymongo.errors import PyMongoError
+
+from src.dados.database import (
+    ErroConexaoMongoDB,
+    ErroConfiguracaoMongoDB,
+    connect_to_mongodb,
+    disconnect_from_mongodb,
+)
+from src.dados.repositorio import (
+    ErroLeituraAnalises,
+    RepositorioAnalises,
+    chave_natural_registro,
+    criar_indices,
+    criar_indices_complementares,
+    garantir_id_origem,
+    normalizar_fonte,
+    obter_colecao,
+)
 
 from src.processamento.aquisicao import (
     CAMINHO_PADRAO_TWEETSENTBR,
@@ -90,6 +108,7 @@ class Coleta:
     termo: str | None = None
     quantidade: int | None = None
     complementar_com_x: bool = False
+    forcar_atualizacao: bool = False
     # Pesquisa: quantos textos vieram da base, quantos do X e quantos repetidos saíram.
     origem: dict[str, int] | None = None
     por_sentimento: dict[str, int] = field(default_factory=lambda: dict.fromkeys(SENTIMENTOS, 0))
@@ -115,30 +134,74 @@ class Coleta:
 
 @dataclass
 class RepositorioAdministracao:
-    """Armazenamento em memória de datasets, coletas e análises (até a issue #20)."""
+    """Controle de coletas em andamento e fachada de datasets persistidos no MongoDB."""
 
     datasets: dict[str, Dataset] = field(default_factory=dict)
     coletas: dict[str, Coleta] = field(default_factory=dict)
-    analises: list[dict[str, Any]] = field(default_factory=list)
     _trava: threading.Lock = field(default_factory=threading.Lock, repr=False)
     _sequencia: int = 0
+    _provedor_repositorio: (
+        Callable[[], AbstractContextManager[RepositorioAnalises]] | None
+    ) = field(default=None, repr=False)
+
+    def vincular_persistencia(
+        self,
+        provedor: Callable[[], AbstractContextManager[RepositorioAnalises]],
+    ) -> None:
+        """Associa o provedor canônico de ``RepositorioAnalises`` aos datasets."""
+        self._provedor_repositorio = provedor
 
     def _proximo_id(self, prefixo: str) -> str:
         self._sequencia += 1
         momento = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
         return f"{prefixo}_{momento}_{self._sequencia:02d}"
 
-    def adicionar_dataset(self, nome_arquivo: str, registros: list[dict[str, Any]]) -> Dataset:
+    def adicionar_dataset(
+        self,
+        nome_arquivo: str,
+        registros: list[dict[str, Any]],
+        *,
+        id_dataset: str | None = None,
+        tipo: str = "upload_csv",
+        origem_coleta: str | None = "csv",
+        metadados: dict[str, Any] | None = None,
+    ) -> Dataset:
+        if self._provedor_repositorio is not None:
+            with self._provedor_repositorio() as repo:
+                salvo = repo.salvar_dataset(
+                    nome_arquivo,
+                    registros,
+                    id_dataset=id_dataset,
+                    tipo=tipo,
+                    origem_coleta=origem_coleta,
+                    metadados=metadados,
+                )
+            return Dataset(
+                salvo["id_dataset"], salvo["nome_arquivo"], salvo["registros"]
+            )
         with self._trava:
-            dataset = Dataset(self._proximo_id("ds"), nome_arquivo, registros)
+            dataset = Dataset(id_dataset or self._proximo_id("ds"), nome_arquivo, registros)
             self.datasets[dataset.id] = dataset
             return dataset
 
-    def listar_datasets(self) -> list[Dataset]:
+    def listar_datasets(self, *, incluir_registros: bool = True) -> list[Dataset]:
+        if self._provedor_repositorio is not None:
+            with self._provedor_repositorio() as repo:
+                itens = repo.listar_datasets(incluir_registros=incluir_registros)
+            return [
+                Dataset(item["id_dataset"], item["nome_arquivo"], item.get("registros", []))
+                for item in itens
+            ]
         with self._trava:
             return list(self.datasets.values())
 
     def obter_dataset(self, id_dataset: str) -> Dataset | None:
+        if self._provedor_repositorio is not None:
+            with self._provedor_repositorio() as repo:
+                item = repo.obter_dataset(id_dataset, incluir_registros=True)
+            if item is None:
+                return None
+            return Dataset(item["id_dataset"], item["nome_arquivo"], item.get("registros", []))
         with self._trava:
             return self.datasets.get(id_dataset)
 
@@ -148,6 +211,7 @@ class RepositorioAdministracao:
         termo: str | None = None,
         quantidade: int | None = None,
         complementar_com_x: bool = False,
+        forcar_atualizacao: bool = False,
     ) -> Coleta:
         with self._trava:
             coleta = Coleta(
@@ -156,6 +220,7 @@ class RepositorioAdministracao:
                 termo=termo,
                 quantidade=quantidade,
                 complementar_com_x=complementar_com_x,
+                forcar_atualizacao=forcar_atualizacao,
             )
             self.coletas[coleta.id] = coleta
             return replace(coleta)
@@ -175,42 +240,17 @@ class RepositorioAdministracao:
         with self._trava:
             self.coletas[id_coleta] = replace(self.coletas[id_coleta], **campos)
 
-    def salvar_analises(
-        self, documentos: Iterable[dict[str, Any]]
-    ) -> dict[str, int]:
-        copias = [dict(documento) for documento in documentos]
 
-        for documento in copias:
-            validar_analise(documento)
-
-        inseridos = 0
-        duplicados = 0
-
-        with self._trava:
-            chaves = {
-                (item["fonte"], item["id_origem"])
-                for item in self.analises
-            }
-
-            for documento in copias:
-                chave = (documento["fonte"], documento["id_origem"])
-
-                if chave in chaves:
-                    duplicados += 1
-                    continue
-
-                self.analises.append(documento)
-                chaves.add(chave)
-                inseridos += 1
-
-        return {
-            "inseridos": inseridos,
-            "duplicados": duplicados,
-        }
-
-    def obter_analises(self) -> list[dict[str, Any]]:
-        with self._trava:
-            return [dict(analise) for analise in self.analises]
+@contextmanager
+def _abrir_colecao_analises() -> Iterator[Collection]:
+    client = connect_to_mongodb()
+    try:
+        colecao = obter_colecao(client)
+        criar_indices(colecao)
+        criar_indices_complementares(colecao)
+        yield colecao
+    finally:
+        disconnect_from_mongodb(client)
 
 
 def _buscar_x_padrao(termo: str, quantidade: int) -> list[dict[str, Any]]:
@@ -230,22 +270,24 @@ def _criar_pipeline_padrao() -> Any:
 
 
 class ContextoAdministracao:
-    """Reúne autenticação, armazenamento e configuração das rotas de administração."""
+    """Reúne autenticação, estado operacional e persistência das rotas de administração."""
 
     def __init__(
         self,
         autenticador: Autenticador,
         repositorio: RepositorioAdministracao | None = None,
         *,
-        criar_pipeline: Callable[[], Any] = _criar_pipeline_padrao,
+        criar_pipeline: Callable[[], Any] | None = None,
         limite_csv_bytes: int = LIMITE_CSV_MB_PADRAO * 1024 * 1024,
         limite_coleta: int = LIMITE_COLETA_PADRAO,
         caminho_tweetsentbr: Path = CAMINHO_PADRAO_TWEETSENTBR,
         buscar_x: Callable[[str, int], list[dict[str, Any]]] | None = None,
+        colecao_analises: Collection | None = None,
+        provedor_colecao: Callable[[], AbstractContextManager[Collection]] = _abrir_colecao_analises,
     ) -> None:
         self.autenticador = autenticador
         self.repositorio = repositorio or RepositorioAdministracao()
-        self._criar_pipeline = criar_pipeline
+        self._criar_pipeline = criar_pipeline or _criar_pipeline_padrao
         self._pipeline: Any = None
         self._trava_pipeline = threading.Lock()
         self.limite_csv_bytes = limite_csv_bytes
@@ -253,7 +295,22 @@ class ContextoAdministracao:
         self.caminho_tweetsentbr = caminho_tweetsentbr
         # Sem função de busca (sem XFETCH_API_KEY), a busca no X fica desligada.
         self.buscar_x = buscar_x
-        self._tweetsentbr: list[dict[str, Any]] | None = None
+        self._colecao_analises = colecao_analises
+        self._provedor_colecao = provedor_colecao
+        self._trava_tweetsentbr = threading.Lock()
+        self.repositorio.vincular_persistencia(self.repositorio_analises)
+
+    @contextmanager
+    def repositorio_analises(self) -> Iterator[RepositorioAnalises]:
+        if self._colecao_analises is not None:
+            yield RepositorioAnalises(self._colecao_analises)
+            return
+        with self._provedor_colecao() as colecao:
+            yield RepositorioAnalises(colecao)
+
+    def salvar_analises(self, documentos: list[dict[str, Any]]) -> dict[str, int]:
+        with self.repositorio_analises() as repositorio:
+            return repositorio.salvar_analises(documentos)
 
     @classmethod
     def do_ambiente(cls) -> ContextoAdministracao:
@@ -274,36 +331,64 @@ class ContextoAdministracao:
                 self._pipeline = self._criar_pipeline()
             return self._pipeline
 
+    def garantir_tweetsentbr(self, repo: RepositorioAnalises | None = None) -> bool:
+        """Persiste o corpus TweetSentBR no MongoDB de forma idempotente quando disponível."""
+        with self._trava_tweetsentbr:
+            if repo is not None:
+                return self._sincronizar_tweetsentbr(repo)
+            with self.repositorio_analises() as repo_aberto:
+                return self._sincronizar_tweetsentbr(repo_aberto)
+
+    def _sincronizar_tweetsentbr(self, repo: RepositorioAnalises) -> bool:
+        if repo.possui_dataset(ID_TWEETSENTBR):
+            return True
+        if not self.caminho_tweetsentbr.is_file():
+            return False
+        registros = list(iterar_tweetsentbr(self.caminho_tweetsentbr, modo_estrito=False))
+        if not registros:
+            return False
+        repo.salvar_dataset(
+            "TweetSentBR",
+            registros,
+            id_dataset=ID_TWEETSENTBR,
+            tipo="corpus",
+            origem_coleta="tweetsentbr",
+        )
+        return True
+
     def fontes(self) -> list[dict[str, str]]:
+        with self.repositorio_analises() as repo:
+            tem_tweetsentbr = self._sincronizar_tweetsentbr(repo)
+            datasets = repo.listar_datasets(incluir_registros=False)
         fontes = []
-        if self.caminho_tweetsentbr.is_file():
+        if tem_tweetsentbr:
             fontes.append({"id": ID_TWEETSENTBR, "nome": "TweetSentBR"})
-        for dataset in self.repositorio.listar_datasets():
+        for dataset in datasets:
+            if dataset["id_dataset"] == ID_TWEETSENTBR:
+                continue
             fontes.append(
-                {"id": dataset.id, "nome": f"Dataset importado: {dataset.nome_arquivo}"}
+                {
+                    "id": dataset["id_dataset"],
+                    "nome": f"Dataset importado: {dataset['nome_arquivo']}",
+                }
             )
         return fontes
 
     def registros_da_base(self) -> list[dict[str, Any]]:
-        """Tudo o que a API já tem: datasets importados, buscas no X e o TweetSentBR."""
-        if self._tweetsentbr is None:
-            self._tweetsentbr = (
-                list(iterar_tweetsentbr(self.caminho_tweetsentbr, modo_estrito=False))
-                if self.caminho_tweetsentbr.is_file()
-                else []
-            )
-        registros = list(self._tweetsentbr)
-        for dataset in self.repositorio.listar_datasets():
-            registros.extend(dataset.registros)
-        return registros
+        """Tudo o que a API tem no MongoDB: TweetSentBR, datasets, pesquisas X e análises."""
+        with self.repositorio_analises() as repo:
+            self._sincronizar_tweetsentbr(repo)
+            return repo.listar_registros_base()
 
     def registros_da_fonte(self, fonte: str) -> list[dict[str, Any]]:
         if fonte == ID_TWEETSENTBR:
-            return list(
-                iterar_tweetsentbr(
-                    self.caminho_tweetsentbr, modo_estrito=False, limite=self.limite_coleta
-                )
-            )
+            with self.repositorio_analises() as repo:
+                if not self._sincronizar_tweetsentbr(repo):
+                    raise KeyError(fonte)
+                dataset = repo.obter_dataset(ID_TWEETSENTBR, incluir_registros=True)
+            if dataset is None:
+                raise KeyError(fonte)
+            return list(dataset.get("registros", []))[: self.limite_coleta]
         dataset = self.repositorio.obter_dataset(fonte)
         if dataset is None:
             raise KeyError(fonte)
@@ -360,6 +445,7 @@ class CorpoColeta(BaseModel):
     termo: str | None = None
     quantidade: int | None = None
     complementar_com_x: bool = False
+    forcar_atualizacao: bool = False
 
 
 @roteador.post("/auth/login")
@@ -437,7 +523,26 @@ def importar_dataset(
         if caminho:
             Path(caminho).unlink(missing_ok=True)
 
-    dataset = contexto.repositorio.adicionar_dataset(nome, registros)
+    try:
+        dataset = contexto.repositorio.adicionar_dataset(
+            nome,
+            registros,
+            tipo="upload_csv",
+            origem_coleta="csv",
+            metadados={
+                "registros_lidos": len(registros) + relatorio.total_descartados,
+                "registros_descartados": relatorio.total_descartados,
+            },
+        )
+    except (
+        ErroConfiguracaoMongoDB,
+        ErroConexaoMongoDB,
+        PyMongoError,
+        ErroLeituraAnalises,
+    ):
+        logger.exception("Falha ao persistir dataset %s", nome)
+        return _erro(503, "Banco de dados indisponível ao salvar dataset.")
+
     importados = len(registros)
     descartados = relatorio.total_descartados
     return {
@@ -455,30 +560,85 @@ def listar_fontes(
     _sessao: Administrador,
     contexto: Contexto,
 ) -> Any:
-    return {"fontes": contexto.fontes()}
+    try:
+        return {"fontes": contexto.fontes()}
+    except (
+        ErroConfiguracaoMongoDB,
+        ErroConexaoMongoDB,
+        PyMongoError,
+        ErroLeituraAnalises,
+    ):
+        logger.exception("Falha ao listar fontes persistidas")
+        return _erro(503, "Banco de dados indisponível ao consultar fontes.")
 
 
 def _registros_da_coleta(
     contexto: ContextoAdministracao, coleta: Coleta
-) -> tuple[list[dict[str, Any]], list[str | None]]:
-    """Textos a analisar e a origem de cada um: "base" ou "x" na pesquisa; None nas demais."""
+) -> tuple[list[dict[str, Any]], list[str | None], dict[str, Any] | None]:
+    """Textos a analisar, origem ("base"/"x") e metadados de cache pendente."""
     if coleta.fonte != FONTE_PESQUISA:
         registros = contexto.registros_da_fonte(coleta.fonte)
-        return registros, [None] * len(registros)
+        return registros, [None] * len(registros), None
     assert coleta.termo and coleta.quantidade
+
+    with contexto.repositorio_analises() as repo:
+        contexto._sincronizar_tweetsentbr(repo)
+        base = repo.listar_registros_base()
+        cache = repo.buscar_cache_pesquisa(
+            coleta.termo,
+            complementar_com_x=coleta.complementar_com_x,
+        )
+
     resultado = pesquisar(
         coleta.termo,
         coleta.quantidade,
-        contexto.registros_da_base(),
+        base,
         buscar_x=contexto.buscar_x,
         complementar_com_x=coleta.complementar_com_x,
+        cache_pesquisa=cache,
+        forcar_atualizacao=coleta.forcar_atualizacao,
     )
+
     if resultado.do_x:
-        # Os tweets novos entram na base: a próxima pesquisa os reaproveita sem pagar.
-        momento = datetime.now(UTC).strftime("%d/%m %H:%M")
-        contexto.repositorio.adicionar_dataset(
-            f"busca no X por “{coleta.termo}” ({momento} UTC)", resultado.do_x
-        )
+        # Tweets novos ficam salvos na base mesmo se a classificação falhar depois.
+        with contexto.repositorio_analises() as repo:
+            momento = datetime.now(UTC).strftime("%d/%m %H:%M")
+            repo.salvar_dataset(
+                f"busca no X por “{coleta.termo}” ({momento} UTC)",
+                resultado.do_x,
+                tipo="pesquisa_x",
+                origem_coleta="xfetch",
+                metadados={"termo": coleta.termo},
+            )
+
+    pode_cachear = not resultado.cache_reutilizado and (
+        not coleta.complementar_com_x
+        or resultado.consultou_x
+        or len(resultado.registros) >= coleta.quantidade
+    )
+    cache_pendente: dict[str, Any] | None = None
+    if pode_cachear:
+        chaves_cache = [
+            {
+                "fonte": normalizar_fonte(r["fonte"]),
+                "id_origem": garantir_id_origem(r),
+            }
+            for r in resultado.registros
+        ]
+        cache_pendente = {
+            "consulta": coleta.termo,
+            "complementar_com_x": coleta.complementar_com_x,
+            "quantidade_solicitada": coleta.quantidade,
+            "quantidade_atendida": len(resultado.registros),
+            "esgotado_na_origem": resultado.esgotado_na_origem,
+            "origem": {
+                "base": len(resultado.da_base),
+                "x": len(resultado.do_x),
+                "duplicatas": resultado.duplicatas,
+            },
+            "chaves_registros": chaves_cache,
+        }
+
     contexto.repositorio.atualizar_coleta(
         coleta.id,
         origem={
@@ -488,11 +648,33 @@ def _registros_da_coleta(
         },
         mensagem=resultado.aviso,
     )
-    return resultado.registros, resultado.origens
+    return resultado.registros, resultado.origens, cache_pendente
+
+
+def _resumir_resolvidos(
+    resolvidos: dict[int, dict[str, Any]],
+    total: int,
+    origens: list[str | None],
+) -> tuple[dict[str, int], list[dict[str, str]]]:
+    por_sentimento = dict.fromkeys(SENTIMENTOS, 0)
+    exemplos: list[dict[str, str]] = []
+    for posicao in range(total):
+        documento = resolvidos.get(posicao)
+        if documento is None:
+            continue
+        sentimento = documento.get("sentimento")
+        if sentimento in por_sentimento:
+            por_sentimento[sentimento] += 1
+        if len(exemplos) < MAXIMO_EXEMPLOS:
+            exemplo = {"texto": documento["texto_original"], "sentimento": sentimento}
+            if origens[posicao] is not None:
+                exemplo["origem"] = origens[posicao]
+            exemplos.append(exemplo)
+    return por_sentimento, exemplos
 
 
 def executar_coleta(contexto: ContextoAdministracao, id_coleta: str) -> None:
-    """Coleta os textos da fonte e os classifica em lotes, atualizando o progresso."""
+    """Coleta os textos da fonte e os classifica em lotes, pulando análises já persistidas."""
     from src.processamento.aquisicao.xfetch import ErroXFetch
 
     repositorio = contexto.repositorio
@@ -500,35 +682,68 @@ def executar_coleta(contexto: ContextoAdministracao, id_coleta: str) -> None:
     if coleta is None:
         return
     try:
-        registros, origens = _registros_da_coleta(contexto, coleta)
+        registros, origens, cache_pendente = _registros_da_coleta(contexto, coleta)
         repositorio.atualizar_coleta(
             id_coleta, situacao="em_andamento", textos_coletados=len(registros)
         )
+        existentes: dict[tuple[str, str], dict[str, Any]] = {}
         if registros:
+            chaves = [chave_natural_registro(r) for r in registros]
+            with contexto.repositorio_analises() as repo_analises:
+                existentes = repo_analises.obter_analises_por_chaves(chaves)
+
+        resolvidos: dict[int, dict[str, Any]] = {}
+        pendentes: list[tuple[int, dict[str, Any]]] = []
+        for posicao, registro in enumerate(registros):
+            chave = chave_natural_registro(registro)
+            analise = existentes.get(chave)
+            if (
+                analise is not None
+                and analise.get("sentimento") in SENTIMENTOS
+                and isinstance(analise.get("texto_original"), str)
+            ):
+                resolvidos[posicao] = analise
+            else:
+                if (
+                    not isinstance(registro.get("id_origem"), str)
+                    or registro["id_origem"] != chave[1]
+                ):
+                    registro = {**registro, "id_origem": chave[1]}
+                pendentes.append((posicao, registro))
+
+        analisados = len(resolvidos)
+        if pendentes:
             pipeline = contexto.pipeline()
-        analisados = 0
-        por_sentimento = dict.fromkeys(SENTIMENTOS, 0)
-        exemplos: list[dict[str, str]] = []
-        for inicio in range(0, len(registros), TAMANHO_LOTE_ANALISE):
-            lote = registros[inicio : inicio + TAMANHO_LOTE_ANALISE]
-            documentos = pipeline.processar_registros(lote)
-            repositorio.salvar_analises(documentos)
-            for posicao, documento in enumerate(documentos, start=inicio):
-                sentimento = documento.get("sentimento")
-                if sentimento in por_sentimento:
-                    por_sentimento[sentimento] += 1
-                if len(exemplos) < MAXIMO_EXEMPLOS:
-                    exemplo = {"texto": documento["texto_original"], "sentimento": sentimento}
-                    if origens[posicao] is not None:
-                        exemplo["origem"] = origens[posicao]
-                    exemplos.append(exemplo)
-            analisados += len(lote)
+            for inicio in range(0, len(pendentes), TAMANHO_LOTE_ANALISE):
+                fatia = pendentes[inicio : inicio + TAMANHO_LOTE_ANALISE]
+                lote = [reg for _, reg in fatia]
+                documentos = pipeline.processar_registros(lote)
+                contexto.salvar_analises(documentos)
+                for (posicao, _), documento in zip(fatia, documentos):
+                    resolvidos[posicao] = documento
+                analisados += len(lote)
+                por_sentimento, exemplos = _resumir_resolvidos(
+                    resolvidos, len(registros), origens
+                )
+                repositorio.atualizar_coleta(
+                    id_coleta,
+                    textos_analisados=analisados,
+                    por_sentimento=por_sentimento,
+                    exemplos=exemplos,
+                )
+        elif resolvidos:
+            por_sentimento, exemplos = _resumir_resolvidos(
+                resolvidos, len(registros), origens
+            )
             repositorio.atualizar_coleta(
                 id_coleta,
                 textos_analisados=analisados,
-                por_sentimento=dict(por_sentimento),
-                exemplos=list(exemplos),
+                por_sentimento=por_sentimento,
+                exemplos=exemplos,
             )
+        if cache_pendente is not None:
+            with contexto.repositorio_analises() as repo_cache:
+                repo_cache.salvar_cache_pesquisa(**cache_pendente)
         campos: dict[str, Any] = {"situacao": "concluida"}
         if not registros and not repositorio.obter_coleta(id_coleta).mensagem:
             campos["mensagem"] = "Nenhum texto encontrado para analisar."
@@ -542,6 +757,18 @@ def executar_coleta(contexto: ContextoAdministracao, id_coleta: str) -> None:
     except ErroXFetch as erro:
         # As mensagens do módulo XFetch não trazem chave, cabeçalhos nem consulta.
         repositorio.atualizar_coleta(id_coleta, situacao="falhou", mensagem=str(erro))
+    except (
+        ErroConfiguracaoMongoDB,
+        ErroConexaoMongoDB,
+        PyMongoError,
+        ErroLeituraAnalises,
+    ):
+        logger.exception("Falha de persistência na coleta %s", id_coleta)
+        repositorio.atualizar_coleta(
+            id_coleta,
+            situacao="falhou",
+            mensagem="Banco de dados indisponível ao consultar ou salvar análises.",
+        )
     except Exception:  # A coleta roda em segundo plano e não pode derrubar a API.
         logger.exception("Falha na coleta %s", id_coleta)
         repositorio.atualizar_coleta(
@@ -566,10 +793,25 @@ def iniciar_coleta(
         quantidade = corpo.quantidade
         if quantidade is None or not 1 <= quantidade <= QUANTIDADE_MAXIMA_PESQUISA:
             return _erro(422, "A meta de textos deve ficar entre 1 e 100.")
-    elif corpo.fonte not in {f["id"] for f in contexto.fontes()}:
-        return _erro(422, "Fonte de coleta desconhecida.")
+    else:
+        try:
+            fontes_disponiveis = {f["id"] for f in contexto.fontes()}
+        except (
+            ErroConfiguracaoMongoDB,
+            ErroConexaoMongoDB,
+            PyMongoError,
+            ErroLeituraAnalises,
+        ):
+            logger.exception("Falha ao validar fonte de coleta %s", corpo.fonte)
+            return _erro(503, "Banco de dados indisponível ao validar fonte de coleta.")
+        if corpo.fonte not in fontes_disponiveis:
+            return _erro(422, "Fonte de coleta desconhecida.")
     coleta = contexto.repositorio.criar_coleta(
-        corpo.fonte, termo, quantidade, corpo.complementar_com_x
+        corpo.fonte,
+        termo,
+        quantidade,
+        corpo.complementar_com_x,
+        corpo.forcar_atualizacao,
     )
     tarefas.add_task(executar_coleta, contexto, coleta.id)
     return JSONResponse(coleta.como_resposta(), status_code=202)

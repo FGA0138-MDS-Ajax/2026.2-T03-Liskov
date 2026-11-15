@@ -1,8 +1,5 @@
 from collections.abc import Iterator
 from functools import lru_cache
-from dotenv import load_dotenv
-import os
-from src.servico.administracao import RepositorioAdministracao, obter_contexto
 
 from fastapi import HTTPException, status
 from pymongo.collection import Collection
@@ -14,33 +11,27 @@ from src.dados.database import (
     connect_to_mongodb,
     disconnect_from_mongodb,
 )
-from src.dados.repositorio import criar_indices, obter_colecao
+from src.dados.repositorio import (
+    ErroLeituraAnalises,
+    criar_indices,
+    criar_indices_complementares,
+    obter_colecao,
+)
 from src.processamento.pipeline import PipelineClassificacao
 
 
-def obter_colecao_analises() -> Iterator[Collection | RepositorioAdministracao]:
-    load_dotenv()
-    modo = os.getenv("SENTIA_ARMAZENAMENTO", "mongodb").strip().lower()
-
-    if modo == "memoria":
-        yield obter_contexto().repositorio
-        return
-
-    if modo != "mongodb":
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="SENTIA_ARMAZENAMENTO deve ser 'mongodb' ou 'memoria'.",
-        )
-
+def obter_colecao_analises() -> Iterator[Collection]:
     try:
         client = connect_to_mongodb()
         try:
             colecao = obter_colecao(client)
             criar_indices(colecao)
+            if isinstance(colecao, Collection):
+                criar_indices_complementares(colecao)
             yield colecao
         finally:
             disconnect_from_mongodb(client)
-    except (ErroConfiguracaoMongoDB, ErroConexaoMongoDB, PyMongoError) as erro:
+    except (ErroConfiguracaoMongoDB, ErroConexaoMongoDB, PyMongoError, ErroLeituraAnalises) as erro:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Banco de dados indisponível.",

@@ -207,6 +207,10 @@ class PipelineClassificacao:
             if data_publicacao is not None:
                 documento["data_publicacao"] = data_publicacao
 
+            texto_tratado = registro.get("texto_tratado")
+            if isinstance(texto_tratado, str) and texto_tratado.strip():
+                documento["texto_tratado"] = texto_tratado.strip()
+
             metadados = registro.get("metadados")
             if metadados:
                 if not isinstance(metadados, dict):
