@@ -1,9 +1,12 @@
-# Proposta futura: pesquisa híbrida MongoDB + XFetch
+# Pesquisa híbrida MongoDB + XFetch
 
-**Status: NÃO IMPLEMENTADO.** Documento conceitual para futuras issues e aceite da PO.
-Busca semântica, embeddings, Vector Search, persistência e coordenação das fontes
-não são entregas do módulo de aquisição deste PR. Nenhum desses fluxos foi
-validado como integração real nesta auditoria.
+**Status: IMPLEMENTADO NO BACKEND (busca lexical normalizada + persistência/cache no MongoDB).**
+A camada de serviço (`src/servico/pesquisa.py` e `src/servico/administracao.py`) integra a base
+persistida (`registros` + `analises`, incluindo CSVs importados, `TweetSentBR` e coletas
+anteriores no X) com o cache persistente na coleção `pesquisas` (`src/dados/repositorio.py`)
+e complemento sob demanda no XFetch.
+
+> **Nota sobre busca semântica (Vector Search):** a geração de embeddings e índices de Vector Search no MongoDB permanece como evolução futura documentada abaixo; na versão atual, a recuperação local utiliza correspondência lexical normalizada (sem acentos e por radical) combinada ao cache exato de consultas equivalentes.
 
 
 ## Objetivo
@@ -133,3 +136,10 @@ Considere que o usuário pesquise por **“custo de vida”** e o sistema esteja
 Para a primeira versão, utilizar 100 tweets como quantidade-alvo por pesquisa e deixar esse valor configurável. A busca no MongoDB deve priorizar a recuperação de conteúdo já armazenado; o XFetch deve ser chamado apenas para complementar os resultados quando necessário.
 
 A pesquisa semântica com Vector Search pode ser implementada como evolução do sistema, após a geração e persistência dos embeddings dos tweets.
+
+## Comportamento implementado na camada canônica (`PR #96`)
+
+- **Base acumulada (`registros` + `analises`):** textos de CSVs enviados via `POST /datasets`, do corpus `TweetSentBR` e de aquisições anteriores no XFetch persistem em `registros` e `datasets`, sendo combinados sem duplicatas pela chave `(fonte, id_origem)` (com fallback SHA-256 determinístico `auto_...` quando `id_origem` estiver ausente ou vazio).
+- **Cache persistente (`pesquisas`):** consultas equivalentes (normalizadas por caixa, acentos e espaçamento) reaproveitam o histórico local e o registro de esgotamento (`esgotado_na_origem`) ou cobertura de meta para evitar chamadas repetidas ao XFetch. Consultas distintas apenas por substring parcial não colidem.
+- **Atualização forçada (`forcar_atualizacao=True`):** permite ignorar o cache em `POST /coletas` (`fonte: "pesquisa"`) sem apagar registros ou análises históricas.
+- **Proteção contra cache falso e reclassificação redundante:** falhas no XFetch não gravam cache em `pesquisas`, e `executar_coleta` ignora a re-inferência de registros cuja análise já exista em `analises`.

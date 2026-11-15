@@ -11,7 +11,12 @@ from src.dados.database import (
     connect_to_mongodb,
     disconnect_from_mongodb,
 )
-from src.dados.repositorio import criar_indices, obter_colecao
+from src.dados.repositorio import (
+    ErroLeituraAnalises,
+    criar_indices,
+    criar_indices_complementares,
+    obter_colecao,
+)
 from src.processamento.pipeline import PipelineClassificacao
 
 
@@ -21,10 +26,12 @@ def obter_colecao_analises() -> Iterator[Collection]:
         try:
             colecao = obter_colecao(client)
             criar_indices(colecao)
+            if isinstance(colecao, Collection):
+                criar_indices_complementares(colecao)
             yield colecao
         finally:
             disconnect_from_mongodb(client)
-    except (ErroConfiguracaoMongoDB, ErroConexaoMongoDB, PyMongoError) as erro:
+    except (ErroConfiguracaoMongoDB, ErroConexaoMongoDB, PyMongoError, ErroLeituraAnalises) as erro:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Banco de dados indisponível.",

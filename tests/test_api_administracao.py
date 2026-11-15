@@ -97,11 +97,52 @@ class PipelineFalso:
 
 
 
-class ColecaoAnalisesFalsa:
-    """Dupla leve da coleção MongoDB ``analises`` para testes unitários."""
+class _CursorFalso(list):
+    def sort(self, chaves, _direcao=None):
+        if isinstance(chaves, str):
+            chaves = [(chaves, 1 if _direcao is None else _direcao)]
+        resultado = list(self)
+        for campo, direcao in reversed(chaves):
+            resultado.sort(
+                key=lambda item: (item.get(campo) is None, str(item.get(campo, ""))),
+                reverse=(direcao == -1),
+            )
+        return _CursorFalso(resultado)
 
-    def __init__(self) -> None:
+
+def _corresponde_filtro(doc: dict, filtro: dict | None) -> bool:
+    if not filtro:
+        return True
+    for chave, esperado in filtro.items():
+        if chave == "$or":
+            if not any(_corresponde_filtro(doc, sub) for sub in esperado):
+                return False
+            continue
+        atual = doc.get(chave)
+        if isinstance(atual, list):
+            if esperado not in atual:
+                return False
+        elif atual != esperado:
+            return False
+    return True
+
+
+def _projetar_doc(doc: dict, projecao: dict | None) -> dict:
+    if not projecao:
+        return dict(doc)
+    excluir = {k for k, v in projecao.items() if not v}
+    incluir = [k for k, v in projecao.items() if v]
+    if not incluir:
+        return {k: v for k, v in doc.items() if k not in excluir}
+    return {k: doc[k] for k in incluir if k in doc}
+
+
+class ColecaoMemoriaFalsa:
+    """Dupla leve de coleção MongoDB em memória para testes unitários."""
+
+    def __init__(self, banco=None) -> None:
         self.documentos: list[dict] = []
+        self.database = banco
 
     def create_indexes(self, _indices) -> None:
         return None
@@ -117,21 +158,83 @@ class ColecaoAnalisesFalsa:
                 falhas.append({"code": 11000})
                 continue
             chaves.add(chave)
+            copia.setdefault("_id", f"fake-{len(self.documentos) + 1}")
             self.documentos.append(copia)
             inseridos += 1
-            ids.append(f"fake-{len(self.documentos)}")
+            ids.append(copia["_id"])
         if falhas:
             raise BulkWriteError({"nInserted": inseridos, "writeErrors": falhas})
         return Mock(inserted_ids=ids)
 
-    def find(self, filtro=None, projecao=None):
-        itens = []
+    @staticmethod
+    def _aplicar(doc: dict, atualizacao: dict, *, inserindo: bool) -> None:
+        if "$set" in atualizacao:
+            for k, v in atualizacao["$set"].items():
+                doc[k] = v
+        if inserindo and "$setOnInsert" in atualizacao:
+            for k, v in atualizacao["$setOnInsert"].items():
+                doc.setdefault(k, v)
+        if "$addToSet" in atualizacao:
+            for k, v in atualizacao["$addToSet"].items():
+                lista = doc.setdefault(k, [])
+                if v not in lista:
+                    lista.append(v)
+
+    def update_one(self, filtro: dict, atualizacao: dict, upsert: bool = False):
         for doc in self.documentos:
-            if not projecao:
-                itens.append(dict(doc))
-                continue
-            itens.append({k: v for k, v in doc.items() if projecao.get(k)})
-        return itens
+            if _corresponde_filtro(doc, filtro):
+                self._aplicar(doc, atualizacao, inserindo=False)
+                return Mock(matched_count=1, upserted_id=None)
+        if upsert:
+            novo = {k: v for k, v in filtro.items() if not k.startswith("$")}
+            novo["_id"] = f"fake-{len(self.documentos) + 1}"
+            self._aplicar(novo, atualizacao, inserindo=True)
+            self.documentos.append(novo)
+            return Mock(matched_count=0, upserted_id=novo["_id"])
+        return Mock(matched_count=0, upserted_id=None)
+
+    def bulk_write(self, operacoes, ordered=False):
+        upserted = 0
+        matched = 0
+        for op in operacoes:
+            res = self.update_one(op._filter, op._doc, upsert=op._upsert)
+            if res.upserted_id is not None:
+                upserted += 1
+            elif res.matched_count:
+                matched += 1
+        return Mock(upserted_count=upserted, matched_count=matched)
+
+    def find_one(self, filtro=None, projecao=None):
+        for doc in self.documentos:
+            if _corresponde_filtro(doc, filtro):
+                return _projetar_doc(doc, projecao)
+        return None
+
+    def find(self, filtro=None, projecao=None):
+        itens = [
+            _projetar_doc(doc, projecao)
+            for doc in self.documentos
+            if _corresponde_filtro(doc, filtro)
+        ]
+        return _CursorFalso(itens)
+
+
+class BancoMemoriaFalso:
+    """Agrupa coleções irmãs (`analises`, `registros`, `datasets`, `pesquisas`) em memória."""
+
+    def __init__(self, colecao_analises: ColecaoMemoriaFalsa) -> None:
+        self._colecoes: dict[str, ColecaoMemoriaFalsa] = {"analises": colecao_analises}
+
+    def __getitem__(self, nome: str) -> ColecaoMemoriaFalsa:
+        return self._colecoes.setdefault(nome, ColecaoMemoriaFalsa(self))
+
+
+class ColecaoAnalisesFalsa(ColecaoMemoriaFalsa):
+    """Dupla leve do conjunto de coleções MongoDB do SentIA para testes unitários."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.database = BancoMemoriaFalso(self)
 
 
 def _contexto(tmp_path: Path, **opcoes) -> ContextoAdministracao:
@@ -354,7 +457,7 @@ def test_coleta_analisa_todos_os_textos_do_dataset(cliente, contexto):
         assert len(repo.listar_registros_base()) == 2
 
 
-def test_coleta_registra_falha_segura_quando_banco_indisponivel(tmp_path):
+def test_importar_dataset_responde_503_quando_banco_indisponivel(tmp_path):
     @contextmanager
     def provedor_quebrado():
         raise ErroConexaoMongoDB("Falha ao conectar ao MongoDB")
@@ -365,11 +468,37 @@ def test_coleta_registra_falha_segura_quando_banco_indisponivel(tmp_path):
     try:
         cliente = TestClient(app)
         cabecalho = _entrar(cliente)
+        resposta = _importar(cliente, cabecalho)
+    finally:
+        app.dependency_overrides.clear()
+
+    assert resposta.status_code == 503
+    assert resposta.json() == {"mensagem": "Banco de dados indisponível ao salvar dataset."}
+
+
+def test_coleta_registra_falha_segura_quando_banco_indisponivel(tmp_path):
+    colecao = ColecaoAnalisesFalsa()
+    caminho = tmp_path / "tweetsent.csv"
+    caminho.write_text("id,texto,fonte\nt1,Texto um,TweetSentBR\n", encoding="utf-8")
+
+    @contextmanager
+    def provedor_oscilante():
+        raise ErroConexaoMongoDB("Falha ao conectar ao MongoDB")
+        yield
+
+    contexto = _contexto(tmp_path, colecao_analises=colecao)
+    app.dependency_overrides[obter_contexto] = lambda: contexto
+    try:
+        cliente = TestClient(app)
+        cabecalho = _entrar(cliente)
         id_dataset = _importar(cliente, cabecalho).json()["id_dataset"]
-        id_coleta = cliente.post(
-            "/coletas", headers=cabecalho, json={"fonte": id_dataset}
-        ).json()["id"]
-        situacao = cliente.get(f"/coletas/{id_coleta}", headers=cabecalho).json()
+        contexto._colecao_analises = None
+        contexto._provedor_colecao = provedor_oscilante
+        coleta = contexto.repositorio.criar_coleta(id_dataset)
+        from src.servico.administracao import executar_coleta
+
+        executar_coleta(contexto, coleta.id)
+        situacao = cliente.get(f"/coletas/{coleta.id}", headers=cabecalho).json()
     finally:
         app.dependency_overrides.clear()
 
@@ -657,3 +786,124 @@ def test_painel_importa_e_ja_analisa_o_csv_na_api_real(painel):
     assert concluida.fonte == resultado.id_dataset
     assert concluida.situacao == "concluida"
     assert concluida.textos_analisados == resultado.registros_importados == 2
+
+
+def test_pesquisa_com_forcar_atualizacao_refaz_consulta_no_x(com_x):
+    x = XFalso(
+        _tweets("t1", "t2", "t3"),
+        [{"id_origem": "t4", "texto_original": "Novo tweet sobre vacina", "fonte": "X"}],
+    )
+    cliente, cabecalho = com_x(x)
+    primeira = _pesquisar(cliente, cabecalho, "vacina", meta=5)
+    assert primeira["origem"] == {"base": 2, "x": 3, "duplicatas": 0}
+    assert len(x.pedidos) == 1
+
+    # Repetição sem forçar: cache/base atende sem nova chamada ao X.
+    segunda = _pesquisar(cliente, cabecalho, "vacina", meta=5)
+    assert len(x.pedidos) == 1
+    assert segunda["origem"] == {"base": 5, "x": 0, "duplicatas": 0}
+
+    # Forçando atualização: consulta o X novamente sem apagar histórico.
+    resposta = cliente.post(
+        "/coletas",
+        headers=cabecalho,
+        json={
+            "fonte": "pesquisa",
+            "termo": "vacina",
+            "quantidade": 5,
+            "complementar_com_x": True,
+            "forcar_atualizacao": True,
+        },
+    )
+    assert resposta.status_code == 202
+    forcar = cliente.get(f"/coletas/{resposta.json()['id']}", headers=cabecalho).json()
+    assert len(x.pedidos) == 2
+    assert forcar["origem"]["x"] == 1
+
+
+def test_coleta_repetida_pula_reinferencia_no_pipeline(tmp_path):
+    contexto = _contexto(tmp_path)
+    app.dependency_overrides[obter_contexto] = lambda: contexto
+    try:
+        cliente = TestClient(app)
+        cabecalho = _entrar(cliente)
+        id_dataset = _importar(cliente, cabecalho).json()["id_dataset"]
+        primeira = cliente.post(
+            "/coletas", headers=cabecalho, json={"fonte": id_dataset}
+        ).json()["id"]
+        assert (
+            cliente.get(f"/coletas/{primeira}", headers=cabecalho).json()["situacao"]
+            == "concluida"
+        )
+        assert contexto.pipeline().lotes == [2]
+
+        segunda = cliente.post(
+            "/coletas", headers=cabecalho, json={"fonte": id_dataset}
+        ).json()["id"]
+        st_segunda = cliente.get(f"/coletas/{segunda}", headers=cabecalho).json()
+    finally:
+        app.dependency_overrides.clear()
+
+    assert st_segunda["situacao"] == "concluida"
+    assert st_segunda["textos_analisados"] == 2
+    assert contexto.pipeline().lotes == [2], "não deveria reclassificar textos já analisados"
+
+def test_pesquisa_com_forcar_atualizacao_refaz_consulta_no_x(com_x):
+    x = XFalso(
+        _tweets("t1", "t2", "t3"),
+        [{"id_origem": "t4", "texto_original": "Novo tweet sobre vacina", "fonte": "X"}],
+    )
+    cliente, cabecalho = com_x(x)
+    primeira = _pesquisar(cliente, cabecalho, "vacina", meta=5)
+    assert primeira["origem"] == {"base": 2, "x": 3, "duplicatas": 0}
+    assert len(x.pedidos) == 1
+
+    # Repetição sem forçar: cache/base atende sem nova chamada ao X.
+    segunda = _pesquisar(cliente, cabecalho, "vacina", meta=5)
+    assert len(x.pedidos) == 1
+    assert segunda["origem"] == {"base": 5, "x": 0, "duplicatas": 0}
+
+    # Forçando atualização: consulta o X novamente sem apagar histórico.
+    resposta = cliente.post(
+        "/coletas",
+        headers=cabecalho,
+        json={
+            "fonte": "pesquisa",
+            "termo": "vacina",
+            "quantidade": 5,
+            "complementar_com_x": True,
+            "forcar_atualizacao": True,
+        },
+    )
+    assert resposta.status_code == 202
+    forcar = cliente.get(f"/coletas/{resposta.json()['id']}", headers=cabecalho).json()
+    assert len(x.pedidos) == 2
+    assert forcar["origem"]["x"] == 1
+
+
+def test_coleta_repetida_pula_reinferencia_no_pipeline(tmp_path):
+    contexto = _contexto(tmp_path)
+    app.dependency_overrides[obter_contexto] = lambda: contexto
+    try:
+        cliente = TestClient(app)
+        cabecalho = _entrar(cliente)
+        id_dataset = _importar(cliente, cabecalho).json()["id_dataset"]
+        primeira = cliente.post(
+            "/coletas", headers=cabecalho, json={"fonte": id_dataset}
+        ).json()["id"]
+        assert (
+            cliente.get(f"/coletas/{primeira}", headers=cabecalho).json()["situacao"]
+            == "concluida"
+        )
+        assert contexto.pipeline().lotes == [2]
+
+        segunda = cliente.post(
+            "/coletas", headers=cabecalho, json={"fonte": id_dataset}
+        ).json()["id"]
+        st_segunda = cliente.get(f"/coletas/{segunda}", headers=cabecalho).json()
+    finally:
+        app.dependency_overrides.clear()
+
+    assert st_segunda["situacao"] == "concluida"
+    assert st_segunda["textos_analisados"] == 2
+    assert contexto.pipeline().lotes == [2], "não deveria reclassificar textos já analisados"

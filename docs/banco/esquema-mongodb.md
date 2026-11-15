@@ -23,8 +23,8 @@ Sprint 4, e a configuração do ambiente e da conexão pertence à issue #12.
 | Item | Valor |
 |---|---|
 | Banco de dados | `sentia` |
-| Collection | `analises` |
-| Um documento representa | um texto analisado |
+| Collection principal de resultados | `analises` (um texto classificado por documento) |
+| Collections complementares | `registros` (base bruta e normalizada), `datasets` (catálogo de CSV/corpus/pesquisa X), `pesquisas` (cache persistente da pesquisa híbrida) |
 
 ### 1.1 Onde o banco entra no fluxo
 
@@ -362,4 +362,15 @@ db.analises.createIndex({ data_processamento: 1 }, { name: "idx_data_processamen
 ```
 
 O `1` indica ordem crescente. O campo `_id` já possui índice automático.
+
+### 5.1 Collections complementares e índices (`criar_indices_complementares`)
+
+Além de `analises`, `src/dados/repositorio.py` mantém de forma idempotente as collections:
+
+- **`registros`:** armazena textos importados via CSV, corpus `TweetSentBR` e tweets adquiridos via XFetch, com chave única composta `(fonte, id_origem)` (ou hash determinístico `auto_<sha256>` quando `id_origem` estiver ausente/vazio), preservando `texto_tratado`, `rotulo_original`, `rotulo_padronizado`, `data_publicacao`, `metadados`, `ids_datasets` e `origem_coleta`.
+  - Índices: `uq_registros_fonte_id_origem` (único em `fonte`, `id_origem`), `idx_registros_ids_datasets` (`ids_datasets`), `idx_registros_origem_coleta` (`origem_coleta`) e `idx_registros_data_publicacao` (`data_publicacao`).
+- **`datasets`:** catálogo persistente dos conjuntos importados (`upload_csv`, `corpus` como `tweetsentbr`, e `pesquisa_x`), preservando ordem via `chaves_registros` e sobrevivendo a reinícios da API.
+  - Índices: `uq_datasets_id_dataset` (único em `id_dataset`) e `idx_datasets_criado_em` (`criado_em`).
+- **`pesquisas`:** cache persistente das pesquisas híbridas concluídas sem erro externo, indexado pela chave normalizada exata `(consulta_normalizada, complementar_com_x)` (`chave_cache`, sem correspondência parcial por substring) com controle de `quantidade_solicitada`, `quantidade_atendida` e `esgotado_na_origem`.
+  - Índices: `uq_pesquisas_chave_cache` (único em `chave_cache`), `idx_pesquisas_consulta` (`consulta_normalizada`, `complementar_com_x`) e `idx_pesquisas_atualizado_em` (`atualizado_em`).
 

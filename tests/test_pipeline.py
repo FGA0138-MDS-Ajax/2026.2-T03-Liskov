@@ -1,4 +1,4 @@
-﻿import csv
+import csv
 from datetime import datetime, timezone
 
 import pytest
@@ -98,8 +98,19 @@ def test_omite_campos_opcionais_ausentes():
     documento = resultado[0]
     assert "rotulo_original" not in documento
     assert "rotulo_padronizado" not in documento
+    assert "texto_tratado" not in documento
     assert "data_publicacao" not in documento
     assert "metadados" not in documento
+
+
+def test_preserva_texto_tratado_nao_vazio_e_omite_em_branco():
+    pipeline = PipelineClassificacao(classificador=ClassificadorFalso())
+    com_tratado = pipeline.processar_registros([
+        registro(id_origem="t_ok", texto_tratado="  texto limpo exemplo  "),
+        registro(id_origem="t_vazio", texto_tratado="   "),
+    ])
+    assert com_tratado[0]["texto_tratado"] == "texto limpo exemplo"
+    assert "texto_tratado" not in com_tratado[1]
 
 
 def test_converte_data_publicacao_para_utc():

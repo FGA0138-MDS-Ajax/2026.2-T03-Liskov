@@ -22,8 +22,12 @@ from src.dados.repositorio import (
     buscar_por_id,
     buscar_por_id_origem,
     criar_indices,
+    criar_indices_complementares,
+    garantir_id_origem,
     listar_analises,
     listar_registros_base,
+    montar_chave_cache_pesquisa,
+    normalizar_consulta_pesquisa,
     obter_colecao,
     resumir_analises,
     salvar_analise,
@@ -390,3 +394,41 @@ def test_repositorio_analises_integra_escrita_consulta_e_resumo(colecao):
         "por_sentimento": {"positivo": 1, "negativo": 0, "neutro": 0},
         "sem_data_publicacao": 1,
     }
+
+
+def test_garantir_id_origem_e_normalizacao_de_cache_sem_colisao_parcial():
+    reg_sem_id = {"fonte": "X", "texto_original": "Texto qualquer", "data_publicacao": "2026-11-10"}
+    reg_mesmo = {
+        "fonte": " x ",
+        "id_origem": "  ",
+        "texto_original": "Texto qualquer",
+        "data_publicacao": datetime(2026, 11, 10, tzinfo=UTC),
+    }
+    reg_outro = {"fonte": "X", "texto_original": "Texto diferente"}
+
+    id_gerado = garantir_id_origem(reg_sem_id)
+    assert id_gerado.startswith("auto_")
+    assert id_gerado == garantir_id_origem(reg_mesmo)
+    assert id_gerado != garantir_id_origem(reg_outro)
+    assert garantir_id_origem({"id_origem": " id_real "}) == "id_real"
+
+    assert normalizar_consulta_pesquisa("  Vacinação   Infantil  ") == "vacinacao infantil"
+    chave_vac = montar_chave_cache_pesquisa("vac")
+    chave_vacina = montar_chave_cache_pesquisa("vacina")
+    chave_vac_x0 = montar_chave_cache_pesquisa("vacina", complementar_com_x=False)
+    chave_eq = montar_chave_cache_pesquisa("  VACINA  ", complementar_com_x=True)
+
+    assert chave_vac["chave_cache"] != chave_vacina["chave_cache"]
+    assert chave_vacina["chave_cache"] != chave_vac_x0["chave_cache"]
+    assert chave_vacina["chave_cache"] == chave_eq["chave_cache"]
+
+
+def test_criar_indices_complementares_envia_indices_sem_banco_real():
+    colecoes = {"registros": Mock(), "datasets": Mock(), "pesquisas": Mock()}
+    colecao_falsa = Mock()
+    colecao_falsa.database = colecoes
+
+    criar_indices_complementares(colecao_falsa)
+
+    for nome in ("registros", "datasets", "pesquisas"):
+        colecoes[nome].create_indexes.assert_called_once()

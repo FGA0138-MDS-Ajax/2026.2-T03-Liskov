@@ -1,19 +1,28 @@
-from collections.abc import Iterable
+import hashlib
+import re
+import unicodedata
+from collections.abc import Iterable, Mapping
 from datetime import UTC, date, datetime, time
 from typing import Any
+from uuid import uuid4
 
 from bson import ObjectId
 from bson.errors import InvalidId
-from pymongo import ASCENDING, IndexModel
+from pymongo import ASCENDING, IndexModel, UpdateOne
 from pymongo.collection import Collection
 from pymongo.errors import BulkWriteError, DuplicateKeyError, PyMongoError
 from pymongo.mongo_client import MongoClient
 
 NOME_BANCO_PADRAO = "sentia"
 NOME_COLECAO = "analises"
+NOME_COLECAO_REGISTROS = "registros"
+NOME_COLECAO_DATASETS = "datasets"
+NOME_COLECAO_PESQUISAS = "pesquisas"
 SENTIMENTOS_VALIDOS = {"positivo", "negativo", "neutro"}
 CAMPOS_TEXTO_OBRIGATORIOS = ("id_origem", "fonte", "texto_original")
 LIMITE_MAXIMO_PAGINA = 100
+LIMITE_CHAVES_EMBEDDED_DATASET = 50_000
+TAMANHO_LOTE_CONSULTA_CHAVES = 200
 
 
 class ErroAnaliseInvalida(ValueError):
@@ -89,6 +98,70 @@ def obter_colecao(client: MongoClient, nome_banco: str | None = None):
 def criar_indices(colecao: Collection):
 
     return colecao.create_indexes(INDICES)
+
+
+INDICES_REGISTROS = [
+    IndexModel(
+        [("fonte", ASCENDING), ("id_origem", ASCENDING)],
+        unique=True,
+        name="uq_registros_fonte_id_origem",
+    ),
+    IndexModel([("ids_datasets", ASCENDING)], name="idx_registros_ids_datasets"),
+    IndexModel([("origem_coleta", ASCENDING)], name="idx_registros_origem_coleta"),
+    IndexModel([("data_publicacao", ASCENDING)], name="idx_registros_data_publicacao"),
+]
+
+INDICES_DATASETS = [
+    IndexModel(
+        [("id_dataset", ASCENDING)],
+        unique=True,
+        name="uq_datasets_id_dataset",
+    ),
+    IndexModel([("criado_em", ASCENDING)], name="idx_datasets_criado_em"),
+]
+
+INDICES_PESQUISAS = [
+    IndexModel(
+        [("chave_cache", ASCENDING)],
+        unique=True,
+        name="uq_pesquisas_chave_cache",
+    ),
+    IndexModel(
+        [("consulta_normalizada", ASCENDING), ("complementar_com_x", ASCENDING)],
+        name="idx_pesquisas_consulta",
+    ),
+    IndexModel([("atualizado_em", ASCENDING)], name="idx_pesquisas_atualizado_em"),
+]
+
+
+def _colecao_auxiliar(colecao: Any, nome: str) -> Any:
+    """Resolve uma coleção irmã no mesmo banco a partir da coleção `analises`."""
+    database = getattr(colecao, "database", None)
+    if database is None or not hasattr(database, "__getitem__"):
+        raise ErroLeituraAnalises(
+            "Banco de dados indisponível para consultar coleções auxiliares."
+        )
+    return database[nome]
+
+
+def criar_indices_complementares(colecao: Collection) -> dict[str, Any]:
+    """Cria de forma idempotente os índices de `registros`, `datasets` e `pesquisas`."""
+    try:
+        return {
+            NOME_COLECAO_REGISTROS: _colecao_auxiliar(
+                colecao, NOME_COLECAO_REGISTROS
+            ).create_indexes(INDICES_REGISTROS),
+            NOME_COLECAO_DATASETS: _colecao_auxiliar(
+                colecao, NOME_COLECAO_DATASETS
+            ).create_indexes(INDICES_DATASETS),
+            NOME_COLECAO_PESQUISAS: _colecao_auxiliar(
+                colecao, NOME_COLECAO_PESQUISAS
+            ).create_indexes(INDICES_PESQUISAS),
+        }
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao criar índices auxiliares no MongoDB; verifique a conexão."
+        ) from None
 
 
 def validar_analise(documento: dict[str, Any]):
@@ -264,50 +337,610 @@ def resumir_analises(
     }
 
 
+def _serializar_data_iso(valor: Any) -> str | None:
+    if valor is None:
+        return None
+    if isinstance(valor, datetime):
+        data = valor if valor.tzinfo is not None else valor.replace(tzinfo=UTC)
+        return data.astimezone(UTC).isoformat().replace("+00:00", "Z")
+    if isinstance(valor, date):
+        return datetime(valor.year, valor.month, valor.day, tzinfo=UTC).isoformat().replace(
+            "+00:00", "Z"
+        )
+    return str(valor)
+
+
+def _normalizar_data_registro(valor: Any) -> datetime | str | None:
+    if valor is None:
+        return None
+    if isinstance(valor, datetime):
+        return (valor if valor.tzinfo is not None else valor.replace(tzinfo=UTC)).astimezone(
+            UTC
+        )
+    if isinstance(valor, date):
+        return datetime(valor.year, valor.month, valor.day, tzinfo=UTC)
+    if isinstance(valor, str):
+        texto = valor.strip()
+        if not texto:
+            return None
+        if len(texto) == 10:
+            try:
+                calendario = date.fromisoformat(texto)
+            except ValueError:
+                return texto
+            return datetime(calendario.year, calendario.month, calendario.day, tzinfo=UTC)
+        try:
+            data = datetime.fromisoformat(texto.replace("Z", "+00:00"))
+        except ValueError:
+            return texto
+        if data.tzinfo is not None:
+            return data.astimezone(UTC)
+        return texto
+    return str(valor)
+
+
+def garantir_id_origem(registro: Mapping[str, Any]) -> str:
+    """Retorna o identificador de origem ou gera hash SHA-256 determinístico."""
+    bruto = registro.get("id_origem")
+    if bruto is not None and not isinstance(bruto, bool):
+        identificador = str(bruto).strip()
+        if identificador:
+            return identificador
+
+    fonte = str(registro.get("fonte", "")).strip().casefold()
+    texto = str(registro.get("texto_original", "")).strip()
+    data_chave = _serializar_data_iso(_normalizar_data_registro(registro.get("data_publicacao"))) or ""
+    payload = f"{fonte}\0{texto}\0{data_chave}".encode()
+    return f"auto_{hashlib.sha256(payload).hexdigest()[:24]}"
+
+
+def chave_natural_registro(registro: Mapping[str, Any]) -> tuple[str, str]:
+    """Chave lógica estável `(fonte normalizada, id_origem)` para deduplicação."""
+    return (str(registro.get("fonte", "")).strip().casefold(), garantir_id_origem(registro))
+
+
+def _normalizar_registro_bruto(
+    registro: Mapping[str, Any],
+    *,
+    origem_coleta: str | None = None,
+) -> dict[str, Any]:
+    if not isinstance(registro, Mapping):
+        raise ErroAnaliseInvalida("Cada registro deve ser um mapeamento válido.")
+    fonte_bruta = registro.get("fonte")
+    texto_bruto = registro.get("texto_original")
+    if not isinstance(fonte_bruta, str) or not fonte_bruta.strip():
+        raise ErroAnaliseInvalida("Campo obrigatório ausente ou vazio: fonte")
+    if not isinstance(texto_bruto, str) or not texto_bruto.strip():
+        raise ErroAnaliseInvalida("Campo obrigatório ausente ou vazio: texto_original")
+
+    fonte = fonte_bruta.strip()
+    id_origem = garantir_id_origem(registro)
+    documento: dict[str, Any] = {
+        "id_origem": id_origem,
+        "fonte": fonte,
+        "texto_original": texto_bruto,
+    }
+
+    texto_tratado = registro.get("texto_tratado")
+    if isinstance(texto_tratado, str) and texto_tratado.strip():
+        documento["texto_tratado"] = texto_tratado.strip()
+
+    for campo in ("rotulo_original", "rotulo_padronizado"):
+        valor = registro.get(campo)
+        if valor is not None:
+            texto = str(valor).strip()
+            if texto:
+                documento[campo] = texto
+
+    data_publicacao = _normalizar_data_registro(registro.get("data_publicacao"))
+    if data_publicacao is not None:
+        documento["data_publicacao"] = data_publicacao
+
+    metadados = registro.get("metadados")
+    if metadados is not None:
+        if not isinstance(metadados, Mapping):
+            raise ErroAnaliseInvalida("metadados precisa ser um dicionário válido.")
+        if metadados:
+            documento["metadados"] = dict(metadados)
+
+    if isinstance(origem_coleta, str) and origem_coleta.strip():
+        documento["origem_coleta"] = origem_coleta.strip()
+
+    return documento
+
+
+def _serializar_registro_base(doc: Mapping[str, Any]) -> dict[str, Any] | None:
+    if not all(
+        isinstance(doc.get(campo), str) and doc[campo].strip()
+        for campo in CAMPOS_TEXTO_OBRIGATORIOS
+    ):
+        return None
+    registro: dict[str, Any] = {
+        "id_origem": doc["id_origem"].strip(),
+        "fonte": doc["fonte"].strip(),
+        "texto_original": doc["texto_original"],
+    }
+    texto_tratado = doc.get("texto_tratado")
+    if isinstance(texto_tratado, str) and texto_tratado.strip():
+        registro["texto_tratado"] = texto_tratado.strip()
+    for campo in ("rotulo_original", "rotulo_padronizado"):
+        if doc.get(campo) is not None:
+            registro[campo] = doc[campo]
+    if doc.get("data_publicacao") is not None:
+        registro["data_publicacao"] = _serializar_data_iso(doc["data_publicacao"])
+    if isinstance(doc.get("metadados"), Mapping) and doc["metadados"]:
+        registro["metadados"] = dict(doc["metadados"])
+    return registro
+
+
+def salvar_registros(
+    colecao: Collection,
+    registros: Iterable[Mapping[str, Any]],
+    *,
+    id_dataset: str | None = None,
+    origem_coleta: str | None = None,
+) -> dict[str, Any]:
+    """Persiste registros brutos na coleção `registros` com upsert por `(fonte, id_origem)`."""
+    col_registros = _colecao_auxiliar(colecao, NOME_COLECAO_REGISTROS)
+    por_chave: dict[tuple[str, str], dict[str, Any]] = {}
+    recebidos = 0
+    for item in registros:
+        recebidos += 1
+        normalizado = _normalizar_registro_bruto(item, origem_coleta=origem_coleta)
+        chave = (normalizado["fonte"], normalizado["id_origem"])
+        if chave not in por_chave:
+            por_chave[chave] = normalizado
+        else:
+            por_chave[chave].update(normalizado)
+
+    if not por_chave:
+        return {"recebidos": recebidos, "inseridos": 0, "existentes": 0, "chaves": []}
+
+    agora = datetime.now(UTC)
+    operacoes: list[UpdateOne] = []
+    chaves_ordenadas: list[dict[str, str]] = []
+    for (fonte, id_origem), doc in por_chave.items():
+        chaves_ordenadas.append({"fonte": fonte, "id_origem": id_origem})
+        campos_set: dict[str, Any] = {
+            "texto_original": doc["texto_original"],
+            "atualizado_em": agora,
+        }
+        for opcional in (
+            "texto_tratado",
+            "rotulo_original",
+            "rotulo_padronizado",
+            "data_publicacao",
+            "metadados",
+        ):
+            if opcional in doc:
+                campos_set[opcional] = doc[opcional]
+
+        campos_insert: dict[str, Any] = {
+            "fonte": fonte,
+            "id_origem": id_origem,
+            "criado_em": agora,
+        }
+        if "origem_coleta" in doc:
+            campos_insert["origem_coleta"] = doc["origem_coleta"]
+
+        atualizacao: dict[str, Any] = {
+            "$set": campos_set,
+            "$setOnInsert": campos_insert,
+        }
+        if isinstance(id_dataset, str) and id_dataset.strip():
+            atualizacao["$addToSet"] = {"ids_datasets": id_dataset.strip()}
+
+        operacoes.append(
+            UpdateOne(
+                {"fonte": fonte, "id_origem": id_origem},
+                atualizacao,
+                upsert=True,
+            )
+        )
+
+    try:
+        resultado = col_registros.bulk_write(operacoes, ordered=False)
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao salvar registros no MongoDB; verifique a conexão."
+        ) from None
+
+    return {
+        "recebidos": recebidos,
+        "inseridos": int(getattr(resultado, "upserted_count", 0) or 0),
+        "existentes": int(getattr(resultado, "matched_count", 0) or 0),
+        "chaves": chaves_ordenadas,
+    }
+
+
+def salvar_dataset(
+    colecao: Collection,
+    nome_arquivo: str,
+    registros: Iterable[Mapping[str, Any]],
+    *,
+    id_dataset: str | None = None,
+    tipo: str = "upload_csv",
+    origem_coleta: str | None = None,
+    metadados: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Persiste registros e metadados de um dataset no MongoDB de forma idempotente."""
+    if not isinstance(nome_arquivo, str) or not nome_arquivo.strip():
+        raise ErroAnaliseInvalida("nome_arquivo deve ser texto não vazio.")
+
+    dataset_id = (
+        id_dataset.strip()
+        if isinstance(id_dataset, str) and id_dataset.strip()
+        else f"ds_{uuid4().hex[:12]}"
+    )
+    lista_registros = [dict(r) for r in registros]
+    resumo_escrita = salvar_registros(
+        colecao,
+        lista_registros,
+        id_dataset=dataset_id,
+        origem_coleta=origem_coleta,
+    )
+    chaves = resumo_escrita["chaves"]
+    col_datasets = _colecao_auxiliar(colecao, NOME_COLECAO_DATASETS)
+    agora = datetime.now(UTC)
+
+    campos_set: dict[str, Any] = {
+        "nome_arquivo": nome_arquivo.strip(),
+        "tipo": tipo,
+        "quantidade_registros": len(chaves),
+        "atualizado_em": agora,
+    }
+    if len(chaves) <= LIMITE_CHAVES_EMBEDDED_DATASET:
+        campos_set["chaves_registros"] = chaves
+    if metadados:
+        campos_set["metadados"] = dict(metadados)
+
+    try:
+        col_datasets.update_one(
+            {"id_dataset": dataset_id},
+            {
+                "$set": campos_set,
+                "$setOnInsert": {"id_dataset": dataset_id, "criado_em": agora},
+            },
+            upsert=True,
+        )
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao salvar metadados do dataset no MongoDB; verifique a conexão."
+        ) from None
+
+    registros_serializados = [
+        serializado
+        for item in lista_registros
+        if (
+            serializado := _serializar_registro_base(
+                _normalizar_registro_bruto(item, origem_coleta=origem_coleta)
+            )
+        )
+        is not None
+    ]
+    return {
+        "id_dataset": dataset_id,
+        "nome_arquivo": nome_arquivo.strip(),
+        "tipo": tipo,
+        "quantidade_registros": len(chaves),
+        "registros": registros_serializados,
+    }
+
+
+def possui_dataset(colecao: Collection, id_dataset: str) -> bool:
+    """Informa se o dataset existe na coleção `datasets` do MongoDB."""
+    if not isinstance(id_dataset, str) or not id_dataset.strip():
+        return False
+    col_datasets = _colecao_auxiliar(colecao, NOME_COLECAO_DATASETS)
+    try:
+        return col_datasets.find_one({"id_dataset": id_dataset.strip()}, {"_id": 1}) is not None
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao consultar datasets no MongoDB; verifique a conexão."
+        ) from None
+
+
+def _carregar_registros_dataset(
+    colecao: Collection,
+    doc_dataset: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    col_registros = _colecao_auxiliar(colecao, NOME_COLECAO_REGISTROS)
+    id_dataset = doc_dataset["id_dataset"]
+    try:
+        docs = list(col_registros.find({"ids_datasets": id_dataset}, {"_id": 0}))
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao carregar registros do dataset no MongoDB; verifique a conexão."
+        ) from None
+
+    por_chave: dict[tuple[str, str], dict[str, Any]] = {}
+    serializados: list[dict[str, Any]] = []
+    for doc in docs:
+        item = _serializar_registro_base(doc)
+        if item is None:
+            continue
+        chave = (item["fonte"], item["id_origem"])
+        por_chave[chave] = item
+        serializados.append(item)
+
+    chaves_ordenadas = doc_dataset.get("chaves_registros")
+    if not isinstance(chaves_ordenadas, list) or not chaves_ordenadas:
+        return serializados
+
+    ordenados: list[dict[str, Any]] = []
+    usados: set[tuple[str, str]] = set()
+    for ref in chaves_ordenadas:
+        if not isinstance(ref, Mapping):
+            continue
+        chave = (ref.get("fonte"), ref.get("id_origem"))
+        if chave in por_chave and chave not in usados:
+            ordenados.append(por_chave[chave])
+            usados.add(chave)
+    for item in serializados:
+        chave = (item["fonte"], item["id_origem"])
+        if chave not in usados:
+            ordenados.append(item)
+    return ordenados
+
+
+def obter_dataset(
+    colecao: Collection,
+    id_dataset: str,
+    *,
+    incluir_registros: bool = True,
+) -> dict[str, Any] | None:
+    """Recupera metadados (e opcionalmente os registros ordenados) de um dataset."""
+    if not isinstance(id_dataset, str) or not id_dataset.strip():
+        return None
+    col_datasets = _colecao_auxiliar(colecao, NOME_COLECAO_DATASETS)
+    try:
+        doc = col_datasets.find_one({"id_dataset": id_dataset.strip()}, {"_id": 0})
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao consultar dataset no MongoDB; verifique a conexão."
+        ) from None
+    if doc is None:
+        return None
+
+    saida: dict[str, Any] = {
+        "id_dataset": doc["id_dataset"],
+        "nome_arquivo": doc["nome_arquivo"],
+        "tipo": doc.get("tipo", "upload_csv"),
+        "quantidade_registros": doc.get("quantidade_registros", 0),
+    }
+    if incluir_registros:
+        saida["registros"] = _carregar_registros_dataset(colecao, doc)
+    return saida
+
+
+def listar_datasets(
+    colecao: Collection,
+    *,
+    incluir_registros: bool = False,
+) -> list[dict[str, Any]]:
+    """Lista os datasets persistidos ordenados pela criação."""
+    col_datasets = _colecao_auxiliar(colecao, NOME_COLECAO_DATASETS)
+    try:
+        docs = list(
+            col_datasets.find({}, {"_id": 0}).sort([("criado_em", ASCENDING), ("id_dataset", ASCENDING)])
+        )
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao listar datasets no MongoDB; verifique a conexão."
+        ) from None
+
+    datasets: list[dict[str, Any]] = []
+    for doc in docs:
+        item: dict[str, Any] = {
+            "id_dataset": doc["id_dataset"],
+            "nome_arquivo": doc["nome_arquivo"],
+            "tipo": doc.get("tipo", "upload_csv"),
+            "quantidade_registros": doc.get("quantidade_registros", 0),
+        }
+        if incluir_registros:
+            item["registros"] = _carregar_registros_dataset(colecao, doc)
+        datasets.append(item)
+    return datasets
+
+
 def listar_registros_base(colecao: Collection) -> list[dict[str, Any]]:
-    """Recupera registros base da coleção analises para deduplicação de coleta."""
+    """Recupera a base persistida combinando `registros` e `analises` sem duplicatas."""
     projecao = {
         "_id": 0,
         "id_origem": 1,
         "fonte": 1,
         "texto_original": 1,
+        "texto_tratado": 1,
         "data_publicacao": 1,
         "rotulo_original": 1,
+        "rotulo_padronizado": 1,
         "metadados": 1,
     }
+    documentos_registros: list[dict[str, Any]] = []
     try:
-        documentos = list(colecao.find({}, projecao))
+        database = getattr(colecao, "database", None)
+        if database is not None and hasattr(database, "__getitem__"):
+            col_registros = _colecao_auxiliar(colecao, NOME_COLECAO_REGISTROS)
+            documentos_registros = list(col_registros.find({}, projecao))
+        documentos_analises = list(colecao.find({}, projecao))
     except PyMongoError:
         raise ErroLeituraAnalises(
             "Falha ao consultar o MongoDB; verifique a conexão."
         ) from None
 
-    registros: list[dict[str, Any]] = []
-    for doc in documentos:
-        if all(
-            isinstance(doc.get(campo), str) and doc[campo].strip()
-            for campo in CAMPOS_TEXTO_OBRIGATORIOS
+    por_chave: dict[tuple[str, str], dict[str, Any]] = {}
+    for origem_docs in (documentos_registros, documentos_analises):
+        for doc in origem_docs:
+            registro = _serializar_registro_base(doc)
+            if registro is None:
+                continue
+            chave = (registro["fonte"].casefold(), registro["id_origem"])
+            if chave not in por_chave:
+                por_chave[chave] = registro
+            else:
+                existente = por_chave[chave]
+                for campo in (
+                    "texto_tratado",
+                    "rotulo_original",
+                    "rotulo_padronizado",
+                    "data_publicacao",
+                    "metadados",
+                ):
+                    if campo not in existente and campo in registro:
+                        existente[campo] = registro[campo]
+
+    return list(por_chave.values())
+
+
+def obter_analises_por_chaves(
+    colecao: Collection,
+    chaves: Iterable[tuple[str, str]],
+) -> dict[tuple[str, str], dict[str, Any]]:
+    """Busca análises já persistidas para o conjunto de chaves `(fonte, id_origem)`."""
+    pares_unicos: list[tuple[str, str]] = []
+    vistos: set[tuple[str, str]] = set()
+    for fonte, id_origem in chaves:
+        if (
+            not isinstance(fonte, str)
+            or not fonte.strip()
+            or not isinstance(id_origem, str)
+            or not id_origem.strip()
         ):
-            registro: dict[str, Any] = {
-                "id_origem": doc["id_origem"],
-                "fonte": doc["fonte"],
-                "texto_original": doc["texto_original"],
-            }
-            for opcional in ("data_publicacao", "rotulo_original", "metadados"):
-                if doc.get(opcional) is not None:
-                    registro[opcional] = doc[opcional]
-            registros.append(registro)
-    return registros
+            continue
+        par = (fonte.strip(), id_origem.strip())
+        if par not in vistos:
+            vistos.add(par)
+            pares_unicos.append(par)
+
+    if not pares_unicos:
+        return {}
+
+    encontradas: dict[tuple[str, str], dict[str, Any]] = {}
+    try:
+        for inicio in range(0, len(pares_unicos), TAMANHO_LOTE_CONSULTA_CHAVES):
+            lote = pares_unicos[inicio : inicio + TAMANHO_LOTE_CONSULTA_CHAVES]
+            filtro = {"$or": [{"fonte": f, "id_origem": i} for f, i in lote]}
+            for doc in colecao.find(filtro, {"_id": 0}):
+                fonte_doc = doc.get("fonte")
+                id_doc = doc.get("id_origem")
+                if isinstance(fonte_doc, str) and isinstance(id_doc, str):
+                    encontradas[(fonte_doc.strip(), id_doc.strip())] = doc
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao consultar análises existentes no MongoDB; verifique a conexão."
+        ) from None
+    return encontradas
+
+
+def normalizar_consulta_pesquisa(consulta: str) -> str:
+    """Normaliza consulta de busca (minúsculas, sem acentos e espaços colapsados)."""
+    if not isinstance(consulta, str):
+        raise ErroConsultaInvalida("consulta deve ser texto não vazio.")
+    decomposto = unicodedata.normalize("NFKD", consulta.casefold())
+    sem_acentos = "".join(c for c in decomposto if not unicodedata.combining(c))
+    tokens = re.findall(r"\w+", sem_acentos)
+    normalizada = " ".join(tokens) if tokens else " ".join(sem_acentos.split())
+    if not normalizada:
+        raise ErroConsultaInvalida("consulta deve ser texto não vazio.")
+    return normalizada
+
+
+def montar_chave_cache_pesquisa(
+    consulta: str,
+    *,
+    complementar_com_x: bool = True,
+) -> dict[str, Any]:
+    """Monta a chave exata de cache da pesquisa híbrida."""
+    consulta_normalizada = normalizar_consulta_pesquisa(consulta)
+    chave_cache = f"{consulta_normalizada}|x:{1 if complementar_com_x else 0}"
+    return {
+        "chave_cache": chave_cache,
+        "consulta_normalizada": consulta_normalizada,
+        "complementar_com_x": bool(complementar_com_x),
+    }
+
+
+def buscar_cache_pesquisa(
+    colecao: Collection,
+    consulta: str,
+    *,
+    complementar_com_x: bool = True,
+) -> dict[str, Any] | None:
+    """Retorna cache exato de pesquisa equivalente, nunca por substring parcial."""
+    espec = montar_chave_cache_pesquisa(consulta, complementar_com_x=complementar_com_x)
+    col_pesquisas = _colecao_auxiliar(colecao, NOME_COLECAO_PESQUISAS)
+    try:
+        return col_pesquisas.find_one({"chave_cache": espec["chave_cache"]}, {"_id": 0})
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao consultar cache de pesquisa no MongoDB; verifique a conexão."
+        ) from None
+
+
+def salvar_cache_pesquisa(
+    colecao: Collection,
+    consulta: str,
+    *,
+    complementar_com_x: bool,
+    quantidade_solicitada: int,
+    quantidade_atendida: int,
+    esgotado_na_origem: bool,
+    origem: dict[str, int] | None = None,
+    chaves_registros: list[dict[str, str]] | None = None,
+) -> dict[str, Any]:
+    """Persiste ou atualiza cache de pesquisa concluída na coleção `pesquisas`."""
+    espec = montar_chave_cache_pesquisa(consulta, complementar_com_x=complementar_com_x)
+    col_pesquisas = _colecao_auxiliar(colecao, NOME_COLECAO_PESQUISAS)
+    agora = datetime.now(UTC)
+
+    campos_set: dict[str, Any] = {
+        "consulta_original": " ".join(consulta.split()),
+        "consulta_normalizada": espec["consulta_normalizada"],
+        "complementar_com_x": espec["complementar_com_x"],
+        "quantidade_solicitada": int(quantidade_solicitada),
+        "quantidade_atendida": int(quantidade_atendida),
+        "esgotado_na_origem": bool(esgotado_na_origem),
+        "atualizado_em": agora,
+    }
+    if origem is not None:
+        campos_set["origem"] = dict(origem)
+    if chaves_registros is not None:
+        campos_set["chaves_registros"] = list(chaves_registros)
+
+    try:
+        col_pesquisas.update_one(
+            {"chave_cache": espec["chave_cache"]},
+            {
+                "$set": campos_set,
+                "$setOnInsert": {"chave_cache": espec["chave_cache"], "criado_em": agora},
+            },
+            upsert=True,
+        )
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao salvar cache de pesquisa no MongoDB; verifique a conexão."
+        ) from None
+
+    return {"chave_cache": espec["chave_cache"], **campos_set}
 
 
 class RepositorioAnalises:
-    """Repositório canônico para persistência e consulta da coleção analises."""
+    """Repositório canônico para persistência e consulta no MongoDB."""
 
     def __init__(self, colecao: Collection) -> None:
         self.colecao = colecao
+        self._indices_complementares_garantidos = False
+
+    def _garantir_indices_complementares(self) -> None:
+        if not self._indices_complementares_garantidos and isinstance(self.colecao, Collection):
+            criar_indices_complementares(self.colecao)
+            self._indices_complementares_garantidos = True
 
     def criar_indices(self):
         return criar_indices(self.colecao)
+
+    def criar_indices_complementares(self):
+        return criar_indices_complementares(self.colecao)
 
     def buscar_por_id_origem(self, fonte: str, id_origem: str) -> dict[str, Any] | None:
         return buscar_por_id_origem(self.colecao, fonte, id_origem)
@@ -354,5 +987,92 @@ class RepositorioAnalises:
         )
 
     def listar_registros_base(self) -> list[dict[str, Any]]:
+        self._garantir_indices_complementares()
         return listar_registros_base(self.colecao)
+
+    def salvar_registros(
+        self,
+        registros: Iterable[Mapping[str, Any]],
+        *,
+        id_dataset: str | None = None,
+        origem_coleta: str | None = None,
+    ) -> dict[str, Any]:
+        self._garantir_indices_complementares()
+        return salvar_registros(
+            self.colecao,
+            registros,
+            id_dataset=id_dataset,
+            origem_coleta=origem_coleta,
+        )
+
+    def salvar_dataset(
+        self,
+        nome_arquivo: str,
+        registros: Iterable[Mapping[str, Any]],
+        *,
+        id_dataset: str | None = None,
+        tipo: str = "upload_csv",
+        origem_coleta: str | None = None,
+        metadados: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        self._garantir_indices_complementares()
+        return salvar_dataset(
+            self.colecao,
+            nome_arquivo,
+            registros,
+            id_dataset=id_dataset,
+            tipo=tipo,
+            origem_coleta=origem_coleta,
+            metadados=metadados,
+        )
+
+    def possui_dataset(self, id_dataset: str) -> bool:
+        self._garantir_indices_complementares()
+        return possui_dataset(self.colecao, id_dataset)
+
+    def obter_dataset(
+        self, id_dataset: str, *, incluir_registros: bool = True
+    ) -> dict[str, Any] | None:
+        self._garantir_indices_complementares()
+        return obter_dataset(self.colecao, id_dataset, incluir_registros=incluir_registros)
+
+    def listar_datasets(self, *, incluir_registros: bool = False) -> list[dict[str, Any]]:
+        self._garantir_indices_complementares()
+        return listar_datasets(self.colecao, incluir_registros=incluir_registros)
+
+    def obter_analises_por_chaves(
+        self, chaves: Iterable[tuple[str, str]]
+    ) -> dict[tuple[str, str], dict[str, Any]]:
+        return obter_analises_por_chaves(self.colecao, chaves)
+
+    def buscar_cache_pesquisa(
+        self, consulta: str, *, complementar_com_x: bool = True
+    ) -> dict[str, Any] | None:
+        self._garantir_indices_complementares()
+        return buscar_cache_pesquisa(
+            self.colecao, consulta, complementar_com_x=complementar_com_x
+        )
+
+    def salvar_cache_pesquisa(
+        self,
+        consulta: str,
+        *,
+        complementar_com_x: bool,
+        quantidade_solicitada: int,
+        quantidade_atendida: int,
+        esgotado_na_origem: bool,
+        origem: dict[str, int] | None = None,
+        chaves_registros: list[dict[str, str]] | None = None,
+    ) -> dict[str, Any]:
+        self._garantir_indices_complementares()
+        return salvar_cache_pesquisa(
+            self.colecao,
+            consulta,
+            complementar_com_x=complementar_com_x,
+            quantidade_solicitada=quantidade_solicitada,
+            quantidade_atendida=quantidade_atendida,
+            esgotado_na_origem=esgotado_na_origem,
+            origem=origem,
+            chaves_registros=chaves_registros,
+        )
 

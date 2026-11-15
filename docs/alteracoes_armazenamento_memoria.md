@@ -1,21 +1,23 @@
-# Unificação da persistência de análises no MongoDB
+# Unificação da persistência de análises, datasets e pesquisas no MongoDB
 
 ## Contexto histórico
 
-Em uma etapa intermediária do projeto, foi introduzido o modo alternativo em memória selecionado pela variável `SENTIA_ARMAZENAMENTO=memoria`, além do módulo auxiliar `src/persistencia/leitura.py` duplicando funções de consulta que já pertenciam ao repositório principal.
+Em uma etapa intermediária do projeto, foi introduzido o modo alternativo em memória selecionado pela variável `SENTIA_ARMAZENAMENTO=memoria`, além do módulo auxiliar `src/persistencia/leitura.py` duplicando funções de consulta que já pertenciam ao repositório principal. Anteriormente também os datasets CSV importados e o histórico do `TweetSentBR`/pesquisas híbridas dependiam do estado em memória do processo.
 
-Essa bifurcação criava dois fluxos distintos entre a API principal (`src/servico/main.py`) e a administração (`src/servico/administracao.py`), fazendo com que análises processadas por coletas administrativas não fossem gravadas na coleção `analises` consultada pelo dashboard.
+Essa bifurcação criava fluxos desconectados entre a API principal (`src/servico/main.py`) e a administração (`src/servico/administracao.py`), fazendo com que datasets, cache de pesquisas e análises se perdessem ou divergissem após reinícios.
 
 ## Estado atual (canônico)
 
-- **Implementação única de persistência:** [`src/dados/repositorio.py`](../src/dados/repositorio.py) (`RepositorioAnalises` e funções associadas) concentra gravação, deduplicação, busca pontual, listagem paginada, resumo por sentimento e listagem de registros base sobre a coleção MongoDB `analises`.
+- **Implementação única de persistência:** [`src/dados/repositorio.py`](../src/dados/repositorio.py) (`RepositorioAnalises` e funções associadas) concentra gravação, deduplicação `(fonte, id_origem)`, busca pontual, listagem paginada, resumo por sentimento e listagem de base sobre as coleções MongoDB `analises`, `registros`, `datasets` e `pesquisas`.
 - **Remoção do modo em memória para análises e do módulo duplicado:**
   - `src/persistencia/leitura.py` foi removido; todas as consultas e integrações com MongoDB passam diretamente por `src/dados/repositorio.py`.
   - A variável `SENTIA_ARMAZENAMENTO` e os helpers `*_memoria` em `src/dados/repositorio.py` foram removidos de `src/servico/dependencias.py` e `src/servico/main.py`.
-- **Integração com a administração:**
-  - `executar_coleta()` em [`src/servico/administracao.py`](../src/servico/administracao.py) persiste os lotes classificados via `ContextoAdministracao.salvar_analises()` → `RepositorioAnalises` na mesma coleção `analises` lida por `GET /analises` e `GET /analises/resumo`.
-  - `ContextoAdministracao.registros_da_base()` também consulta `RepositorioAnalises.listar_registros_base()`, preservando o histórico da base após reinícios do servidor.
-  - `RepositorioAdministracao` preserva em RAM apenas o estado operacional transitório do processo (`datasets` CSV importados como *staging*, status de execução de `coletas` e sessões autenticadas).
+- **Integração completa com a administração:**
+  - `POST /datasets` persiste os registros normalizados e os metadados do dataset no MongoDB (`registros` e `datasets`) de forma síncrona antes de retornar HTTP `201` (ou `503` se o banco estiver indisponível).
+  - O corpus `TweetSentBR` é carregado e persistido de forma idempotente em `datasets`/`registros` (`id_dataset="tweetsentbr"`) e permanece acessível mesmo após reinício sem depender do CSV local.
+  - A pesquisa híbrida (`_registros_da_coleta()` + `pesquisar()`) reutiliza a base unificada (`registros` + `analises`) e o cache persistente da coleção `pesquisas` (sem colidir em substrings parciais, sem gravar cache quando o `XFetch` falha e respeitando `forcar_atualizacao=True` sem apagar o histórico).
+  - `executar_coleta()` em [`src/servico/administracao.py`](../src/servico/administracao.py) verifica análises já persistidas em `analises` (`obter_analises_por_chaves`) antes de enviar registros ao pipeline, evitando reclassificação redundante, e grava novos lotes via `RepositorioAnalises` na mesma coleção lida pelo dashboard.
+  - `RepositorioAdministracao` preserva em RAM apenas o controle transitório dos jobs `coletas` em andamento e sessões autenticadas (`Autenticador`).
 
 ## Como executar localmente
 

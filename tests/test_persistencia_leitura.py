@@ -23,10 +23,17 @@ from src.dados.database import (
 from src.dados.repositorio import (
     ErroConsultaInvalida,
     ErroLeituraAnalises,
+    NOME_COLECAO,
+    NOME_COLECAO_DATASETS,
+    NOME_COLECAO_PESQUISAS,
+    NOME_COLECAO_REGISTROS,
     RepositorioAnalises,
     criar_indices,
+    garantir_id_origem,
     obter_colecao,
 )
+from src.processamento.aquisicao.csv_importer import converter_rotulo_para_sentia
+from src.processamento.aquisicao.xfetch import ErroXFetch
 from src.servico import administracao
 from src.servico.autenticacao import Autenticador, ConfiguracaoAdmin, gerar_hash_senha
 from src.servico.dependencias import obter_pipeline
@@ -97,6 +104,13 @@ class PipelineFalso:
                 )
             if registro.get("rotulo_original") is not None:
                 item["rotulo_original"] = registro["rotulo_original"]
+            if registro.get("rotulo_padronizado") is not None:
+                item["rotulo_padronizado"] = converter_rotulo_para_sentia(
+                    registro["rotulo_padronizado"]
+                )
+            texto_tratado = registro.get("texto_tratado")
+            if isinstance(texto_tratado, str) and texto_tratado.strip():
+                item["texto_tratado"] = texto_tratado.strip()
             if registro.get("metadados") is not None:
                 item["metadados"] = registro["metadados"]
             saida.append(item)
@@ -451,3 +465,595 @@ def test_administracao_coleta_e_pesquisa_persistem_para_dashboard_apos_recriar_c
     finally:
         administracao.obter_contexto.cache_clear()
         app.dependency_overrides.clear()
+
+
+def _configurar_ambiente_admin_mongo(monkeypatch, uri_teste: str) -> str:
+    senha_admin = "senha-integracao-segura"
+    monkeypatch.setenv("MONGODB_URI", uri_teste)
+    monkeypatch.setenv("SENTIA_ADMIN_USUARIO", "admin")
+    monkeypatch.setenv("SENTIA_ADMIN_SENHA_HASH", gerar_hash_senha(senha_admin))
+    monkeypatch.setattr(administracao, "_criar_pipeline_padrao", PipelineFalso)
+    administracao.obter_contexto.cache_clear()
+    return senha_admin
+
+
+def _login_admin(cliente: TestClient, senha_admin: str) -> dict[str, str]:
+    login = cliente.post("/auth/login", json={"usuario": "admin", "senha": senha_admin})
+    assert login.status_code == 200
+    return {"Authorization": f"Bearer {login.json()['token']}"}
+
+
+def test_integracao_cenario_1_dataset_csv_persiste_e_reimportacao_nao_duplica(
+    monkeypatch, client, tmp_path: Path, uri_mongodb_teste, nome_banco_teste
+):
+    uri_teste = uri_com_banco(uri_mongodb_teste, nome_banco_teste)
+    senha_admin = _configurar_ambiente_admin_mongo(monkeypatch, uri_teste)
+    try:
+        ctx = administracao.obter_contexto()
+        ctx.caminho_tweetsentbr = tmp_path / "nao-existe.csv"
+        cliente = TestClient(app)
+        headers = _login_admin(cliente, senha_admin)
+
+        csv_bytes = (
+            "id,texto,fonte,rotulo,data,campanha\n"
+            "csv_1,Ótimo serviço público,portal,positivo,2026-10-10,outubro\n"
+            "csv_2,Atendimento muito ruim,portal,negativo,2026-10-11,outubro\n"
+        ).encode("utf-8")
+        up = cliente.post(
+            "/datasets",
+            headers=headers,
+            files={"arquivo": ("avaliacoes.csv", csv_bytes, "text/csv")},
+        )
+        assert up.status_code == 201
+        id_dataset = up.json()["id_dataset"]
+
+        banco = client[nome_banco_teste]
+        assert banco[NOME_COLECAO_DATASETS].count_documents({"id_dataset": id_dataset}) == 1
+        assert banco[NOME_COLECAO_REGISTROS].count_documents({"fonte": "portal"}) == 2
+        doc_1 = banco[NOME_COLECAO_REGISTROS].find_one({"fonte": "portal", "id_origem": "csv_1"})
+        assert doc_1["rotulo_original"] == "positivo"
+        assert doc_1["rotulo_padronizado"] == "POS"
+        assert doc_1["metadados"] == {"campanha": "outubro"}
+
+        # Reimportação idêntica não duplica documentos em `registros`.
+        reup = cliente.post(
+            "/datasets",
+            headers=headers,
+            files={"arquivo": ("avaliacoes.csv", csv_bytes, "text/csv")},
+        )
+        assert reup.status_code == 201
+        assert banco[NOME_COLECAO_REGISTROS].count_documents({"fonte": "portal"}) == 2
+
+        # Novo contexto após reinício simulado recupera dataset e registros do MongoDB.
+        administracao.obter_contexto.cache_clear()
+        ctx_novo = administracao.ContextoAdministracao(
+            Autenticador(ConfiguracaoAdmin.do_ambiente()),
+            criar_pipeline=PipelineFalso,
+            caminho_tweetsentbr=tmp_path / "nao-existe.csv",
+        )
+        assert any(f["id"] == id_dataset for f in ctx_novo.fontes())
+        assert len(ctx_novo.repositorio.obter_dataset(id_dataset).registros) == 2
+
+        # `texto_tratado` opcional também é preservado quando fornecido ao repositório/pipeline.
+        with ctx_novo.repositorio_analises() as repo:
+            repo.salvar_dataset(
+                "tratado.csv",
+                [
+                    {
+                        "id_origem": "tr_1",
+                        "fonte": "portal",
+                        "texto_original": "Texto ótimo!",
+                        "texto_tratado": "texto otimo",
+                    }
+                ],
+            )
+            carregado = repo.obter_dataset(
+                next(d["id_dataset"] for d in repo.listar_datasets() if d["nome_arquivo"] == "tratado.csv")
+            )
+            assert carregado["registros"][0]["texto_tratado"] == "texto otimo"
+    finally:
+        administracao.obter_contexto.cache_clear()
+
+
+def test_integracao_cenario_2_tweetsentbr_persiste_e_sobrevive_sem_arquivo_local(
+    monkeypatch, client, tmp_path: Path, uri_mongodb_teste, nome_banco_teste
+):
+    uri_teste = uri_com_banco(uri_mongodb_teste, nome_banco_teste)
+    senha_admin = _configurar_ambiente_admin_mongo(monkeypatch, uri_teste)
+    caminho_corpus = tmp_path / "tweetsentbr.csv"
+    caminho_corpus.write_text(
+        "id,texto,fonte,rotulo\n"
+        "ts_1,Adorei a campanha,TweetSentBR,Positivo\n"
+        "ts_2,Fila muito ruim hoje,TweetSentBR,Negativo\n",
+        encoding="utf-8",
+    )
+    try:
+        ctx = administracao.obter_contexto()
+        ctx.caminho_tweetsentbr = caminho_corpus
+        cliente = TestClient(app)
+        headers = _login_admin(cliente, senha_admin)
+
+        fontes = cliente.get("/coletas/fontes", headers=headers).json()["fontes"]
+        assert {"id": "tweetsentbr", "nome": "TweetSentBR"} in fontes
+
+        banco = client[nome_banco_teste]
+        assert banco[NOME_COLECAO_DATASETS].count_documents({"id_dataset": "tweetsentbr"}) == 1
+        assert banco[NOME_COLECAO_REGISTROS].count_documents({"fonte": "TweetSentBR"}) == 2
+
+        # Remove o arquivo CSV local e recria o contexto sem o arquivo físico.
+        caminho_corpus.unlink()
+        administracao.obter_contexto.cache_clear()
+        ctx_reiniciado = administracao.ContextoAdministracao(
+            Autenticador(ConfiguracaoAdmin.do_ambiente()),
+            criar_pipeline=PipelineFalso,
+            caminho_tweetsentbr=tmp_path / "arquivo-inexistente.csv",
+        )
+        assert {"id": "tweetsentbr", "nome": "TweetSentBR"} in ctx_reiniciado.fontes()
+        assert {r["id_origem"] for r in ctx_reiniciado.registros_da_base()} >= {"ts_1", "ts_2"}
+        assert len(ctx_reiniciado.registros_da_fonte("tweetsentbr")) == 2
+    finally:
+        administracao.obter_contexto.cache_clear()
+
+
+def test_integracao_cenario_3_aquisicao_xfetch_persiste_em_registros_datasets_e_analises(
+    monkeypatch, client, tmp_path: Path, uri_mongodb_teste, nome_banco_teste
+):
+    uri_teste = uri_com_banco(uri_mongodb_teste, nome_banco_teste)
+    senha_admin = _configurar_ambiente_admin_mongo(monkeypatch, uri_teste)
+
+    def buscar_x_falso(_termo: str, quantidade: int) -> list[dict]:
+        return [
+            {
+                "id_origem": "tw_inf_1",
+                "fonte": "X",
+                "texto_original": "Preço alto da inflação no mercado",
+                "data_publicacao": "2026-11-05T10:00:00Z",
+                "metadados": {"provedor": "XFetch", "lang": "pt", "like_count": 7},
+            },
+            {
+                "id_origem": "tw_inf_2",
+                "fonte": "X",
+                "texto_original": "Inflação pesa demais no bolso",
+                "data_publicacao": "2026-11-05T11:00:00Z",
+                "metadados": {"provedor": "XFetch", "lang": "pt", "retweet_count": 2},
+            },
+        ][:quantidade]
+
+    try:
+        ctx = administracao.obter_contexto()
+        ctx.caminho_tweetsentbr = tmp_path / "nao-existe.csv"
+        ctx.buscar_x = buscar_x_falso
+        cliente = TestClient(app)
+        headers = _login_admin(cliente, senha_admin)
+
+        res = cliente.post(
+            "/coletas",
+            headers=headers,
+            json={
+                "fonte": "pesquisa",
+                "termo": "inflação",
+                "quantidade": 2,
+                "complementar_com_x": True,
+            },
+        )
+        assert res.status_code == 202
+        status_col = cliente.get(f"/coletas/{res.json()['id']}", headers=headers).json()
+        assert status_col["situacao"] == "concluida"
+
+        banco = client[nome_banco_teste]
+        assert banco[NOME_COLECAO_REGISTROS].count_documents({"fonte": "X"}) == 2
+        assert (
+            banco[NOME_COLECAO_DATASETS].count_documents({"tipo": "pesquisa_x"}) == 1
+        )
+        assert banco[NOME_COLECAO].count_documents({"fonte": "X"}) == 2
+        salvo = banco[NOME_COLECAO_REGISTROS].find_one({"id_origem": "tw_inf_1"})
+        assert salvo["metadados"]["provedor"] == "XFetch"
+    finally:
+        administracao.obter_contexto.cache_clear()
+
+
+def test_integracao_cenario_4_cache_pesquisa_hibrida_e_forcar_atualizacao(
+    monkeypatch, client, tmp_path: Path, uri_mongodb_teste, nome_banco_teste
+):
+    uri_teste = uri_com_banco(uri_mongodb_teste, nome_banco_teste)
+    senha_admin = _configurar_ambiente_admin_mongo(monkeypatch, uri_teste)
+    chamadas_x: list[tuple[str, int]] = []
+
+    def buscar_x_spy(termo: str, quantidade: int) -> list[dict]:
+        chamadas_x.append((termo, quantidade))
+        indice = len(chamadas_x)
+        if termo.casefold() in {"vacinação", "vacinacao"} and indice == 1:
+            return [
+                {
+                    "id_origem": "vx_1",
+                    "fonte": "X",
+                    "texto_original": "Campanha de vacinação excelente",
+                },
+                {
+                    "id_origem": "vx_2",
+                    "fonte": "X",
+                    "texto_original": "Vacinação no posto foi ruim",
+                },
+            ]
+        return [
+            {
+                "id_origem": f"ext_{indice}",
+                "fonte": "X",
+                "texto_original": f"Novo registro sobre {termo}",
+            }
+        ]
+
+    try:
+        ctx = administracao.obter_contexto()
+        ctx.caminho_tweetsentbr = tmp_path / "nao-existe.csv"
+        ctx.buscar_x = buscar_x_spy
+        cliente = TestClient(app)
+        headers = _login_admin(cliente, senha_admin)
+
+        # 1) Busca inicial com meta=5, mas X devolve apenas 2 -> esgotado_na_origem=True.
+        r1 = cliente.post(
+            "/coletas",
+            headers=headers,
+            json={
+                "fonte": "pesquisa",
+                "termo": "Vacinação",
+                "quantidade": 5,
+                "complementar_com_x": True,
+            },
+        )
+        assert r1.status_code == 202
+        st1 = cliente.get(f"/coletas/{r1.json()['id']}", headers=headers).json()
+        assert st1["situacao"] == "concluida"
+        assert len(chamadas_x) == 1
+
+        banco = client[nome_banco_teste]
+        doc_cache = banco[NOME_COLECAO_PESQUISAS].find_one({"consulta_normalizada": "vacinacao"})
+        assert doc_cache is not None
+        assert doc_cache["esgotado_na_origem"] is True
+
+        # 2) Recria contexto e repete com consulta equivalente sem acento e caixa alta.
+        administracao.obter_contexto.cache_clear()
+        ctx2 = administracao.ContextoAdministracao(
+            Autenticador(ConfiguracaoAdmin.do_ambiente()),
+            criar_pipeline=PipelineFalso,
+            caminho_tweetsentbr=tmp_path / "nao-existe.csv",
+            buscar_x=buscar_x_spy,
+        )
+        app.dependency_overrides[administracao.obter_contexto] = lambda: ctx2
+        headers2 = _login_admin(cliente, senha_admin)
+        r2 = cliente.post(
+            "/coletas",
+            headers=headers2,
+            json={
+                "fonte": "pesquisa",
+                "termo": "  VACINACAO  ",
+                "quantidade": 5,
+                "complementar_com_x": True,
+            },
+        )
+        st2 = cliente.get(f"/coletas/{r2.json()['id']}", headers=headers2).json()
+        assert st2["situacao"] == "concluida"
+        assert len(chamadas_x) == 1, "consulta equivalente deveria reutilizar o cache sem ir ao X"
+
+        # 3) Substring parcial incompatível ("vac") não reutiliza cache de "vacinacao".
+        r3 = cliente.post(
+            "/coletas",
+            headers=headers2,
+            json={
+                "fonte": "pesquisa",
+                "termo": "vac",
+                "quantidade": 2,
+                "complementar_com_x": True,
+            },
+        )
+        assert cliente.get(f"/coletas/{r3.json()['id']}", headers=headers2).json()["situacao"] == "concluida"
+        assert len(chamadas_x) == 2
+
+        # 4) forcar_atualizacao=True consulta o X novamente sem apagar histórico anterior.
+        r4 = cliente.post(
+            "/coletas",
+            headers=headers2,
+            json={
+                "fonte": "pesquisa",
+                "termo": "vacinacao",
+                "quantidade": 5,
+                "complementar_com_x": True,
+                "forcar_atualizacao": True,
+            },
+        )
+        st4 = cliente.get(f"/coletas/{r4.json()['id']}", headers=headers2).json()
+        assert st4["situacao"] == "concluida"
+        assert len(chamadas_x) == 3
+        assert banco[NOME_COLECAO_REGISTROS].count_documents({"id_origem": {"$in": ["vx_1", "vx_2"]}}) == 2
+        assert banco[NOME_COLECAO_REGISTROS].count_documents({"id_origem": "ext_3"}) == 1
+    finally:
+        app.dependency_overrides.clear()
+        administracao.obter_contexto.cache_clear()
+
+
+def test_integracao_cenario_5_deduplicacao_e_fallback_id_origem(client, nome_banco_teste):
+    col = obter_colecao(client, nome_banco_teste)
+    repo = RepositorioAnalises(col)
+
+    sem_id_a = {"fonte": "X", "texto_original": "Texto repetido sem id", "data_publicacao": "2026-11-01T10:00:00Z"}
+    sem_id_a_dup = {"fonte": "X", "id_origem": "   ", "texto_original": "Texto repetido sem id", "data_publicacao": "2026-11-01T10:00:00Z"}
+    sem_id_b = {"fonte": "X", "texto_original": "Outro texto sem id"}
+
+    assert garantir_id_origem(sem_id_a).startswith("auto_")
+    assert garantir_id_origem(sem_id_a) == garantir_id_origem(sem_id_a_dup)
+
+    repo.salvar_registros([sem_id_a, sem_id_a_dup, sem_id_b], id_dataset="ds_a", origem_coleta="xfetch")
+    # Reimportação repetida envolvendo registros já existentes em X/CSV não duplica documentos.
+    repo.salvar_registros(
+        [
+            {"id_origem": garantir_id_origem(sem_id_a), "fonte": "X", "texto_original": "Texto repetido sem id"},
+            {"id_origem": "fixo_1", "fonte": "csv_a", "texto_original": "Texto fixo"},
+        ],
+        id_dataset="ds_b",
+        origem_coleta="csv",
+    )
+    repo.salvar_registros(
+        [{"id_origem": "fixo_1", "fonte": "csv_a", "texto_original": "Texto fixo"}],
+        id_dataset="ds_c",
+        origem_coleta="csv",
+    )
+
+    banco = client[nome_banco_teste]
+    assert banco[NOME_COLECAO_REGISTROS].count_documents({}) == 3
+    base = repo.listar_registros_base()
+    assert len(base) == 3
+
+
+def test_integracao_cenario_6_recuperacao_completa_apos_reinicio(
+    monkeypatch, client, tmp_path: Path, uri_mongodb_teste, nome_banco_teste
+):
+    uri_teste = uri_com_banco(uri_mongodb_teste, nome_banco_teste)
+    senha_admin = _configurar_ambiente_admin_mongo(monkeypatch, uri_teste)
+    corpus_csv = tmp_path / "tweetsentbr.csv"
+    corpus_csv.write_text("id,texto,fonte\nts_rec_1,Texto base do corpus sobre saude,TweetSentBR\n", encoding="utf-8")
+
+    chamadas_x: list[tuple[str, int]] = []
+
+    def buscar_x(termo: str, qtd: int) -> list[dict]:
+        chamadas_x.append((termo, qtd))
+        return [{"id_origem": "rx_1", "fonte": "X", "texto_original": f"Post sobre {termo}"}]
+
+    try:
+        ctx = administracao.obter_contexto()
+        ctx.caminho_tweetsentbr = corpus_csv
+        ctx.buscar_x = buscar_x
+        cliente = TestClient(app)
+        headers = _login_admin(cliente, senha_admin)
+
+        csv_up = "id,texto,fonte\nc_1,Atendimento hospitalar bom,portal\n".encode("utf-8")
+        id_ds = cliente.post(
+            "/datasets",
+            headers=headers,
+            files={"arquivo": ("saude.csv", csv_up, "text/csv")},
+        ).json()["id_dataset"]
+        assert cliente.post("/coletas", headers=headers, json={"fonte": id_ds}).status_code == 202
+        assert cliente.post("/coletas", headers=headers, json={"fonte": "tweetsentbr"}).status_code == 202
+        assert (
+            cliente.post(
+                "/coletas",
+                headers=headers,
+                json={"fonte": "pesquisa", "termo": "economia", "quantidade": 3, "complementar_com_x": True},
+            ).status_code
+            == 202
+        )
+        assert len(chamadas_x) == 1
+
+        # Remove corpus físico e reinicia completamente contexto/cliente.
+        corpus_csv.unlink()
+        administracao.obter_contexto.cache_clear()
+        ctx_novo = administracao.ContextoAdministracao(
+            Autenticador(ConfiguracaoAdmin.do_ambiente()),
+            criar_pipeline=PipelineFalso,
+            caminho_tweetsentbr=tmp_path / "nao-existe.csv",
+            buscar_x=buscar_x,
+        )
+        app.dependency_overrides[administracao.obter_contexto] = lambda: ctx_novo
+        headers_reinicio = _login_admin(cliente, senha_admin)
+
+        fontes = cliente.get("/coletas/fontes", headers=headers_reinicio).json()["fontes"]
+        ids_fontes = {f["id"] for f in fontes}
+        assert "tweetsentbr" in ids_fontes
+        assert id_ds in ids_fontes
+
+        # Pesquisa equivalente usa cache sem nova chamada ao X.
+        rep = cliente.post(
+            "/coletas",
+            headers=headers_reinicio,
+            json={"fonte": "pesquisa", "termo": "Economia", "quantidade": 3, "complementar_com_x": True},
+        )
+        assert (
+            cliente.get(f"/coletas/{rep.json()['id']}", headers=headers_reinicio).json()["situacao"]
+            == "concluida"
+        )
+        assert len(chamadas_x) == 1
+
+        # Dashboard reflete todas as análises persistidas.
+        assert cliente.get("/analises").json()["total"] == 3
+        assert cliente.get("/analises/resumo").json()["total"] == 3
+    finally:
+        app.dependency_overrides.clear()
+        administracao.obter_contexto.cache_clear()
+
+
+def test_integracao_cenario_7_pula_reclassificacao_para_analises_existentes(
+    monkeypatch, tmp_path: Path, uri_mongodb_teste, nome_banco_teste
+):
+    uri_teste = uri_com_banco(uri_mongodb_teste, nome_banco_teste)
+    senha_admin = _configurar_ambiente_admin_mongo(monkeypatch, uri_teste)
+    lotes_enviados: list[list[str]] = []
+
+    class PipelineSpy(PipelineFalso):
+        def processar_registros(self, registros):
+            lotes_enviados.append([r["id_origem"] for r in registros])
+            return super().processar_registros(registros)
+
+    monkeypatch.setattr(administracao, "_criar_pipeline_padrao", PipelineSpy)
+    administracao.obter_contexto.cache_clear()
+    try:
+        ctx = administracao.obter_contexto()
+        ctx._criar_pipeline = PipelineSpy
+        ctx.caminho_tweetsentbr = tmp_path / "nao-existe.csv"
+
+        # Salva previamente 2 análises na coleção `analises`.
+        with ctx.repositorio_analises() as repo:
+            repo.salvar_analises([
+                criar_documento("id_1", sentimento="positivo", fonte="crm"),
+                criar_documento("id_2", sentimento="negativo", fonte="crm"),
+            ])
+
+        cliente = TestClient(app)
+        headers = _login_admin(cliente, senha_admin)
+        csv_bytes = (
+            "id,texto,fonte\n"
+            "id_1,texto id_1,crm\n"
+            "id_2,texto id_2,crm\n"
+            "id_3,Novo comentário ruim,crm\n"
+        ).encode("utf-8")
+        id_ds = cliente.post(
+            "/datasets",
+            headers=headers,
+            files={"arquivo": ("misto.csv", csv_bytes, "text/csv")},
+        ).json()["id_dataset"]
+
+        col = cliente.post("/coletas", headers=headers, json={"fonte": id_ds}).json()["id"]
+        st = cliente.get(f"/coletas/{col}", headers=headers).json()
+        assert st["situacao"] == "concluida"
+        assert st["textos_analisados"] == 3
+        assert lotes_enviados == [["id_3"]], "apenas o registro inédito deve ir para inferência"
+
+        # Segunda execução sobre os mesmos dados não aciona o pipeline novamente.
+        col2 = cliente.post("/coletas", headers=headers, json={"fonte": id_ds}).json()["id"]
+        st2 = cliente.get(f"/coletas/{col2}", headers=headers).json()
+        assert st2["situacao"] == "concluida"
+        assert st2["textos_analisados"] == 3
+        assert lotes_enviados == [["id_3"]]
+    finally:
+        administracao.obter_contexto.cache_clear()
+
+
+def test_integracao_cenario_8_dashboard_com_proveniencia_e_texto_tratado(
+    monkeypatch, client, tmp_path: Path, uri_mongodb_teste, nome_banco_teste
+):
+    uri_teste = uri_com_banco(uri_mongodb_teste, nome_banco_teste)
+    senha_admin = _configurar_ambiente_admin_mongo(monkeypatch, uri_teste)
+    corpus_csv = tmp_path / "tweetsentbr.csv"
+    corpus_csv.write_text("id,texto,fonte,rotulo\nts_dash_1,Muito bom o atendimento,TweetSentBR,Positivo\n", encoding="utf-8")
+
+    try:
+        ctx = administracao.obter_contexto()
+        ctx.caminho_tweetsentbr = corpus_csv
+        ctx.buscar_x = lambda termo, _qtd: [
+            {
+                "id_origem": "x_dash_1",
+                "fonte": "X",
+                "texto_original": f"Comentário ruim sobre {termo}",
+                "data_publicacao": "2026-11-04T12:00:00Z",
+                "metadados": {"provedor": "XFetch", "lang": "pt"},
+            }
+        ]
+        cliente = TestClient(app)
+        headers = _login_admin(cliente, senha_admin)
+
+        csv_bytes = (
+            "id,texto,fonte,rotulo,data,canal\n"
+            "csv_dash_1,Entrega excelente,loja,5,2026-11-02,web\n"
+        ).encode("utf-8")
+        id_ds = cliente.post(
+            "/datasets",
+            headers=headers,
+            files={"arquivo": ("dash.csv", csv_bytes, "text/csv")},
+        ).json()["id_dataset"]
+        cliente.post("/coletas", headers=headers, json={"fonte": id_ds})
+        cliente.post("/coletas", headers=headers, json={"fonte": "tweetsentbr"})
+        cliente.post(
+            "/coletas",
+            headers=headers,
+            json={"fonte": "pesquisa", "termo": "transporte", "quantidade": 1, "complementar_com_x": True},
+        )
+
+        # Valida também preservação de `texto_tratado` no PipelineClassificacao + MongoDB.
+        pipeline_tratado = PipelineFalso()
+        with ctx.repositorio_analises() as repo:
+            docs_tratados = pipeline_tratado.processar_registros([
+                {
+                    "id_origem": "bl_1",
+                    "fonte": "baseline",
+                    "texto_original": "O produto cumpriu o esperado!",
+                    "texto_tratado": "produto cumpriu esperado",
+                    "data_publicacao": "2026-11-03T08:00:00Z",
+                }
+            ])
+            repo.salvar_analises(docs_tratados)
+
+        doc_baseline = client[nome_banco_teste][NOME_COLECAO].find_one({"id_origem": "bl_1"})
+        assert doc_baseline["texto_tratado"] == "produto cumpriu esperado"
+
+        itens = cliente.get("/analises").json()["itens"]
+        por_id = {item["id_origem"]: item for item in itens}
+        assert por_id["csv_dash_1"]["rotulo_original"] == "5"
+        assert por_id["csv_dash_1"]["rotulo_padronizado"] == "positivo"
+        assert por_id["csv_dash_1"]["metadados"] == {"canal": "web"}
+        assert por_id["ts_dash_1"]["fonte"] == "TweetSentBR"
+        assert por_id["x_dash_1"]["metadados"] == {"provedor": "XFetch", "lang": "pt"}
+
+        resumo_periodo = cliente.get(
+            "/analises/resumo", params={"inicio": "2026-11-01", "fim": "2026-11-10"}
+        ).json()
+        assert resumo_periodo["total"] == 3
+        assert resumo_periodo["sem_data_publicacao"] == 1  # ts_dash_1 do TweetSentBR
+    finally:
+        administracao.obter_contexto.cache_clear()
+
+
+def test_integracao_cenario_9_falha_xfetch_nao_grava_cache_indevido(
+    monkeypatch, client, tmp_path: Path, uri_mongodb_teste, nome_banco_teste
+):
+    uri_teste = uri_com_banco(uri_mongodb_teste, nome_banco_teste)
+    senha_admin = _configurar_ambiente_admin_mongo(monkeypatch, uri_teste)
+    chamadas_x: list[str] = []
+
+    def x_que_falha(termo: str, _qtd: int) -> list[dict]:
+        chamadas_x.append(f"falha:{termo}")
+        raise ErroXFetch("Falha na comunicação com o XFetch (HTTP 402).")
+
+    def x_saudavel(termo: str, _qtd: int) -> list[dict]:
+        chamadas_x.append(f"ok:{termo}")
+        return [{"id_origem": "recup_1", "fonte": "X", "texto_original": f"Texto sobre {termo}"}]
+
+    try:
+        ctx = administracao.obter_contexto()
+        ctx.caminho_tweetsentbr = tmp_path / "nao-existe.csv"
+        ctx.buscar_x = x_que_falha
+        cliente = TestClient(app)
+        headers = _login_admin(cliente, senha_admin)
+
+        r_falha = cliente.post(
+            "/coletas",
+            headers=headers,
+            json={"fonte": "pesquisa", "termo": "energia", "quantidade": 3, "complementar_com_x": True},
+        )
+        st_falha = cliente.get(f"/coletas/{r_falha.json()['id']}", headers=headers).json()
+        assert st_falha["situacao"] == "falhou"
+        assert "HTTP 402" in st_falha["mensagem"]
+
+        banco = client[nome_banco_teste]
+        assert banco[NOME_COLECAO_PESQUISAS].count_documents({"consulta_normalizada": "energia"}) == 0
+
+        # Nova tentativa posterior volta a chamar XFetch normalmente e grava o cache válido.
+        ctx.buscar_x = x_saudavel
+        r_ok = cliente.post(
+            "/coletas",
+            headers=headers,
+            json={"fonte": "pesquisa", "termo": "energia", "quantidade": 3, "complementar_com_x": True},
+        )
+        st_ok = cliente.get(f"/coletas/{r_ok.json()['id']}", headers=headers).json()
+        assert st_ok["situacao"] == "concluida"
+        assert chamadas_x == ["falha:energia", "ok:energia"]
+        assert banco[NOME_COLECAO_PESQUISAS].count_documents({"consulta_normalizada": "energia"}) == 1
+    finally:
+        administracao.obter_contexto.cache_clear()
