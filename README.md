@@ -1,138 +1,316 @@
-# SentIA
+# SentIA — Análise de Sentimentos
 
-Plataforma em desenvolvimento para análise de sentimentos em textos em português. Projeto acadêmico da equipe **T03 — Liskov**, Métodos de Desenvolvimento de Software (MDS), UnB/FGA, 2026.2.
+Plataforma web acadêmica para análise de sentimentos em textos em português. O **SentIA** busca apoiar a interpretação de grandes volumes de publicações sobre temas, pessoas, produtos ou acontecimentos, classificando os textos como **positivos, negativos ou neutros** e disponibilizando os resultados para consulta.
 
-- **Linha de base técnica (`developer`):** `1723a7d` (`13/11/2026`, pós-PC1 — **Sprint 5 em andamento**).
-- **Inspeção cruzada (`LAMPORT → LISKOV`):** ponto de entrada em [`docs/inspecao/README.md`](docs/inspecao/README.md) e [`docs/inspecao/ROTEIRO_INSPECAO.md`](docs/inspecao/ROTEIRO_INSPECAO.md).
-- **Índice completo de documentação:** [`docs/README.md`](docs/README.md).
+**Projeto:** Grupo Liskov — Turma 03 · Métodos de Desenvolvimento de Software (MDS) · Universidade de Brasília (UnB/FGA) · 2026.2  
+**Repositório:** [FGA0138-MDS-Ajax/2026.2-T03-Liskov](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov)  
+**Linha de base descrita:** branch `developer`, commit `1723a7d` (13/11/2026); status documental consultado até 14/11/2026.
 
----
-
-## Estado atual do projeto (corte de 14/11/2026)
-
-### 1. O que já está implementado e integrado na `developer`
-
-- **Aquisição e auditoria de dados (`src/processamento/aquisicao/`):**
-  - Importador CSV estrito e tolerante com relatório de descartes (`csv_importer.py`).
-  - Adaptadores para **TweetSentBR** (`tweetsentbr.py`), **BPSAD** (`bpsad_adapter.py`) e auditoria SHA-256 (`auditoria_datasets.py`).
-  - Coleta paginada via **XFetch** (`xfetch.py`, PR `#65`), com allowlist de metadados e validação com cliente HTTP simulado.
-- **Processamento e classificação (`src/processamento/classificacao/` e `pipeline.py`):**
-  - Adaptador `ClassificadorBertweet` para `pysentimiento/bertweet-pt-sentiment` preservando texto bruto (decisão arquitetural proposta em [`docs/decisoes/ADR-001-nao-remover-stopwords-no-bertweet.md`](docs/decisoes/ADR-001-nao-remover-stopwords-no-bertweet.md)), além do baseline isolado TF-IDF + Regressão Logística (`baseline.py`) e métricas (`avaliacao.py`).
-  - `PipelineClassificacao` em lote preservando `texto_original`, `id_origem`, `fonte`, separando anotação humana da classe prevista (`sentimento`) e emitindo documentos compatíveis com BSON.
-- **Persistência e leitura MongoDB (`src/dados/`, PRs `#43`, `#47`, `#78`, `#84` e `#96`):**
-  - Conexão PyMongo explícita (`database.py`), índices únicos e compostos nas coleções `analises`, `registros`, `datasets` e `pesquisas`, inserção/upsert com deduplicação por `(fonte, id_origem)` (e fallback SHA-256 determinístico `auto_...`), consultas paginadas, agregação por sentimento, recuperação de datasets/corpus/pesquisas após reinícios e reuso de análises já persistidas centralizados em `RepositorioAnalises` (`src/dados/repositorio.py`).
-  - Integrado com o serviço `mongo:7` na CI; tanto as rotas `/analises*` quanto `POST /datasets`, `GET /coletas/fontes` e `POST /coletas` compartilham a camada única de persistência no MongoDB.
-- **Serviço HTTP FastAPI (`src/servico/main.py`, `administracao.py`, `autenticacao.py`, `pesquisa.py`):**
-  - **Rotas de análise (`main.py`):** `GET /health`, `POST /analises` (201, classifica lote via pipeline e persiste), `GET /analises` (paginado e filtrado por `inicio`, `fim`, `sentimento`) e `GET /analises/resumo` (totais e `sem_data_publicacao`). *Observação: essas rotas não exigem login administrativo.*
-  - **Rotas administrativas autenticadas (`administracao.py`, token `Bearer` com hash `scrypt`, expiração e bloqueio por tentativas):** `POST /auth/login`, `POST /auth/logout` (204), `POST /datasets` (upload CSV, 201), `GET /coletas/fontes`, `POST /coletas` (processamento em segundo plano, 202) e `GET /coletas/{id_coleta}`.
-- **Painel web Streamlit (`src/apresentacao/`):**
-  - Navegação entre **Dashboard** (filtros de período/sentimento, indicadores numéricos e aviso de textos sem data) e **Administração** (login, importação de CSV, **Pesquisar assunto** e acompanhamento de coleta).
-  - Clientes HTTP reais (`fontes/api.py`, `fontes/administracao_api.py`) alinhados a [`docs/frontend/CONTRATO-API.md`](docs/frontend/CONTRATO-API.md), além de modos simulados (`mock.py`, `administracao_mock.py`).
-
-### 2. O que opera em modo mock, em memória ou em caráter experimental
-
-- **Modo padrão do painel (`SENTIA_FONTE_DADOS=mock`):** sem configurar `SENTIA_FONTE_DADOS=api`, o Streamlit usa `17` análises fictícias (`FonteMock`) e administração simulada (`admin` / `senha-de-exemplo` em `AdministracaoMock`).
-- **Estado operacional em memória (`RepositorioAdministracao`):** datasets CSV importados, o corpus `TweetSentBR` carregado, aquisições do XFetch, cache de pesquisas híbridas e análises classificadas passam a persistir integralmente no MongoDB (`datasets`, `registros`, `pesquisas` e `analises`) e sobrevivem a reinícios da API; apenas **sessões ativas e o status transitório de jobs de coleta em andamento ficam apenas na RAM do processo** (reiniciar a API encerra sessões e limpa jobs transitórios já concluídos).
-- **Pesquisa híbrida por assunto (`src/servico/pesquisa.py`, PR `#81` e PR `#96`):** implementa busca lexical normalizada com radical de 5 caracteres sobre a base persistida no MongoDB (`registros` + `analises`), cache persistente de consultas equivalentes em `pesquisas` (com `forcar_atualizacao=True` opcional) e complemento opcional pago via XFetch (`POST /coletas` com `fonte="pesquisa"`). Não utiliza Vector Search nem embeddings no MongoDB (evolução semântica descrita em `docs/pesquisa_hibrida_mongodb_xfetch.md`) e **ainda aguarda ratificação formal da PO**, definição de teto financeiro do XFetch e criação de issue dedicada.
-- **Testes automatizados sem dependências externas reais:** na CI, MongoDB roda contra `mongo:7` real, enquanto inferência do `ClassificadorBertweet`, API XFetch e chamadas HTTP nos testes do painel usam dublês/mocks em processo.
-
-### 3. O que segue pendente (Sprints 5–7 e decisões abertas)
-
-- **Avaliação empírica BPSAD por classe (`#85` / PR `#89` aberto):** reproduzir métricas por classe do BERTweet no BPSAD (o PR `#89` relata 67,70% de acurácia e 0,5543 F1-macro em amostra de 10k textos, abaixo dos ~80% de `RNF01`) e deliberar critério com a PO.
-- **Dashboard integrado completo (Sprint 6 — `#27–#30`, `#32`, `#61`):** renderização da listagem paginada de análises, gráficos de distribuição por sentimento, resumo textual estatístico e eventual nuvem de palavras opcional no Streamlit, além de validação visual atual (`T18`).
-- **Finalização, usabilidade e entrega (Sprint 7 — `#62`, `#63`, `#86`):** teste de usabilidade, publicação web segura (definindo autenticação para `/analises` e persistência administrativa), atualização formal dos documentos acadêmicos *Visão* e *Arquitetura* após decisões da PO e sincronização controlada `developer → main` (`main` segue na versão inicial de `02/11`, `c72faeb`).
+> O SentIA é um projeto acadêmico em evolução. As classificações são previsões de um modelo e dependem da qualidade, do domínio e da representatividade dos dados. Resultados de amostras não devem ser generalizados para toda a população.
 
 ---
 
-## Arquitetura resumida
+## Demonstração
 
-`src/apresentacao` (Streamlit) → `src/servico` (FastAPI) → `src/processamento` (aquisição, pipeline e classificação) → `src/dados` (MongoDB — `database.py` e `repositorio.py`).
+Não foram encontrados screenshots ou vídeos que comprovem a aparência da versão atual na branch `developer`. Os arquivos de imagem atualmente versionados para o painel são **wireframes de referência**, não capturas da aplicação em execução:
 
-Detalhes completos em [`docs/arquitetura.md`](docs/arquitetura.md) e [`docs/contratos-dados.md`](docs/contratos-dados.md).
+- [Wireframe — visão geral](docs/frontend/wireframes/dashboard-visao-geral.png)
+- [Wireframe — calendário](docs/frontend/wireframes/dashboard-calendario.png)
+- [Wireframe — filtro por sentimento](docs/frontend/wireframes/dashboard-filtro-sentimento.png)
+- [Wireframe — menu lateral](docs/frontend/wireframes/dashboard-menu-lateral.png)
 
----
+Uma captura real ou vídeo deve ser adicionado aqui quando houver material atualizado da aplicação, sem substituir os wireframes por imagens fictícias.
 
-## Preparação do ambiente
+## Funcionalidades e estado de implementação
 
-Requisitos: Git, [uv](https://docs.astral.sh/uv/getting-started/installation/) e Python 3.11 (`.python-version`).
+| Área | Situação na `developer` |
+|---|---|
+| Importação de datasets CSV | Implementada, com validação do esquema e relatório de registros descartados. |
+| Aquisição de dados | Adaptadores para TweetSentBR e BPSAD, além de coleta paginada via XFetch. A coleta externa depende de chave de API e pode ter custo. |
+| Processamento textual | O fluxo do BERTweet preserva o texto original e utiliza o processamento do PySentimiento. O baseline comparativo aplica limpeza mínima antes de TF-IDF. |
+| Classificação | Implementada com `pysentimiento/bertweet-pt-sentiment`, produzindo classes positivo, negativo e neutro. Há também um baseline separado de TF-IDF + Regressão Logística para comparação. |
+| Persistência | Implementada com MongoDB, incluindo consultas, índices e deduplicação dos registros. |
+| API REST | Rotas de saúde, processamento, consulta, resumo e administração implementadas em FastAPI. |
+| Consulta e filtragem | API com paginação e filtros por período e sentimento. |
+| Administração | Login, importação de CSV, pesquisa de assunto e acompanhamento de coletas disponíveis no painel. |
+| Dashboard | Filtros de período/sentimento e indicadores numéricos disponíveis. A listagem paginada, os gráficos de distribuição e o resumo textual ainda estão pendentes. A nuvem de palavras é opcional e também não está implementada. |
 
-```bash
+### Pesquisa híbrida — recurso experimental
+
+A pesquisa por assunto consulta primeiro a base persistida no MongoDB e pode complementar os resultados com o XFetch. A busca local é lexical; não utiliza embeddings nem MongoDB Vector Search. O recurso está integrado ao backend, mas ainda depende de ratificação formal da Product Owner, definição de limite financeiro para o XFetch e acompanhamento por issue específica. Não trate essa funcionalidade como uma integração sem custo ou como uma decisão de produto já homologada.
+
+### Modos de execução
+
+- **`mock`:** demonstração do painel com 17 análises fictícias e administração simulada. Não exige MongoDB nem chave XFetch. As credenciais `admin` / `senha-de-exemplo` pertencem exclusivamente ao mock e não são credenciais reais.
+- **`api`:** conecta o Streamlit à API FastAPI. As rotas de dados e administração dependem do backend e de uma instância MongoDB acessível. A inferência BERTweet real também exige o grupo opcional de dependências `ml`.
+
+## Arquitetura
+
+A arquitetura implementada é organizada em quatro camadas. A interface conversa com o backend pela API REST; não acessa o MongoDB nem executa diretamente as regras de processamento.
+
+```mermaid
+flowchart LR
+    U[Usuário] --> UI[Apresentação<br/>Streamlit]
+    UI --> API[Serviço<br/>FastAPI / API REST]
+    API --> PROC[Processamento<br/>Aquisição e pipeline de classificação]
+    PROC --> DATA[Dados<br/>RepositorioAnalises / PyMongo]
+    DATA --> DB[(MongoDB)]
+    SRC[CSV · TweetSentBR · BPSAD<br/>XFetch opcional] --> PROC
+    DB --> API
+    API --> UI
+```
+
+| Camada | Responsabilidade | Código principal |
+|---|---|---|
+| Apresentação | Dashboard, filtros, login e administração. | `src/apresentacao/` |
+| Serviço | Endpoints REST, validação, autenticação e coordenação dos fluxos. | `src/servico/` |
+| Processamento | Aquisição, pipeline e classificação de sentimentos. | `src/processamento/` |
+| Dados | Conexão, índices, consultas e persistência no MongoDB. | `src/dados/` |
+
+### Fluxo de dados
+
+1. Os textos são obtidos por importação CSV, adaptadores de datasets ou fontes de coleta disponíveis.
+2. Os registros são normalizados e encaminhados ao pipeline de classificação.
+3. O classificador gera a previsão de sentimento e as probabilidades correspondentes, preservando o texto original.
+4. O backend persiste os registros e análises no MongoDB.
+5. O painel consulta a API para apresentar indicadores, filtros e funcionalidades administrativas disponíveis.
+
+O classificador BERTweet utiliza um checkpoint pré-treinado. O repositório não demonstra treinamento próprio do Transformer. O baseline TF-IDF + Regressão Logística é um comparador isolado, não uma substituição do BERTweet.
+
+Detalhes: [Arquitetura atualizada — rascunho de revisão](docs/revisao-academica/ARQUITETURA_ATUALIZADA_RASCUNHO.md) · [Contrato único de dados](docs/contratos-dados.md) · [Contrato API ↔ Painel](docs/frontend/CONTRATO-API.md).
+
+## Tecnologias
+
+| Responsabilidade | Tecnologias |
+|---|---|
+| Linguagem e ambiente | Python 3.11, `uv` |
+| Interface | Streamlit |
+| API | FastAPI, Uvicorn |
+| Banco de dados | MongoDB, PyMongo |
+| Classificação principal | PySentimiento, BERTweet e PyTorch (dependências opcionais do grupo `ml`) |
+| Baseline e experimentos | scikit-learn, TF-IDF e Regressão Logística |
+| Dados e utilitários | pandas, requests, python-dotenv e joblib; NLTK também consta nas dependências declaradas do projeto |
+| Qualidade | pytest, pytest-cov e Ruff |
+| Integração contínua | GitHub Actions; a CI provisiona MongoDB `mongo:7` para os testes de persistência |
+| Portal de documentação | MkDocs Material na branch separada `docs` (a configuração `mkdocs.yml` não está na branch `developer`) |
+
+As versões são controladas por `pyproject.toml` e `uv.lock`. O PySentimiento e o PyTorch são instalados separadamente para permitir que a demonstração básica não precise baixar o modelo e suas dependências pesadas.
+
+## Instalação e execução
+
+### Pré-requisitos
+
+- Git.
+- Python 3.11 (versão indicada em `.python-version`).
+- [`uv`](https://docs.astral.sh/uv/getting-started/installation/).
+- MongoDB local ou remoto para executar os fluxos reais de persistência e consulta.
+
+### 1. Clonar e preparar o ambiente
+
+Execute na raiz do repositório:
+
+```powershell
+git clone https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov.git
+cd 2026.2-T03-Liskov
 uv sync --locked
-make env
+
+# Cria o arquivo local sem sobrescrever um .env existente.
+if (-not (Test-Path .env)) {
+    Copy-Item .env.example .env
+}
 ```
 
-Para instalar também as dependências pesadas opcionais do classificador BERTweet real (`pysentimiento` e `torch`):
+O arquivo `.env.example` contém os nomes das variáveis reconhecidas. Edite a cópia local `.env` de acordo com o modo de execução. Não versione esse arquivo e não coloque nele credenciais reais em exemplos ou commits.
 
-```bash
+Para instalar também as dependências do BERTweet real:
+
+```powershell
 uv sync --locked --group ml
-# ou: make setup-ml
 ```
 
-`make env` cria `.env` a partir de [`.env.example`](.env.example) sem sobrescrever um arquivo existente. O modo `mock` do painel e o roteiro offline não exigem MongoDB nem `XFETCH_API_KEY`.
+Esse grupo instala `pysentimiento` e `torch` e pode exigir um download considerável na primeira execução. Sem ele, os testes e fluxos que usam um classificador simulado continuam disponíveis, mas a inferência BERTweet real não.
 
----
+### 2. Configurar o MongoDB
 
-## Execução
+Inicie uma instância MongoDB e configure `MONGODB_URI` no `.env`. Para uma instância local com a configuração padrão do exemplo:
 
-### 1. Painel Streamlit em modo demonstração offline (`mock`)
-
-```bash
-SENTIA_FONTE_DADOS=mock SENTIA_MOCK_CENARIO=normal uv run streamlit run src/apresentacao/app.py
+```dotenv
+MONGODB_URI=mongodb://localhost:27017/sentia
 ```
 
-Acesse `http://localhost:8501` (ou execute `make run`). Os cenários simulados aceitam `normal`, `vazio` ou `erro`.
+A branch `developer` não fornece um `docker-compose.yml`; a instância MongoDB deve estar disponível separadamente. A demonstração `mock` do painel não depende do banco. Já as rotas de análise, datasets, pesquisa persistente e coleta precisam da conexão configurada.
 
-### 2. API FastAPI (análises e administração)
+### 3. Executar somente o painel em modo demonstração
 
-Com `MONGODB_URI` configurado no ambiente ou no `.env`:
-
-```bash
-uv run uvicorn src.servico.main:app --host 127.0.0.1 --port 8000
-
-# Verificação de saúde:
-curl --fail http://127.0.0.1:8000/health
+```powershell
+$env:SENTIA_FONTE_DADOS = "mock"
+$env:SENTIA_MOCK_CENARIO = "normal"
+uv run streamlit run src/apresentacao/app.py
 ```
 
-Resposta esperada: `{"status":"ok"}`. Para habilitar as rotas `/auth/login`, `/datasets` e `/coletas*`, configure `SENTIA_ADMIN_USUARIO` e `SENTIA_ADMIN_SENHA_HASH` no `.env` (`uv run python -m src.servico.autenticacao`).
+Acesse [http://localhost:8501](http://localhost:8501). Os cenários de mock aceitos são `normal`, `vazio` e `erro`.
 
-### 3. Painel conectado à API local
+### 4. Configurar e iniciar a API
 
-```bash
-SENTIA_FONTE_DADOS=api SENTIA_API_URL=http://127.0.0.1:8000 uv run streamlit run src/apresentacao/app.py
+Para habilitar a área administrativa, configure no `.env`:
+
+```dotenv
+SENTIA_ADMIN_USUARIO=seu_usuario
+SENTIA_ADMIN_SENHA_HASH=
+SENTIA_SESSAO_MINUTOS=60
 ```
 
-### 4. Pipeline offline (`CSV → Classificador simulado → BSON`)
+Gere o hash da senha com o comando abaixo. A senha é solicitada no terminal e não deve ser colocada diretamente no repositório:
 
-```bash
-make demo
-# ou: uv run python -m scripts.demonstrar_pipeline
+```powershell
+uv run python -m src.servico.autenticacao
 ```
 
----
+Copie o valor impresso em `SENTIA_ADMIN_SENHA_HASH` para o `.env`. Em seguida, inicie a API em um terminal:
 
-## Validação, lint e CI
+```powershell
+uv run uvicorn src.servico.main:app --host 127.0.0.1 --port 8000 --reload
+```
 
-```bash
-make check
-# equivalente a:
+Verifique a saúde em [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health). A documentação interativa da API fica em [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+
+### 5. Conectar o painel à API
+
+Em outro terminal PowerShell:
+
+```powershell
+$env:SENTIA_FONTE_DADOS = "api"
+$env:SENTIA_API_URL = "http://127.0.0.1:8000"
+uv run streamlit run src/apresentacao/app.py
+```
+
+Acesse [http://localhost:8501](http://localhost:8501). Para o painel consultar e administrar dados reais, mantenha a API e o MongoDB disponíveis.
+
+### Variáveis de ambiente principais
+
+| Variável | Finalidade |
+|---|---|
+| `SENTIA_FONTE_DADOS` | `mock` ou `api`; seleciona a origem de dados do painel. |
+| `SENTIA_MOCK_CENARIO` | `normal`, `vazio` ou `erro`; controla os cenários de demonstração. |
+| `SENTIA_API_URL` | Endereço-base da API consumida pelo painel. |
+| `SENTIA_API_TIMEOUT_SEGUNDOS` | Tempo limite das chamadas do painel à API. |
+| `MONGODB_URI` | URI de conexão com o MongoDB. |
+| `SENTIA_ADMIN_USUARIO` | Usuário da administração da API. |
+| `SENTIA_ADMIN_SENHA_HASH` | Hash scrypt da senha administrativa; não armazenar a senha em texto puro. |
+| `SENTIA_SESSAO_MINUTOS` | Duração das sessões administrativas. |
+| `SENTIA_LIMITE_CSV_MB` | Limite de tamanho dos arquivos CSV enviados. |
+| `SENTIA_LIMITE_COLETA` | Limite de textos por coleta. |
+| `XFETCH_API_KEY` | Chave opcional do serviço externo XFetch; pode envolver cobrança. |
+
+A lista completa e os valores de exemplo estão em [`.env.example`](.env.example).
+
+## API REST
+
+A API é implementada em `src/servico/`. As rotas principais disponíveis na linha de base são:
+
+| Método | Endpoint | Finalidade |
+|---|---|---|
+| `GET` | `/health` | Verifica se o serviço responde. |
+| `POST` | `/analises` | Classifica e persiste um lote de registros. |
+| `GET` | `/analises` | Consulta análises com paginação e filtros. |
+| `GET` | `/analises/resumo` | Retorna indicadores agregados conforme os filtros. |
+| `POST` | `/auth/login` | Inicia sessão administrativa. |
+| `POST` | `/auth/logout` | Encerra sessão administrativa. |
+| `POST` | `/datasets` | Recebe um dataset CSV. |
+| `GET` | `/coletas/fontes` | Lista fontes de coleta disponíveis. |
+| `POST` | `/coletas` | Solicita uma coleta e seu processamento. |
+| `GET` | `/coletas/{id_coleta}` | Consulta o estado de uma coleta. |
+
+Os filtros de consulta incluem período (`inicio` e `fim`) e sentimento (`positivo`, `negativo` ou `neutro`); a listagem também aceita `pagina` e `tamanho`. Os parâmetros, esquemas JSON, exemplos e códigos de resposta estão no [Contrato API ↔ Painel](docs/frontend/CONTRATO-API.md) e na especificação interativa `/docs`.
+
+**Nota de acesso:** as rotas `/analises` e `/analises/resumo` não exigem login administrativo na implementação descrita. As rotas administrativas utilizam autenticação por token. Antes de disponibilizar a API publicamente, as decisões de autorização e publicação ainda precisam ser tratadas.
+
+## Testes e qualidade
+
+Na raiz do projeto, execute:
+
+```powershell
+# Suíte completa com cobertura
+uv run pytest --cov=src -q
+
+# Verificações Ruff usadas no projeto
 uv run ruff check src/apresentacao tests/test_painel_*.py
 uv run ruff check --isolated --select F,E9 .
-uv run pytest --cov=src -q
+
+# Confere o lockfile
 uv lock --check
 ```
 
-- **Na CI (`.github/workflows/ci.yml`):** o job `test` provisiona `mongo:7` em `mongodb://127.0.0.1:27017` (`MONGODB_URI_TESTE`), executando os testes reais de persistência MongoDB juntamente com a suíte unitária/de integração.
-- **Localmente sem MongoDB:** os testes marcados para MongoDB (`test_persistencia_leitura.py` e parte de `test_repositorio.py`) são ignorados (`skipped`) quando `MONGODB_URI_TESTE` não está acessível.
+A CI executa as verificações de lint, dependências e testes; o workflow provisiona MongoDB `mongo:7` para os testes reais de persistência. Localmente, testes que exigem MongoDB podem ser ignorados quando `MONGODB_URI_TESTE` não estiver acessível. Os testes de inferência BERTweet e de integração XFetch usam dublês/mocks na suíte automatizada; isso não equivale a uma avaliação real do modelo nem a uma coleta externa.
+
+- [Plano de testes atual](docs/qa/inspecao/PLANO_TESTES_ATUAL.md)
+- [Matriz de rastreabilidade T01–T18](docs/qa/inspecao/MATRIZ_RASTREABILIDADE.md)
+- [Relatório de execução da linha de base](docs/qa/inspecao/RELATORIO_EXECUCAO.md)
+- [Registro de defeitos e correções](docs/qa/inspecao/DEFEITOS_E_CORRECOES.md)
+
+A métrica negocial do plano GQM é a acurácia da classificação. As métricas de projeto incluem velocidade por Sprint e burndown. Cobertura de testes, lint e quantidade de testes são indicadores de qualidade de software e **não** devem ser apresentados como métricas GQM de desempenho do modelo ou produtividade. Consulte [Plano GQM vigente](docs/metricas/PLANO_GQM_VIGENTE.md) e [Registro e análise](docs/metricas/REGISTRO_E_ANALISE.md); as decisões de critérios e limiares continuam sujeitas à PO.
+
+## Estrutura do repositório
+
+```text
+.
+├── .github/workflows/   # Integração contínua
+├── Datasets/            # Datasets versionados e dados de demonstração
+├── docs/                # Documentação técnica, acadêmica, QA e gestão
+├── scripts/             # Scripts de demonstração, auditoria e experimentos
+├── src/
+│   ├── apresentacao/    # Painel Streamlit
+│   ├── servico/         # API FastAPI, autenticação e administração
+│   ├── processamento/  # Aquisição, pipeline e classificação
+│   └── dados/           # Conexão e repositório MongoDB
+├── tests/               # Testes automatizados e fixtures
+├── .env.example         # Modelo de configuração local
+├── Makefile             # Atalhos de desenvolvimento
+├── pyproject.toml       # Dependências e ferramentas
+├── uv.lock              # Versões resolvidas
+└── README.md             # Porta de entrada do projeto
+```
+
+## Documentação, desenvolvimento e contribuição
+
+O [índice de documentação](docs/README.md) organiza os materiais disponíveis na branch `developer`. Comece por estes documentos:
+
+| Assunto | Documento |
+|---|---|
+| Arquitetura atual | [Arquitetura atualizada — rascunho de revisão](docs/revisao-academica/ARQUITETURA_ATUALIZADA_RASCUNHO.md) |
+| Visão do Produto e Projeto | [Visão atualizada — rascunho de revisão](docs/revisao-academica/VISAO_ATUALIZADA_RASCUNHO.md) |
+| Contratos e dados | [Contrato único de dados](docs/contratos-dados.md) · [Esquema MongoDB](docs/banco/esquema-mongodb.md) |
+| Instalação e banco | [Este README](#instalação-e-execução) · [Configuração MongoDB](docs/mongodb_setup.md) |
+| Desenvolvimento do painel | [Guia do frontend](docs/frontend/README.md) · [Wireframes e estado dos componentes](docs/frontend/WIREFRAMES.md) |
+| API | [Contrato API ↔ Painel](docs/frontend/CONTRATO-API.md) |
+| Testes | [README da suíte](tests/README.md) · [Plano de testes](docs/qa/inspecao/PLANO_TESTES_ATUAL.md) |
+| Métricas GQM | [Plano GQM vigente](docs/metricas/PLANO_GQM_VIGENTE.md) · [Registro e análise](docs/metricas/REGISTRO_E_ANALISE.md) |
+| Configuração e fluxo de trabalho | [Gestão de configuração](docs/gestao/GESTAO_CONFIGURACAO.md) · [Planejamento e Sprints](docs/gestao/PLANEJAMENTO_E_REPLANEJAMENTOS.md) |
+| Aquisição e classificação | [TweetSentBR](docs/tweetsentbr.md) · [BPSAD](docs/bpsad.md) · [XFetch](docs/integracao_xfetch.md) · [Classificação](docs/classificacao.md) |
+| Histórico de alterações | [CHANGELOG](CHANGELOG.md) |
+
+### Portal MkDocs
+
+A configuração `mkdocs.yml` e a página inicial do portal estão na branch separada [`docs`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/docs), não na linha de base `developer` descrita aqui. O PR [#93 — Portal MkDocs](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/93) foi integrado à branch `docs`. O código-fonte do portal pode ser consultado nessa branch; este README não assume que a configuração MkDocs já esteja incorporada em `developer`.
+
+### Documentos acadêmicos
+
+Os arquivos Markdown de Visão e Arquitetura listados acima são **rascunhos de revisão**. Eles ajudam a localizar divergências entre documentação e implementação, mas não substituem os documentos acadêmicos formais aprovados. Diferenças ainda não resolvidas devem permanecer registradas, sem alterar silenciosamente os artefatos acadêmicos para esconder divergências.
+
+### Equipe
+
+Projeto desenvolvido pelo **Grupo Liskov — Turma 03**, na disciplina de MDS da UnB/FGA. A documentação de planejamento identifica as frentes de produto, coordenação/qualidade, aquisição, machine learning, dados e interface. O mapeamento nominal completo das oito pessoas ainda aparece como sujeito a reconciliação nos documentos de revisão; por isso, este README não atribui nomes ou responsabilidades individuais que não estejam consolidados. Consulte o [rascunho do Documento de Visão](docs/revisao-academica/VISAO_ATUALIZADA_RASCUNHO.md) para o registro e suas ressalvas.
+
+## Contribuição
+
+1. Atualize sua branch local a partir de `developer`.
+2. Crie uma branch de trabalho específica para a alteração (`feat/...`, `fix/...`, `docs/...` ou equivalente).
+3. Mantenha a mudança dentro do escopo da issue e evite misturar refatorações sem relação com a tarefa.
+4. Atualize testes e documentação quando o comportamento ou o uso mudar.
+5. Execute as verificações relevantes e revise `git diff` antes de abrir um Pull Request para `developer`.
+
+O critério de pronto documentado inclui testes aprovados, CI sem falhas, revisão por pares no PR, validação dos critérios de aceitação pela PO e documentação atualizada quando aplicável. As orientações detalhadas de branches, histórico e configuração estão em [Gestão de Configuração](docs/gestao/GESTAO_CONFIGURACAO.md). Não há um `CONTRIBUTING.md` separado na branch `developer` consultada.
 
 ---
 
-## Documentação e Inspeção
-
-Consulte o índice completo em [`docs/README.md`](docs/README.md):
-
-- **Inspeção e Gestão:** [Dossiê de Inspeção](docs/inspecao/README.md) · [Roteiro da Inspeção](docs/inspecao/ROTEIRO_INSPECAO.md) · [Matriz de Evidências](docs/inspecao/MATRIZ_EVIDENCIAS.md) · [Registro Pré-Inspeção](docs/inspecao/REGISTRO_PRE_INSPECAO.md) · [Plano de Regularização](docs/inspecao/PLANO_REGULARIZACAO.md) · [Planejamento e Replanejamentos](docs/gestao/PLANEJAMENTO_E_REPLANEJAMENTOS.md) · [Gestão de Configuração](docs/gestao/GESTAO_CONFIGURACAO.md)
-- **Revisão Acadêmica e ABNT (PR `#90` integrado):** [Visão (rascunho)](docs/revisao-academica/VISAO_ATUALIZADA_RASCUNHO.md) · [Arquitetura (rascunho)](docs/revisao-academica/ARQUITETURA_ATUALIZADA_RASCUNHO.md) · [Matriz de Divergências](docs/revisao-academica/MATRIZ_DIVERGENCIAS.md) · [Revisão ABNT](docs/revisao-academica/REVISAO_ABNT.md) · [Decisões PO](docs/revisao-academica/DECISOES_PENDENTES_PO.md) · [Relatório Sol High](docs/revisao-academica/RELATORIO_ENTREGA.md)
-- **Métricas GQM e QA / Testes (PRs `#91` e `#94` integrados):** [Plano GQM Vigente](docs/metricas/PLANO_GQM_VIGENTE.md) · [Registro e Análise](docs/metricas/REGISTRO_E_ANALISE.md) · [Plano de Testes Atual](docs/qa/inspecao/PLANO_TESTES_ATUAL.md) · [Matriz `T01–T18`](docs/qa/inspecao/MATRIZ_RASTREABILIDADE.md) · [Relatório de Execução (`1723a7d`)](docs/qa/inspecao/RELATORIO_EXECUCAO.md) · [Defeitos e Correções](docs/qa/inspecao/DEFEITOS_E_CORRECOES.md)
-- **Arquitetura e Contratos:** [Arquitetura](docs/arquitetura.md) · [Contratos de dados](docs/contratos-dados.md) · [Contrato da API](docs/frontend/CONTRATO-API.md) · [ADR-001 (proposta stopwords/BERTweet)](docs/decisoes/ADR-001-nao-remover-stopwords-no-bertweet.md)
-- **Frontend, ML, Dados e Banco:** [Guia do painel](docs/frontend/README.md) · [Wireframes](docs/frontend/WIREFRAMES.md) · [Classificação](docs/classificacao.md) · [TweetSentBR](docs/tweetsentbr.md) · [BPSAD](docs/bpsad.md) · [Experimentos BPSAD](docs/experimentos_bpsad.md) · [XFetch](docs/integracao_xfetch.md) · [Esquema MongoDB](docs/banco/esquema-mongodb.md)
-- **Marco histórico PC1 (09/11/2026):** [Status PC1](docs/qa/pc1/STATUS_FINAL.md) · [Roteiro PC1](docs/qa/pc1/ROTEIRO_DEMONSTRACAO.md) · [Matriz PC1](docs/qa/pc1/MATRIZ_RASTREABILIDADE.md)
+**Estado do projeto:** Sprint 5 em andamento no corte documental de 14/11/2026. Entre as pendências registradas estão a reprodução da avaliação BPSAD por classe e sua deliberação pela PO, a ampliação das visualizações do dashboard, a validação integrada/visual, o teste de usabilidade e a publicação web. Consulte o [índice de documentação](docs/README.md) e o [planejamento por Sprint](docs/gestao/PLANEJAMENTO_E_REPLANEJAMENTOS.md) para os detalhes e atualizações.
