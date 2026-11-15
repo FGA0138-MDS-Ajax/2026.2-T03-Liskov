@@ -1,57 +1,42 @@
 # SentIA — Análise de Sentimentos
 
-O **SentIA** é uma plataforma web de análise de sentimentos desenvolvida pelo grupo **Liskov — Turma 03**, da disciplina de **Métodos de Desenvolvimento de Software (MDS)** da Universidade de Brasília — Faculdade do Gama.
+O **SentIA** é uma plataforma web de análise de sentimentos em português desenvolvida pelo grupo **Liskov — Turma 03**, na disciplina de **Métodos de Desenvolvimento de Software (MDS)** da Universidade de Brasília — Faculdade do Gama (2026.2).
 
-O projeto tem como objetivo apoiar a análise de grandes volumes de textos em português, classificando os conteúdos de acordo com sua polaridade:
+O projeto classifica textos segundo sua polaridade (`positivo`, `negativo`, `neutro`) e consolida métricas em painel web, seguindo o recorte da **Sprint 5 / preparação para inspeção cruzada (`LAMPORT → LISKOV`)** em `14/11/2026`, com linha de base técnica em `1723a7d` e documentação consolidada pós-merge na branch [`developer`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/developer) (PRs `#90`, `#91`, `#92`, `#94` e `#95` integrados).
 
-- Positivo
-- Negativo
-- Neutro
+## Estado do produto no corte de 14/11/2026
 
-Os resultados serão apresentados de forma consolidada por meio de um dashboard interativo.
+- **Implementado e integrado (`developer` @ `1723a7d`):** importação CSV (`csv_importer.py`), adaptadores TweetSentBR/BPSAD, cliente XFetch (`xfetch.py`), pipeline em lote preservando texto original para `pysentimiento/bertweet-pt-sentiment` (proposta `ADR-001`) + baseline TF-IDF isolado (`baseline.py`), persistência/leitura e agregação MongoDB (`repositorio.py`, `leitura.py`), API FastAPI (`GET /health`, `POST /analises`, `GET /analises`, `GET /analises/resumo` e rotas administrativas autenticadas `/auth/login`, `/auth/logout`, `/datasets`, `/coletas*`) e painel Streamlit com clientes HTTP e modo offline (`mock`).
+- **Em modo simulado, memória ou caráter experimental:** o dashboard inicia por padrão com `SENTIA_FONTE_DADOS=mock` (17 registros fictícios); sessões, datasets importados pelo painel, jobs de coleta e a pesquisa híbrida lexical (`pesquisa.py`, PR `#81`) operam na memória do processo e aguardam ratificação da Product Owner (PO).
+- **Pendências das Sprints 5–7:** reprodução da avaliação BPSAD por classe (`#85` / PR `#89` aberto), listagem, gráficos de distribuição e resumo narrativo no dashboard (`#27–#30`, `#32`, `#61`), validação visual `T18` (`#31`), teste de usabilidade (`#63`), implantação web (`#62`) e publicação das versões revisadas dos documentos acadêmicos (`#86`).
 
-## Objetivo do projeto
+## Tecnologias atuais
 
-O SentIA busca automatizar o fluxo de análise de sentimentos, desde a aquisição e preparação dos dados textuais até a classificação, persistência e visualização dos resultados.
+- **Linguagem e gerenciador de ambiente:** Python 3.11 + `uv` (`pyproject.toml` / `uv.lock`)
+- **Backend e persistência:** FastAPI, Uvicorn, PyMongo, MongoDB (`mongo:7` na CI — 814/814 testes, 93% cobertura em `1723a7d`)
+- **Painel:** Streamlit
+- **Processamento / ML:** `pysentimiento` (`bertweet-pt-sentiment`), `torch`, `scikit-learn` + `NLTK` (experimentos/baseline)
+- **Qualidade e entrega:** `pytest`, `pytest-cov`, `ruff`, GitHub Actions e MkDocs Material
 
-## Tecnologias
+## Arquitetura implementada
 
-O projeto utiliza principalmente:
+`src/apresentacao` (Streamlit) → `src/servico` (FastAPI) → `src/processamento` (Aquisição, Pipeline e Classificação) → `src/dados` & `src/persistencia` (MongoDB / memória)
 
-- Python
-- FastAPI
-- Uvicorn
-- Streamlit
-- MongoDB
-- scikit-learn
-- NLTK
-- GitHub Actions
-- MkDocs Material
+*(Ver detalhes em [Arquitetura (`developer`)](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/arquitetura.md) e [Contrato único de dados (`#19`)](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/contratos-dados.md).)*
 
-## Arquitetura
+## Documentação Consolidada na `developer` e Rastreabilidade da Inspeção
 
-O sistema será organizado em camadas, separando responsabilidades de:
+Este portal na branch `docs` concentra as **Atas de Reunião** ([Ata 1](atas-reuniao/ata-reuniao-1.md) · [Ata 2](atas-reuniao/ata-reuniao-2.md)), as **Instruções do MkDocs** ([MkDocs](instrucoes/instrucoes.md)) e o resumo institucional. Os documentos de engenharia, gestão, revisão acadêmica, métricas GQM, QA e dossiê de inspeção encontram-se **consolidados na branch `developer`** após a integração dos PRs [`#90`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90), [`#91`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/91), [`#92`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92), [`#94`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/94) e [`#95`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95) (`MERGED`; este portal segue em análise no [PR `#93`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/93), `OPEN` na `docs`):
 
-- Apresentação
-- Serviço
-- Processamento
-- Persistência de dados
-
-O fluxo principal do sistema segue a sequência:
-
-`Aquisição → Pré-processamento → Classificação → Persistência → API → Dashboard`
-
-## Documentação
-
-A documentação do projeto inclui:
-
-- Visão do Produto e Projeto
-- Documento de Arquitetura
-- Métricas e GQM
-- Estratégia de Testes
-- Atas de Reunião
-- Processo de Desenvolvimento
+| Área / Frente | Documentos Canônicos (`developer`) | Histórico de PRs e Situação |
+| --- | --- | --- |
+| **Índice de entrada e comandos** | [`README.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/README.md) · [`docs/README.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/README.md) | [PR `#92`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92) (`MERGED`) · [PR `#95`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95) (`MERGED`) |
+| **Dossiê de Inspeção e Roteiro Executável** | [`inspecao/README.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/README.md) · [`ROTEIRO_INSPECAO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/ROTEIRO_INSPECAO.md) · [`REGISTRO_PRE_INSPECAO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/REGISTRO_PRE_INSPECAO.md) | [PR `#92`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92) (`MERGED`) · [PR `#95`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95) (`MERGED`) |
+| **Matriz de Prontidão e Catálogo Único PO** | [`MATRIZ_EVIDENCIAS.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/MATRIZ_EVIDENCIAS.md) · [`PLANO_REGULARIZACAO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/PLANO_REGULARIZACAO.md) | [PR `#92`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92) (`MERGED`) · [PR `#95`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95) (`MERGED`) |
+| **Gestão: Sprints e Configuração** | [`PLANEJAMENTO_E_REPLANEJAMENTOS.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/gestao/PLANEJAMENTO_E_REPLANEJAMENTOS.md) · [`GESTAO_CONFIGURACAO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/gestao/GESTAO_CONFIGURACAO.md) | [PR `#92`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92) (`MERGED`) · [PR `#95`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95) (`MERGED`) |
+| **Revisão Acadêmica e ABNT** | [`VISAO_ATUALIZADA_RASCUNHO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/VISAO_ATUALIZADA_RASCUNHO.md) · [`ARQUITETURA_ATUALIZADA_RASCUNHO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/ARQUITETURA_ATUALIZADA_RASCUNHO.md) · [`MATRIZ_DIVERGENCIAS.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/MATRIZ_DIVERGENCIAS.md) · [`REVISAO_ABNT.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/REVISAO_ABNT.md) · [`DECISOES_PENDENTES_PO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/DECISOES_PENDENTES_PO.md) · [`RELATORIO_ENTREGA.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/RELATORIO_ENTREGA.md) ([`docs/revisao-academica/`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/developer/docs/revisao-academica)) | [PR `#90`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90) (`MERGED`) · [PR `#95`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95) (`MERGED`) |
+| **Métricas GQM e QA / Testes** | [`PLANO_GQM_VIGENTE.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/metricas/PLANO_GQM_VIGENTE.md) · [`REGISTRO_E_ANALISE.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/metricas/REGISTRO_E_ANALISE.md) · [`PLANO_TESTES_ATUAL.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/PLANO_TESTES_ATUAL.md) · [`MATRIZ_RASTREABILIDADE.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/MATRIZ_RASTREABILIDADE.md) · [`RELATORIO_EXECUCAO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/RELATORIO_EXECUCAO.md) · [`DEFEITOS_E_CORRECOES.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/DEFEITOS_E_CORRECOES.md) ([`docs/metricas/`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/developer/docs/metricas) · [`docs/qa/inspecao/`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/developer/docs/qa/inspecao)) | [PR `#91`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/91) (`MERGED`) · [PR `#94`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/94) (`MERGED`) · [PR `#95`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95) (`MERGED`) |
 
 ## Equipe
 
-Projeto desenvolvido pelo grupo **Liskov — T03**, na disciplina de Métodos de Desenvolvimento de Software.
+Projeto desenvolvido pelo grupo **Liskov — T03**, na disciplina de Métodos de Desenvolvimento de Software (UnB/FGA).
