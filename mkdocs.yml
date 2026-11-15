@@ -25,7 +25,7 @@ nav:
           - "Contrato Único de Dados (#19)": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/contratos-dados.md
           - Contrato API ↔ Painel: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/frontend/CONTRATO-API.md
           - ADR-001 (BERTweet Stopwords): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/decisoes/ADR-001-nao-remover-stopwords-no-bertweet.md
-      - "Inspeção Cruzada e Gestão (pós-merge PR #92)":
+      - "Inspeção Cruzada e Gestão (PRs #92 e #95 — MERGED)":
           - Dossiê de Inspeção (README): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/README.md
           - Roteiro e Checklist Executável: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/ROTEIRO_INSPECAO.md
           - Matriz de Evidências e Prontidão: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/MATRIZ_EVIDENCIAS.md
@@ -33,14 +33,14 @@ nav:
           - Plano de Regularização e PO Unificado: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/PLANO_REGULARIZACAO.md
           - Planejamento e Replanejamentos: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/gestao/PLANEJAMENTO_E_REPLANEJAMENTOS.md
           - Gestão de Configuração: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/gestao/GESTAO_CONFIGURACAO.md
-      - "Revisão Acadêmica e ABNT (pós-merge PR #90)":
+      - "Revisão Acadêmica e ABNT (PR #90 — MERGED)":
           - Visão Atualizada (Rascunho): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/VISAO_ATUALIZADA_RASCUNHO.md
           - Arquitetura Atualizada (Rascunho): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/ARQUITETURA_ATUALIZADA_RASCUNHO.md
-          - Matriz de Divergências (D01–D18): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/MATRIZ_DIVERGENCIAS.md
+          - "Matriz de Divergências (D01–D29)": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/MATRIZ_DIVERGENCIAS.md
           - Revisão ABNT: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/REVISAO_ABNT.md
-          - Decisões Pendentes PO (PO01–PO14): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/DECISOES_PENDENTES_PO.md
+          - "Decisões Pendentes PO (PO-01–PO-14)": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/DECISOES_PENDENTES_PO.md
           - "Relatório de Entrega (#90)": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/RELATORIO_ENTREGA.md
-      - "Métricas GQM e QA / Testes (pós-merge PR #91)":
+      - "Métricas GQM e QA / Testes (PRs #91 e #94 — MERGED)":
           - Plano GQM Vigente: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/metricas/PLANO_GQM_VIGENTE.md
           - Registro e Análise de Métricas: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/metricas/REGISTRO_E_ANALISE.md
           - Plano de Testes Atual: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/PLANO_TESTES_ATUAL.md
@@ -48,8 +48,10 @@ nav:
           - Relatório de Execução (1723a7d): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/RELATORIO_EXECUCAO.md
           - Defeitos e Correções (D01–D04): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/DEFEITOS_E_CORRECOES.md
 
-  - PRs Abertos da Inspeção (pré-merge):
-      - "PR #90 — Revisão Acadêmica": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90
-      - "PR #91 — Métricas GQM e QA": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/91
-      - "PR #92 — Dossiê e Gestão": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92
-      - "PR #93 — Portal MkDocs": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/93
+  - Histórico de PRs da Inspeção:
+      - "PR #90 — Revisão Acadêmica (MERGED)": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90
+      - "PR #91 — Métricas GQM e QA (MERGED)": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/91
+      - "PR #92 — Dossiê e Gestão (MERGED)": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92
+      - "PR #94 — Regularização GQM (MERGED)": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/94
+      - "PR #95 — Consolidação Pós-Merge (MERGED)": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95
+      - "PR #93 — Portal MkDocs (OPEN em docs)": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/93
