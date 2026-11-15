@@ -1,0 +1,6 @@
+review_id,review_text,rating,dataset,review_date,category
+bpsad_syn_001,"Excelente produto! A entrega foi rápida e superou minhas expectativas na conferência.",5,b2w,2026-10-01,eletronicos
+bpsad_syn_002,"Gostei bastante da qualidade e da atenção ao consumidor brasileiro.",4,buscape,2026-10-02,informatica
+bpsad_syn_003,"O item cumpre o básico esperado pelo preço, sem grandes destaques.",3,olist,2026-10-03,utilidades
+bpsad_syn_004,"A embalagem veio amassada e o suporte demorou para responder à solicitação.",2,mercadolivre,2026-10-04,acessorios
+bpsad_syn_005,"Péssima experiência, o aplicativo apresenta falhas críticas e não funciona.",1,utlc_apps,2026-10-05,software

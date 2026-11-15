@@ -1,0 +1,13 @@
+{
+  "id_origem": "bpsad_syn_001",
+  "fonte": "b2w",
+  "texto_original": "Excelente produto! A entrega foi rápida e superou minhas expectativas na conferência.",
+  "sentimento": "positivo",
+  "probabilidades": { "positivo": 0.91, "negativo": 0.03, "neutro": 0.06 },
+  "modelo": { "nome": "pysentimiento/bertweet-pt-sentiment", "versao": "a-definir" },
+  "rotulo_original": "5",
+  "rotulo_padronizado": "positivo",
+  "data_publicacao": { "$date": "2026-10-01T00:00:00Z" },
+  "data_processamento": { "$date": "2026-11-03T14:30:00Z" },
+  "metadados": { "category": "eletronicos" }
+}

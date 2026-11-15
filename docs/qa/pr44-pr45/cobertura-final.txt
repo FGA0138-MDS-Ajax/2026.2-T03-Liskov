@@ -1,0 +1,49 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-9.2.0, pluggy-1.7.0
+rootdir: <REPO>/.qa-pr44-pr45/cenario-a
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0, anyio-4.16.0
+collected 206 items
+
+tests/test_api.py .                                                      [  0%]
+tests/test_aquisicao.py .........................                        [ 12%]
+tests/test_auditoria_datasets.py ...                                     [ 14%]
+tests/test_avaliacao.py ................                                 [ 21%]
+tests/test_classificacao.py ............                                 [ 27%]
+tests/test_comparar_modelos.py .....                                     [ 30%]
+tests/test_csv_importer.py ............................................. [ 51%]
+...................................................                      [ 76%]
+tests/test_importacao.py ....................                            [ 86%]
+tests/test_integracao_conjunta.py ..........                             [ 91%]
+tests/test_pipeline.py ..................                                [100%]
+
+- generated xml file: <REPO>/.qa-pr44-pr45/evidencias/corrigido-a-cobertura.xml -
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.13.5-final-0 ________________
+
+Name                                                Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------------------
+src/__init__.py                                         0      0   100%
+src/apresentacao/__init__.py                            0      0   100%
+src/apresentacao/app.py                                 4      4     0%   1-5
+src/dados/__init__.py                                   0      0   100%
+src/processamento/__init__.py                           0      0   100%
+src/processamento/aquisicao/__init__.py                 5      0   100%
+src/processamento/aquisicao/auditoria_datasets.py     121      2    98%   110, 273
+src/processamento/aquisicao/bpsad_adapter.py           95      7    93%   65, 70, 105, 108, 153, 282, 288
+src/processamento/aquisicao/csv_importer.py           183      4    98%   204, 212, 215, 509
+src/processamento/aquisicao/tweetsentbr.py             59      0   100%
+src/processamento/classificacao/__init__.py             0      0   100%
+src/processamento/classificacao/avaliacao.py           21      0   100%
+src/processamento/classificacao/baseline.py            21      0   100%
+src/processamento/classificacao/bertweet.py            48      4    92%   29, 56-57, 85
+src/processamento/classificacao/rotulos.py             10      0   100%
+src/processamento/pipeline.py                         131     18    86%   22, 29-30, 34-39, 61, 63, 77, 86, 106-107, 126, 131, 137, 155-156, 209
+src/processamento/preprocessamento/__init__.py          0      0   100%
+src/servico/__init__.py                                 0      0   100%
+src/servico/main.py                                     5      0   100%
+---------------------------------------------------------------------------------
+TOTAL                                                 703     39    94%
+Coverage JSON written to file <REPO>/.qa-pr44-pr45/evidencias/corrigido-a-coverage.json
+============================= 206 passed in 2.87s ==============================

@@ -1,0 +1,49 @@
+{
+  "python": "3.13.5 (main, Aug 10 2026, 12:06:59) [GCC 14.2.0]",
+  "versions": {
+    "pysentimiento": "0.7.3",
+    "torch": "2.9.1+cpu",
+    "transformers": "5.22.1",
+    "datasets": "5.1.0",
+    "accelerate": "1.15.0"
+  },
+  "checkpoint": "pysentimiento/bertweet-pt-sentiment",
+  "cuda_available": false,
+  "initialization_seconds": 49.134269426,
+  "device": "cpu",
+  "revision": null,
+  "tokenizer": "BertweetTokenizer",
+  "inference_seconds": 3.13053766500002,
+  "predictions": [
+    {
+      "text": "Adorei o atendimento!",
+      "sentimento": "positivo",
+      "probabilidades": {
+        "positivo": 0.9920560717582703,
+        "negativo": 0.0020639412105083466,
+        "neutro": 0.005879985634237528
+      }
+    },
+    {
+      "text": "A entrega atrasou muito.",
+      "sentimento": "negativo",
+      "probabilidades": {
+        "positivo": 0.006135096773505211,
+        "negativo": 0.9324639439582825,
+        "neutro": 0.06140095740556717
+      }
+    },
+    {
+      "text": "O produto chegou hoje.",
+      "sentimento": "neutro",
+      "probabilidades": {
+        "positivo": 0.08457644283771515,
+        "negativo": 0.03644590452313423,
+        "neutro": 0.8789777159690857
+      }
+    }
+  ],
+  "status": "VERIFICADO",
+  "elapsed_seconds": 53.34671140300003,
+  "checkpoint_revision_from_cache": "726612815d49447cbfe3f55bbfc2993c1f5fad10"
+}

@@ -1,0 +1,51 @@
+Extrato de linhas do log remoto, consultado em 14/11/2026.
+SHA: 1723a7d62d55fa98fbf6eaf5cc9da80650dbe920
+Run: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/43503741871
+Job: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/actions/runs/43503741871/job/132155891920
+Seleção: versão Python, lint, coleta, linhas por arquivo e resumo final.
+2026-11-13T20:41:14.4371126Z Using CPython 3.11.18
+2026-11-13T20:41:14.6645777Z All checks passed!
+2026-11-13T20:41:14.7052322Z All checks passed!
+2026-11-13T20:41:21.2081551Z platform linux -- Python 3.11.18, pytest-9.2.0, pluggy-1.7.0
+2026-11-13T20:41:21.2083039Z collected 814 items
+2026-11-13T20:41:21.5867955Z tests/test_analisar_em_lotes.py .....                                    [  0%]
+2026-11-13T20:41:21.7133017Z tests/test_api.py .................                                      [  2%]
+2026-11-13T20:41:23.2730821Z tests/test_api_administracao.py ........................................ [  7%]
+2026-11-13T20:41:23.8658922Z tests/test_aquisicao.py .........................                        [ 11%]
+2026-11-13T20:41:24.0655810Z tests/test_auditoria_datasets.py ...                                     [ 12%]
+2026-11-13T20:41:24.1288023Z tests/test_avaliacao.py ................                                 [ 14%]
+2026-11-13T20:41:24.1673890Z tests/test_classificacao.py ..............                               [ 15%]
+2026-11-13T20:41:24.1802896Z tests/test_comparar_modelos.py .....                                     [ 16%]
+2026-11-13T20:41:24.6560085Z tests/test_consultas_api.py ............................................ [ 21%]
+2026-11-13T20:41:24.7644725Z tests/test_csv_importer.py ............................................. [ 28%]
+2026-11-13T20:41:25.1885085Z tests/test_database.py ...................................               [ 38%]
+2026-11-13T20:41:27.4253509Z tests/test_experimentos_bpsad.py ..............                          [ 40%]
+2026-11-13T20:41:27.4862815Z tests/test_importacao.py ....................                            [ 42%]
+2026-11-13T20:41:27.5498629Z tests/test_integracao_conjunta.py ..........                             [ 43%]
+2026-11-13T20:41:27.6176172Z tests/test_painel_administracao.py ..................................... [ 48%]
+2026-11-13T20:41:30.7745662Z tests/test_painel_arquitetura.py ..................                      [ 55%]
+2026-11-13T20:41:30.7996538Z tests/test_painel_config.py ............                                 [ 56%]
+2026-11-13T20:41:32.0547179Z tests/test_painel_filtros.py ..................                          [ 59%]
+2026-11-13T20:41:32.1373925Z tests/test_painel_fonte_api.py ......................................... [ 64%]
+2026-11-13T20:41:32.2553337Z tests/test_painel_fonte_mock.py .......                                  [ 71%]
+2026-11-13T20:41:32.2765487Z tests/test_painel_transformacoes.py ...........                          [ 72%]
+2026-11-13T20:41:35.2169144Z tests/test_painel_ui.py ..................                               [ 74%]
+2026-11-13T20:41:35.8482729Z tests/test_persistencia_leitura.py .........................             [ 77%]
+2026-11-13T20:41:35.8665708Z tests/test_pesquisa_hibrida.py .........                                 [ 78%]
+2026-11-13T20:41:35.9044479Z tests/test_pipeline.py ...................                               [ 81%]
+2026-11-13T20:41:36.0568359Z tests/test_qa_t09_t10.py ...................                             [ 83%]
+2026-11-13T20:41:36.3479211Z tests/test_repositorio.py .............................................. [ 89%]
+2026-11-13T20:41:36.5405574Z tests/test_xfetch.py ................................................... [ 98%]
+2026-11-13T20:41:37.1799382Z tests/test_xfetch_pipeline.py ...                                        [100%]
+2026-11-13T20:41:37.1804438Z tests/test_api_administracao.py::test_painel_faz_o_fluxo_completo_na_api_real
+2026-11-13T20:41:37.1805168Z tests/test_api_administracao.py::test_painel_mostra_as_mensagens_da_api
+2026-11-13T20:41:37.1806047Z tests/test_api_administracao.py::test_painel_mostra_a_origem_da_pesquisa_na_api_real
+2026-11-13T20:41:37.1821316Z tests/test_api_administracao.py::test_painel_importa_e_ja_analisa_o_csv_na_api_real
+2026-11-13T20:41:37.1824766Z tests/test_api_administracao.py::test_painel_faz_o_fluxo_completo_na_api_real
+2026-11-13T20:41:37.1825366Z tests/test_api_administracao.py::test_painel_mostra_as_mensagens_da_api
+2026-11-13T20:41:37.1825954Z tests/test_api_administracao.py::test_painel_mostra_a_origem_da_pesquisa_na_api_real
+2026-11-13T20:41:37.1826612Z tests/test_api_administracao.py::test_painel_importa_e_ja_analisa_o_csv_na_api_real
+2026-11-13T20:41:37.1827225Z tests/test_consultas_api.py::test_respostas_aceitas_pelo_cliente_fonte_api
+2026-11-13T20:41:37.1831156Z _______________ coverage: platform linux, python 3.11.18-final-0 _______________
+2026-11-13T20:41:37.1858960Z TOTAL                                                2699    176    93%
+2026-11-13T20:41:37.1859382Z ====================== 814 passed, 10 warnings in 21.40s =======================

@@ -1,0 +1,68 @@
+[
+  {
+    "id_origem": "inv_001",
+    "fonte": "exemplo_coleta",
+    "texto_original": "Sentimento fora dos valores aceitos.",
+    "sentimento": "feliz",
+    "modelo": { "nome": "pysentimiento/bertweet-pt-sentiment" },
+    "data_processamento": { "$date": "2026-10-29T14:30:00Z" }
+  },
+  {
+    "id_origem": "inv_002",
+    "fonte": "exemplo_coleta",
+    "texto_original": "Sentimento com letra maiúscula.",
+    "sentimento": "POS",
+    "modelo": { "nome": "pysentimiento/bertweet-pt-sentiment" },
+    "data_processamento": { "$date": "2026-10-29T14:30:00Z" }
+  },
+  {
+    "id_origem": "inv_003",
+    "fonte": "exemplo_coleta",
+    "texto_original": "Data gravada como texto.",
+    "sentimento": "neutro",
+    "modelo": { "nome": "pysentimiento/bertweet-pt-sentiment" },
+    "data_processamento": "29/10/2026"
+  },
+  {
+    "id_origem": "inv_004",
+    "fonte": "exemplo_coleta",
+    "sentimento": "neutro",
+    "modelo": { "nome": "pysentimiento/bertweet-pt-sentiment" },
+    "data_processamento": { "$date": "2026-10-29T14:30:00Z" }
+  },
+  {
+    "id_origem": "inv_005",
+    "fonte": "exemplo_coleta",
+    "texto_original": "Probabilidade fora do intervalo.",
+    "sentimento": "positivo",
+    "probabilidades": { "positivo": 1.7, "negativo": 0.0, "neutro": 0.0 },
+    "modelo": { "nome": "pysentimiento/bertweet-pt-sentiment" },
+    "data_processamento": { "$date": "2026-10-29T14:30:00Z" }
+  },
+  {
+    "id_origem": "inv_006",
+    "fonte": "exemplo_coleta",
+    "texto_original": "Modelo sem nome.",
+    "sentimento": "neutro",
+    "modelo": { "versao": "1.0" },
+    "data_processamento": { "$date": "2026-10-29T14:30:00Z" }
+  },
+  {
+    "id_origem": "inv_007",
+    "fonte": "exemplo_coleta",
+    "texto_original": "Modelo como texto em vez de objeto.",
+    "sentimento": "neutro",
+    "modelo": "pysentimiento/bertweet-pt-sentiment",
+    "data_processamento": { "$date": "2026-10-29T14:30:00Z" }
+  },
+  {
+    "id_origem": "inv_008",
+    "fonte": "exemplo_coleta",
+    "texto_original": "Rótulo padronizado na sigla do importador.",
+    "sentimento": "positivo",
+    "modelo": { "nome": "pysentimiento/bertweet-pt-sentiment" },
+    "rotulo_original": "5",
+    "rotulo_padronizado": "POS",
+    "data_processamento": { "$date": "2026-10-29T14:30:00Z" }
+  }
+]

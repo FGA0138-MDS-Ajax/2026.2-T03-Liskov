@@ -1,0 +1,513 @@
+"""Testes da gravação e consulta canônica de análises em src/dados/repositorio.py.
+
+Os testes de validação e sanitização rodam sem banco. Os que usam MongoDB real
+lêem MONGODB_URI_TESTE (obrigatório quando CI está definido).
+"""
+
+import os
+import traceback
+from datetime import UTC, date, datetime
+from unittest.mock import Mock
+
+import pytest
+from bson import ObjectId
+from pymongo.errors import (
+    BulkWriteError,
+    DuplicateKeyError,
+    OperationFailure,
+    PyMongoError,
+    ServerSelectionTimeoutError,
+)
+
+from src.dados.database import ErroConexaoMongoDB, connect_to_mongodb
+from src.dados.repositorio import (
+    ErroAnaliseInvalida,
+    ErroConsultaInvalida,
+    ErroLeituraAnalises,
+    RepositorioAnalises,
+    buscar_por_id,
+    buscar_por_id_origem,
+    criar_indices,
+    criar_indices_complementares,
+    garantir_id_origem,
+    listar_analises,
+    listar_registros_base,
+    montar_chave_cache_pesquisa,
+    normalizar_consulta_pesquisa,
+    normalizar_fonte,
+    obter_colecao,
+    possui_dataset,
+    resumir_analises,
+    salvar_analise,
+    salvar_analises,
+    salvar_dataset,
+    validar_analise,
+)
+
+URI_TESTE = os.getenv("MONGODB_URI_TESTE", "mongodb://127.0.0.1:27017")
+BANCO_TESTE = "sentia_teste_repositorio"
+
+
+def criar_documento(id_origem="teste_001", **mudancas):
+    """Monta uma análise válida; mudancas troca ou acrescenta campos."""
+    documento = {
+        "id_origem": id_origem,
+        "fonte": "teste",
+        "texto_original": "Gostei muito do atendimento.",
+        "sentimento": "positivo",
+        "modelo": {"nome": "pysentimiento/bertweet-pt-sentiment"},
+        "data_processamento": datetime(2026, 11, 10, 12, 0, tzinfo=UTC),
+    }
+    documento.update(mudancas)
+    return documento
+
+
+@pytest.fixture
+def colecao():
+    """Coleção num banco de teste separado, apagado antes e depois de cada teste."""
+    if os.getenv("SENTIA_TESTES_SEM_MONGODB") == "1":
+        pytest.skip("MongoDB real desabilitado explicitamente nesta execução.")
+    try:
+        client = connect_to_mongodb(URI_TESTE, timeout_ms=1000)
+    except ErroConexaoMongoDB:
+        if os.getenv("CI"):
+            pytest.fail("MongoDB de teste indisponível no CI.")
+        pytest.skip("MongoDB local indisponível; ligue o Docker para rodar este teste.")
+    client.drop_database(BANCO_TESTE)
+    colecao_teste = obter_colecao(client, BANCO_TESTE)
+    criar_indices(colecao_teste)
+    yield colecao_teste
+    client.drop_database(BANCO_TESTE)
+    client.close()
+
+
+
+def test_documento_valido_passa_na_validacao():
+    validar_analise(criar_documento())
+
+
+@pytest.mark.parametrize("campo", ["id_origem", "fonte", "texto_original"])
+@pytest.mark.parametrize("valor", [None, "", "   ", 123])
+def test_campo_de_texto_obrigatorio_ausente_ou_vazio_e_recusado(campo, valor):
+    with pytest.raises(ErroAnaliseInvalida, match=campo):
+        validar_analise(criar_documento(**{campo: valor}))
+
+
+def test_sentimento_fora_da_lista_e_recusado():
+    with pytest.raises(ErroAnaliseInvalida):
+        validar_analise(criar_documento(sentimento="feliz"))
+
+
+@pytest.mark.parametrize("modelo", [None, {}, {"nome": ""}, "bertweet"])
+def test_modelo_sem_nome_e_recusado(modelo):
+    with pytest.raises(ErroAnaliseInvalida, match="modelo"):
+        validar_analise(criar_documento(modelo=modelo))
+
+
+def test_sem_data_processamento_e_recusado():
+    documento = criar_documento()
+    del documento["data_processamento"]
+    with pytest.raises(ErroAnaliseInvalida, match="data_processamento"):
+        validar_analise(documento)
+
+
+@pytest.mark.parametrize("campo", ["data_processamento", "data_publicacao"])
+@pytest.mark.parametrize("valor", ["2026-11-10", datetime(2026, 11, 10), None])
+def test_data_como_texto_sem_fuso_ou_nula_e_recusada(campo, valor):
+    with pytest.raises(ErroAnaliseInvalida, match=campo):
+        validar_analise(criar_documento(**{campo: valor}))
+
+
+def test_documento_invalido_nao_chega_ao_banco():
+    colecao_falsa = Mock()
+    with pytest.raises(ErroAnaliseInvalida):
+        salvar_analise(colecao_falsa, criar_documento(sentimento="feliz"))
+    colecao_falsa.insert_one.assert_not_called()
+
+
+def test_lote_vazio_nao_chama_o_banco():
+    colecao_falsa = Mock()
+    assert salvar_analises(colecao_falsa, []) == {"inseridos": 0, "duplicados": 0}
+    colecao_falsa.insert_many.assert_not_called()
+
+
+
+def test_cria_os_quatro_indices_do_esquema(colecao):
+    indices = {indice["name"]: indice for indice in colecao.list_indexes()}
+    assert set(indices) == {
+        "_id_",
+        "uq_fonte_id_origem",
+        "idx_sentimento_data_publicacao",
+        "idx_data_publicacao",
+        "idx_data_processamento",
+    }
+    assert indices["uq_fonte_id_origem"]["unique"] is True
+
+
+def test_criar_indices_de_novo_nao_da_erro(colecao):
+    criar_indices(colecao)
+
+
+def test_salvar_analise_grava_e_nao_duplica(colecao):
+    documento = criar_documento()
+    assert salvar_analise(colecao, documento) is True
+    assert salvar_analise(colecao, documento) is False
+    assert colecao.count_documents({}) == 1
+
+
+def test_mesmo_id_em_fontes_diferentes_nao_e_duplicata(colecao):
+    assert salvar_analise(colecao, criar_documento(fonte="bpsad")) is True
+    assert salvar_analise(colecao, criar_documento(fonte="X")) is True
+    assert colecao.count_documents({}) == 2
+
+
+def test_salvar_analise_nao_altera_o_dicionario_original(colecao):
+    documento = criar_documento()
+    salvar_analise(colecao, documento)
+    assert "_id" not in documento
+
+
+def test_datas_sao_gravadas_como_data_e_publicacao_ausente_e_omitida(colecao):
+    salvar_analise(colecao, criar_documento())
+    gravado = colecao.find_one({"id_origem": "teste_001"})
+    assert isinstance(gravado["data_processamento"], datetime)
+    assert "data_publicacao" not in gravado
+
+
+def test_salvar_analises_conta_inseridos_e_duplicados(colecao):
+    assert salvar_analises(colecao, [criar_documento("a"), criar_documento("b")]) == {
+        "inseridos": 2,
+        "duplicados": 0,
+    }
+    lote = [criar_documento("b"), criar_documento("c"), criar_documento("c"), criar_documento("d")]
+    assert salvar_analises(colecao, lote) == {"inseridos": 2, "duplicados": 2}
+    assert colecao.count_documents({}) == 4
+
+
+def test_lote_com_um_invalido_nao_grava_nada(colecao):
+    lote = [criar_documento("a"), criar_documento("b", sentimento="feliz")]
+    with pytest.raises(ErroAnaliseInvalida):
+        salvar_analises(colecao, lote)
+    assert colecao.count_documents({}) == 0
+
+
+def test_indices_enviados_ao_driver_sem_banco_real():
+    colecao_falsa = Mock()
+    criar_indices(colecao_falsa)
+    indices = {
+        indice.document["name"]: indice.document
+        for indice in colecao_falsa.create_indexes.call_args.args[0]
+    }
+    assert set(indices) == {
+        "uq_fonte_id_origem", "idx_sentimento_data_publicacao",
+        "idx_data_publicacao", "idx_data_processamento",
+    }
+    assert list(indices["uq_fonte_id_origem"]["key"].items()) == [
+        ("fonte", 1), ("id_origem", 1)
+    ]
+    assert indices["uq_fonte_id_origem"]["unique"] is True
+
+
+def test_insercao_unitaria_nao_modifica_original_e_trata_duplicata():
+    colecao_falsa = Mock()
+    documento = criar_documento()
+    assert salvar_analise(colecao_falsa, documento) is True
+    assert colecao_falsa.insert_one.call_args.args[0] == documento
+    assert colecao_falsa.insert_one.call_args.args[0] is not documento
+    colecao_falsa.insert_one.side_effect = DuplicateKeyError("duplicata")
+    assert salvar_analise(colecao_falsa, documento) is False
+
+
+def test_lote_conta_duplicatas_sem_banco_real():
+    colecao_falsa = Mock()
+    colecao_falsa.insert_many.side_effect = BulkWriteError({
+        "nInserted": 1, "writeErrors": [{"code": 11000}, {"code": 11000}],
+    })
+    assert salvar_analises(colecao_falsa, [criar_documento()] * 3) == {
+        "inseridos": 1, "duplicados": 2,
+    }
+    assert colecao_falsa.insert_many.call_args.kwargs == {"ordered": False}
+
+
+@pytest.mark.parametrize("detalhes", [
+    {"nInserted": 0, "writeErrors": [{"code": 121}]},
+    {"nInserted": 0, "writeErrors": [{"code": 11000}],
+     "writeConcernErrors": [{"code": 64, "errmsg": "falha de confirmação"}]},
+])
+def test_lote_nao_oculta_falhas_que_nao_sao_duplicatas(detalhes):
+    colecao_falsa = Mock()
+    colecao_falsa.insert_many.side_effect = BulkWriteError(detalhes)
+    with pytest.raises(BulkWriteError):
+        salvar_analises(colecao_falsa, [criar_documento()])
+
+
+def test_lote_invalido_nao_chama_driver_sem_banco_real():
+    colecao_falsa = Mock()
+    with pytest.raises(ErroAnaliseInvalida):
+        salvar_analises(colecao_falsa, [criar_documento(), criar_documento(fonte="")])
+    colecao_falsa.insert_many.assert_not_called()
+
+
+@pytest.mark.parametrize("como_texto", [True, False])
+def test_buscar_por_id_preserva_documento_bson(como_texto):
+    identificador = ObjectId()
+    documento = criar_documento(_id=identificador, rotulo_original="5", metadados={"categoria": "x"})
+    colecao_falsa = Mock()
+    colecao_falsa.find_one.return_value = documento
+    chave = str(identificador) if como_texto else identificador
+    assert buscar_por_id(colecao_falsa, chave) is documento
+    colecao_falsa.find_one.assert_called_once_with({"_id": identificador})
+    assert isinstance(documento["_id"], ObjectId)
+    assert isinstance(documento["data_processamento"], datetime)
+    assert "data_publicacao" not in documento
+
+
+def test_busca_por_chave_natural_distingue_fontes_e_preserva_chaves():
+    documentos = {fonte: criar_documento(" id-1 ", fonte=fonte) for fonte in ("b2w", "olist")}
+    colecao_falsa = Mock()
+    colecao_falsa.find_one.side_effect = lambda filtro: documentos[filtro["fonte"]]
+    for fonte in documentos:
+        assert buscar_por_id_origem(colecao_falsa, fonte, " id-1 ") is documentos[fonte]
+        colecao_falsa.find_one.assert_called_with({"fonte": fonte, "id_origem": " id-1 "})
+
+
+@pytest.mark.parametrize("busca", ["id", "chave_natural"])
+def test_busca_inexistente_retorna_none(busca):
+    colecao_falsa = Mock()
+    colecao_falsa.find_one.return_value = None
+    if busca == "id":
+        assert buscar_por_id(colecao_falsa, str(ObjectId())) is None
+    else:
+        assert buscar_por_id_origem(colecao_falsa, "b2w", "inexistente") is None
+    colecao_falsa.find_one.assert_called_once()
+
+
+@pytest.mark.parametrize("identificador", [
+    None, "", " ", "id-malformado", "g" * 24, "0" * 23, "0" * 25,
+    123, True, b"123456789012", {"$ne": None}, [],
+])
+def test_id_invalido_nao_consulta_banco(identificador):
+    colecao_falsa = Mock()
+    assert buscar_por_id(colecao_falsa, identificador) is None
+    colecao_falsa.find_one.assert_not_called()
+
+
+@pytest.mark.parametrize("campo", ["fonte", "id_origem"])
+@pytest.mark.parametrize("valor", [None, "", "  ", 123, {"$ne": None}])
+def test_chave_natural_invalida_nao_consulta_banco(campo, valor):
+    colecao_falsa = Mock()
+    argumentos = {"fonte": "b2w", "id_origem": "1", campo: valor}
+    with pytest.raises(ErroConsultaInvalida, match=campo):
+        buscar_por_id_origem(colecao_falsa, **argumentos)
+    colecao_falsa.find_one.assert_not_called()
+
+
+@pytest.mark.parametrize("busca", ["id", "chave_natural"])
+@pytest.mark.parametrize("erro_driver", [OperationFailure, ServerSelectionTimeoutError])
+def test_falha_de_busca_sanitiza_mensagem_e_traceback(busca, erro_driver):
+    segredo = "mongodb://admin:SENHA_NAO_EXPOR@servidor/sentia"
+    colecao_falsa = Mock()
+    colecao_falsa.find_one.side_effect = erro_driver(segredo)
+    with pytest.raises(ErroLeituraAnalises) as capturada:
+        if busca == "id":
+            buscar_por_id(colecao_falsa, str(ObjectId()))
+        else:
+            buscar_por_id_origem(colecao_falsa, "b2w", "1")
+    assert str(capturada.value) == "Falha ao consultar o MongoDB; verifique a conexão."
+    assert "SENHA_NAO_EXPOR" not in "".join(traceback.format_exception(capturada.value))
+    assert capturada.value.__suppress_context__ is True
+    colecao_falsa.find_one.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "chamada",
+    [
+        lambda c: listar_analises(c, pagina=0),
+        lambda c: listar_analises(c, pagina=True),
+        lambda c: listar_analises(c, tamanho=0),
+        lambda c: listar_analises(c, tamanho=101),
+        lambda c: listar_analises(c, tamanho=True),
+        lambda c: listar_analises(c, sentimento="feliz"),
+        lambda c: listar_analises(c, inicio=date(2026, 11, 2), fim=date(2026, 11, 1)),
+        lambda c: listar_analises(c, inicio=datetime(2026, 11, 1, tzinfo=UTC)),
+        lambda c: resumir_analises(c, sentimento="POS"),
+        lambda c: resumir_analises(c, inicio=date(2026, 11, 2), fim=date(2026, 11, 1)),
+    ],
+)
+def test_consulta_invalida_nao_consulta_banco(chamada):
+    colecao_falsa = Mock()
+    with pytest.raises(ErroConsultaInvalida):
+        chamada(colecao_falsa)
+    colecao_falsa.find.assert_not_called()
+    colecao_falsa.count_documents.assert_not_called()
+    colecao_falsa.aggregate.assert_not_called()
+
+
+def test_falha_em_listagem_resumo_e_base_sanitiza_erro():
+    segredo = "mongodb://admin:SENHA_NAO_EXPOR@servidor/sentia"
+    colecao_falsa = Mock()
+    colecao_falsa.count_documents.side_effect = ServerSelectionTimeoutError(segredo)
+    colecao_falsa.aggregate.side_effect = OperationFailure(segredo)
+    colecao_falsa.find.side_effect = ServerSelectionTimeoutError(segredo)
+    repo = RepositorioAnalises(colecao_falsa)
+
+    for acao in (
+        repo.listar_analises,
+        repo.resumir_analises,
+        repo.listar_registros_base,
+    ):
+        with pytest.raises(ErroLeituraAnalises) as erro:
+            acao()
+        assert str(erro.value) == "Falha ao consultar o MongoDB; verifique a conexão."
+        assert "SENHA_NAO_EXPOR" not in str(erro.value)
+        assert erro.value.__suppress_context__ is True
+
+
+def test_listar_registros_base_filtra_documentos_incompletos():
+    colecao_falsa = Mock()
+    colecao_falsa.find.return_value = [
+        {
+            "id_origem": "ok1",
+            "fonte": "X",
+            "texto_original": "Texto válido",
+            "rotulo_original": "positivo",
+        },
+        {"id_origem": "sem-texto", "fonte": "X", "texto_original": "   "},
+        {"id_origem": "sem-fonte", "texto_original": "Falta fonte"},
+    ]
+    registros = listar_registros_base(colecao_falsa)
+    assert registros == [
+        {
+            "id_origem": "ok1",
+            "fonte": "X",
+            "texto_original": "Texto válido",
+            "rotulo_original": "positivo",
+        }
+    ]
+
+
+def test_repositorio_analises_integra_escrita_consulta_e_resumo(colecao):
+    repo = RepositorioAnalises(colecao)
+    pub = datetime(2026, 11, 9, 10, 0, tzinfo=UTC)
+    assert repo.salvar_analise(criar_documento("r1", sentimento="positivo", data_publicacao=pub))
+    assert repo.salvar_analises([criar_documento("r2", sentimento="negativo")]) == {
+        "inseridos": 1,
+        "duplicados": 0,
+    }
+    pagina = repo.listar_analises()
+    assert pagina["total"] == 2
+    assert {item["id_origem"] for item in pagina["itens"]} == {"r1", "r2"}
+    assert all("_id" not in item for item in pagina["itens"])
+    assert repo.resumir_analises(inicio=date(2026, 11, 1), fim=date(2026, 11, 30)) == {
+        "total": 1,
+        "por_sentimento": {"positivo": 1, "negativo": 0, "neutro": 0},
+        "sem_data_publicacao": 1,
+    }
+
+
+def test_garantir_id_origem_e_normalizacao_de_cache_sem_colisao_parcial():
+    reg_sem_id = {"fonte": "X", "texto_original": "Texto qualquer", "data_publicacao": "2026-11-10"}
+    reg_mesmo = {
+        "fonte": " x ",
+        "id_origem": "  ",
+        "texto_original": "Texto qualquer",
+        "data_publicacao": datetime(2026, 11, 10, tzinfo=UTC),
+    }
+    reg_outro = {"fonte": "X", "texto_original": "Texto diferente"}
+
+    id_gerado = garantir_id_origem(reg_sem_id)
+    assert id_gerado.startswith("auto_")
+    assert id_gerado == garantir_id_origem(reg_mesmo)
+    assert id_gerado != garantir_id_origem(reg_outro)
+    assert garantir_id_origem({"id_origem": " id_real "}) == "id_real"
+
+    assert normalizar_consulta_pesquisa("  Vacinação   Infantil  ") == "vacinacao infantil"
+    chave_vac = montar_chave_cache_pesquisa("vac")
+    chave_vacina = montar_chave_cache_pesquisa("vacina")
+    chave_vac_x0 = montar_chave_cache_pesquisa("vacina", complementar_com_x=False)
+    chave_eq = montar_chave_cache_pesquisa("  VACINA  ", complementar_com_x=True)
+
+    assert chave_vac["chave_cache"] != chave_vacina["chave_cache"]
+    assert chave_vacina["chave_cache"] != chave_vac_x0["chave_cache"]
+    assert chave_vacina["chave_cache"] == chave_eq["chave_cache"]
+
+
+def test_criar_indices_complementares_envia_indices_sem_banco_real():
+    colecoes = {"registros": Mock(), "datasets": Mock(), "pesquisas": Mock()}
+    colecao_falsa = Mock()
+    colecao_falsa.database = colecoes
+
+    criar_indices_complementares(colecao_falsa)
+
+    for nome in ("registros", "datasets", "pesquisas"):
+        colecoes[nome].create_indexes.assert_called_once()
+
+
+def test_garantir_id_origem_trata_invalidos_e_estabiliza_iso_e_fonte():
+    # Sentinelas comuns em CSVs e valores não escalares devem cair para fallback determinístico.
+    for invalido in (None, "", "   ", "nan", "NaN", "null", "None", "<NA>", "N/A", "undefined", True, float("nan"), float("inf"), {"x": 1}):
+        gerado = garantir_id_origem(
+            {
+                "id_origem": invalido,
+                "fonte": "X",
+                "texto_original": "Texto   com   espaços\r\ne quebra",
+                "data_publicacao": "2026-11-10T12:30:00",
+            }
+        )
+        assert gerado.startswith("auto_")
+        equivalente = garantir_id_origem(
+            {
+                "fonte": "  x  ",
+                "texto_original": "Texto com espaços e quebra",
+                "data_publicacao": datetime(2026, 11, 10, 12, 30, 0, 999, tzinfo=UTC),
+            }
+        )
+        assert gerado == equivalente
+
+    # Fontes distintas com mesmo texto/data nunca colidem no ID automático.
+    id_x = garantir_id_origem({"fonte": "X", "texto_original": "Mesmo texto"})
+    id_csv = garantir_id_origem({"fonte": "CSV_A", "texto_original": "Mesmo texto"})
+    assert id_x != id_csv
+
+    assert garantir_id_origem({"id_origem": 123.0}) == "123"
+    assert normalizar_fonte("  Tweet   SentBR  ") == "Tweet SentBR"
+
+
+def test_salvar_dataset_compensa_registros_orfaos_em_falha_intermediaria_e_possui_valida_integridade():
+    col_registros = Mock()
+    col_registros.find.return_value = [{"fonte": "X", "id_origem": "existente_1"}]
+    col_registros.bulk_write.return_value = Mock(
+        upserted_count=1,
+        matched_count=1,
+        upserted_ids={1: "oid_novo"},
+    )
+    col_datasets = Mock()
+    col_datasets.update_one.side_effect = PyMongoError("falha simulada em datasets")
+
+    col_analises = Mock()
+    col_analises.database = {"registros": col_registros, "datasets": col_datasets}
+
+    with pytest.raises(ErroLeituraAnalises, match="Falha ao salvar metadados do dataset"):
+        salvar_dataset(
+            col_analises,
+            "falha.csv",
+            [
+                {"id_origem": "existente_1", "fonte": "x", "texto_original": "Já existe"},
+                {"id_origem": "novo_1", "fonte": "X", "texto_original": "Novo órfão"},
+            ],
+            id_dataset="ds_falha",
+        )
+
+    # Deve remover vínculo `ds_falha` de ambos e deletar somente o novo órfão (`ids_datasets` vazio).
+    col_registros.update_many.assert_called_once()
+    col_registros.delete_many.assert_called_once()
+    filtro_delete = col_registros.delete_many.call_args[0][0]
+    assert filtro_delete["ids_datasets"] == {"$size": 0}
+    assert filtro_delete["$or"] == [{"fonte": "X", "id_origem": "novo_1"}]
+
+    # `possui_dataset` detecta dataset cujo conteúdo em `registros` foi perdido.
+    col_datasets.find_one.return_value = {"id_dataset": "ds_truncado", "quantidade_registros": 5}
+    col_registros.find_one.return_value = None
+    assert possui_dataset(col_analises, "ds_truncado") is False
+    col_registros.find_one.return_value = {"_id": "algum"}
+    assert possui_dataset(col_analises, "ds_truncado") is True

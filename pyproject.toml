@@ -1,0 +1,38 @@
+[project]
+name = "sentia"
+# Valor técnico exigido pelo uv. Não representa uma versão lançada.
+version = "0.0.0"
+description = "Plataforma de análise de sentimentos em redes sociais (MDS, UnB, 2026.2, T03, Liskov)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "streamlit",
+    "pymongo",
+    "nltk",
+    "scikit-learn",
+    "pandas",
+    "requests",
+    "python-dotenv",
+    "joblib>=1.3,<2",
+]
+
+[dependency-groups]
+# Medição de memória somente nos experimentos; não instalado por padrão.
+experimentos = ["psutil>=6,<8"]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "httpx",
+    "ruff==0.17.4",
+]
+# Só para executar o BERTweet real: uv sync --group ml
+ml = [
+    "pysentimiento==0.7.3",
+    "torch>=2.2,<3",
+]
+
+[tool.uv]
+# O projeto é uma aplicação executada a partir do repositório, não um pacote publicável.
+package = false
