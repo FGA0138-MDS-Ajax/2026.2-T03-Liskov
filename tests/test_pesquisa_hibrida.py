@@ -137,8 +137,30 @@ def test_forcar_atualizacao_ignora_cache_e_consulta_x():
 
 def test_chave_gera_fallback_deterministico_quando_id_origem_ausente():
     r1 = {"fonte": "X", "texto_original": "Sem ID", "data_publicacao": "2026-11-01T10:00:00Z"}
-    r2 = {"fonte": "X", "texto_original": "Sem ID", "data_publicacao": "2026-11-01T10:00:00Z"}
+    r2 = {"fonte": "x", "id_origem": "nan", "texto_original": "Sem ID", "data_publicacao": "2026-11-01T10:00:00"}
     r3 = {"fonte": "X", "id_origem": "  ", "texto_original": "Outro texto"}
     assert chave(r1) == chave(r2)
     assert chave(r1)[1].startswith("auto_")
     assert chave(r1) != chave(r3)
+
+
+def test_pesquisar_normaliza_id_invalido_do_x_e_deduplica_fonte_por_caixa():
+    base = [{"id_origem": "t1", "fonte": "X", "texto_original": "vacina salvou vidas"}]
+
+    def x_com_sentinelas(_consulta, _qtd):
+        return [
+            {"id_origem": "t1", "fonte": " x ", "texto_original": "vacina salvou vidas"},
+            {"id_origem": "nan", "fonte": "X", "texto_original": "vacina gratis hoje"},
+        ]
+
+    resultado = pesquisar(
+        "vacina",
+        3,
+        base,
+        buscar_x=x_com_sentinelas,
+        complementar_com_x=True,
+    )
+    assert resultado.duplicatas == 1
+    assert len(resultado.da_base) == 1
+    assert len(resultado.do_x) == 1
+    assert resultado.do_x[0]["id_origem"].startswith("auto_")

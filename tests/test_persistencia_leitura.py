@@ -13,7 +13,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-from pymongo.errors import ServerSelectionTimeoutError
+from pymongo.errors import PyMongoError, ServerSelectionTimeoutError
 
 from src.dados.database import (
     ErroConexaoMongoDB,
@@ -30,7 +30,10 @@ from src.dados.repositorio import (
     RepositorioAnalises,
     criar_indices,
     garantir_id_origem,
+    obter_analises_por_chaves,
     obter_colecao,
+    possui_dataset,
+    salvar_dataset,
 )
 from src.processamento.aquisicao.csv_importer import converter_rotulo_para_sentia
 from src.processamento.aquisicao.xfetch import ErroXFetch
@@ -1057,3 +1060,152 @@ def test_integracao_cenario_9_falha_xfetch_nao_grava_cache_indevido(
         assert banco[NOME_COLECAO_PESQUISAS].count_documents({"consulta_normalizada": "energia"}) == 1
     finally:
         administracao.obter_contexto.cache_clear()
+
+
+def test_integracao_cenario_10_consistencia_compensacao_dataset_e_cache_apos_falha_pipeline(
+    monkeypatch, client, tmp_path: Path, uri_mongodb_teste, nome_banco_teste
+):
+    col = obter_colecao(client, nome_banco_teste)
+    repo = RepositorioAnalises(col)
+    repo.salvar_dataset(
+        "previo.csv",
+        [{"id_origem": "prev_1", "fonte": "X", "texto_original": "Tweet previo estavel"}],
+        id_dataset="ds_previo",
+        tipo="upload_csv",
+    )
+
+    from pymongo.collection import Collection
+
+    banco = client[nome_banco_teste]
+    update_original = Collection.update_one
+
+    def update_one_com_falha(self, *args, **kwargs):
+        if self.name == NOME_COLECAO_DATASETS:
+            raise PyMongoError("falha simulada em datasets")
+        return update_original(self, *args, **kwargs)
+
+    monkeypatch.setattr(Collection, "update_one", update_one_com_falha)
+    with pytest.raises(ErroLeituraAnalises):
+        salvar_dataset(
+            col,
+            "falha_meta.csv",
+            [
+                {"id_origem": "prev_1", "fonte": "x", "texto_original": "Tweet previo estavel"},
+                {"id_origem": "novo_orfao", "fonte": "X", "texto_original": "Registro que deve sofrer rollback"},
+            ],
+            id_dataset="ds_que_falha",
+            tipo="upload_csv",
+        )
+    monkeypatch.undo()
+
+    # Compensação preservou `prev_1` apenas no dataset original e apagou `novo_orfao`.
+    assert banco[NOME_COLECAO_REGISTROS].count_documents({}) == 1
+    doc_prev = banco[NOME_COLECAO_REGISTROS].find_one({"id_origem": "prev_1"})
+    assert doc_prev["ids_datasets"] == ["ds_previo"]
+    assert banco[NOME_COLECAO_DATASETS].find_one({"id_dataset": "ds_que_falha"}) is None
+
+    # Detecção de dataset truncado permite recuperação automática em `possui_dataset`.
+    banco[NOME_COLECAO_DATASETS].insert_one(
+        {"id_dataset": "ds_truncado", "nome_arquivo": "t.csv", "quantidade_registros": 2}
+    )
+    assert possui_dataset(col, "ds_truncado") is False
+
+    # Falha na classificação não grava cache prematuro em `pesquisas`, mas preserva registros do XFetch.
+    uri_teste = uri_com_banco(uri_mongodb_teste, nome_banco_teste)
+    senha_admin = _configurar_ambiente_admin_mongo(monkeypatch, uri_teste)
+    chamadas_x: list[str] = []
+
+    def x_ok(termo: str, _qtd: int) -> list[dict]:
+        chamadas_x.append(termo)
+        return [{"id_origem": "cons_x1", "fonte": "X", "texto_original": f"Novo sobre {termo}"}]
+
+    estado = {"falhar": True}
+
+    def criar_pipeline_instavel():
+        if estado["falhar"]:
+            raise RuntimeError("falha transitória antes de salvar análises")
+        return PipelineFalso()
+
+    monkeypatch.setattr(administracao, "_criar_pipeline_padrao", criar_pipeline_instavel)
+    try:
+        ctx = administracao.obter_contexto()
+        ctx.caminho_tweetsentbr = tmp_path / "nao-existe.csv"
+        ctx.buscar_x = x_ok
+        cliente = TestClient(app)
+        headers = _login_admin(cliente, senha_admin)
+
+        r1 = cliente.post(
+            "/coletas",
+            headers=headers,
+            json={"fonte": "pesquisa", "termo": "infraestrutura", "quantidade": 3, "complementar_com_x": True},
+        )
+        st1 = cliente.get(f"/coletas/{r1.json()['id']}", headers=headers).json()
+        assert st1["situacao"] == "falhou"
+        assert banco[NOME_COLECAO_REGISTROS].count_documents({"id_origem": "cons_x1"}) == 1
+        assert banco[NOME_COLECAO_PESQUISAS].count_documents({"consulta_normalizada": "infraestrutura"}) == 0
+
+        estado["falhar"] = False
+        r2 = cliente.post(
+            "/coletas",
+            headers=headers,
+            json={"fonte": "pesquisa", "termo": "infraestrutura", "quantidade": 3, "complementar_com_x": True},
+        )
+        st2 = cliente.get(f"/coletas/{r2.json()['id']}", headers=headers).json()
+        assert st2["situacao"] == "concluida"
+        assert st2["textos_analisados"] == 1
+        assert banco[NOME_COLECAO_PESQUISAS].count_documents({"consulta_normalizada": "infraestrutura"}) == 1
+        assert chamadas_x == ["infraestrutura", "infraestrutura"]
+
+        # Terceira coleta equivalente reutiliza o cache válido gravado após `analises`.
+        r3 = cliente.post(
+            "/coletas",
+            headers=headers,
+            json={"fonte": "pesquisa", "termo": "infraestrutura", "quantidade": 3, "complementar_com_x": True},
+        )
+        st3 = cliente.get(f"/coletas/{r3.json()['id']}", headers=headers).json()
+        assert st3["situacao"] == "concluida"
+        assert chamadas_x == ["infraestrutura", "infraestrutura"]
+    finally:
+        administracao.obter_contexto.cache_clear()
+
+
+def test_integracao_cenario_11_deduplicacao_fonte_case_insensitive_e_ids_invalidos(
+    client, nome_banco_teste
+):
+    col = obter_colecao(client, nome_banco_teste)
+    repo = RepositorioAnalises(col)
+
+    # Primeira carga com grafia "X", id inválido "nan" e timestamp ISO com microssegundos.
+    repo.salvar_registros(
+        [
+            {"id_origem": "t_case_1", "fonte": "X", "texto_original": "Primeiro texto", "data_publicacao": "2026-11-01T10:00:00.123456Z"},
+            {"id_origem": "nan", "fonte": "X", "texto_original": "Texto sem id valido", "data_publicacao": "2026-11-01T12:00:00"},
+            {"id_origem": "null", "fonte": "csv_outro", "texto_original": "Texto sem id valido", "data_publicacao": "2026-11-01T12:00:00"},
+        ],
+        id_dataset="ds_mix_1",
+        origem_coleta="xfetch",
+    )
+
+    # Segunda carga com " x " (caixa/espaços) e "None" equivalente ao "nan" acima + mesma data naive UTC.
+    resumo = repo.salvar_registros(
+        [
+            {"id_origem": "t_case_1", "fonte": "  x  ", "texto_original": "Primeiro texto"},
+            {"id_origem": "None", "fonte": "x", "texto_original": "Texto sem id valido", "data_publicacao": utc(2026, 11, 1, 12, 0)},
+        ],
+        id_dataset="ds_mix_2",
+        origem_coleta="csv",
+    )
+
+    assert resumo["inseridos"] == 0
+    assert resumo["existentes"] == 2
+    banco = client[nome_banco_teste]
+    # 3 documentos distintos: t_case_1(X), auto_...(X) e auto_...(csv_outro).
+    assert banco[NOME_COLECAO_REGISTROS].count_documents({}) == 3
+
+    # Análise salva com grafia "x" continua sendo encontrada ao consultar por "X".
+    docs_analise = PipelineFalso().processar_registros(
+        [{"id_origem": "t_case_1", "fonte": "x", "texto_original": "Primeiro texto"}]
+    )
+    repo.salvar_analises(docs_analise)
+    mapa = obter_analises_por_chaves(col, [("X", "t_case_1")])
+    assert ("x", "t_case_1") in mapa

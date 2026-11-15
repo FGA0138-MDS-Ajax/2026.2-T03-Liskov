@@ -11,7 +11,13 @@ from unittest.mock import Mock
 
 import pytest
 from bson import ObjectId
-from pymongo.errors import BulkWriteError, DuplicateKeyError, OperationFailure, ServerSelectionTimeoutError
+from pymongo.errors import (
+    BulkWriteError,
+    DuplicateKeyError,
+    OperationFailure,
+    PyMongoError,
+    ServerSelectionTimeoutError,
+)
 
 from src.dados.database import ErroConexaoMongoDB, connect_to_mongodb
 from src.dados.repositorio import (
@@ -28,10 +34,13 @@ from src.dados.repositorio import (
     listar_registros_base,
     montar_chave_cache_pesquisa,
     normalizar_consulta_pesquisa,
+    normalizar_fonte,
     obter_colecao,
+    possui_dataset,
     resumir_analises,
     salvar_analise,
     salvar_analises,
+    salvar_dataset,
     validar_analise,
 )
 
@@ -432,3 +441,73 @@ def test_criar_indices_complementares_envia_indices_sem_banco_real():
 
     for nome in ("registros", "datasets", "pesquisas"):
         colecoes[nome].create_indexes.assert_called_once()
+
+
+def test_garantir_id_origem_trata_invalidos_e_estabiliza_iso_e_fonte():
+    # Sentinelas comuns em CSVs e valores não escalares devem cair para fallback determinístico.
+    for invalido in (None, "", "   ", "nan", "NaN", "null", "None", "<NA>", "N/A", "undefined", True, float("nan"), float("inf"), {"x": 1}):
+        gerado = garantir_id_origem(
+            {
+                "id_origem": invalido,
+                "fonte": "X",
+                "texto_original": "Texto   com   espaços\r\ne quebra",
+                "data_publicacao": "2026-11-10T12:30:00",
+            }
+        )
+        assert gerado.startswith("auto_")
+        equivalente = garantir_id_origem(
+            {
+                "fonte": "  x  ",
+                "texto_original": "Texto com espaços e quebra",
+                "data_publicacao": datetime(2026, 11, 10, 12, 30, 0, 999, tzinfo=UTC),
+            }
+        )
+        assert gerado == equivalente
+
+    # Fontes distintas com mesmo texto/data nunca colidem no ID automático.
+    id_x = garantir_id_origem({"fonte": "X", "texto_original": "Mesmo texto"})
+    id_csv = garantir_id_origem({"fonte": "CSV_A", "texto_original": "Mesmo texto"})
+    assert id_x != id_csv
+
+    assert garantir_id_origem({"id_origem": 123.0}) == "123"
+    assert normalizar_fonte("  Tweet   SentBR  ") == "Tweet SentBR"
+
+
+def test_salvar_dataset_compensa_registros_orfaos_em_falha_intermediaria_e_possui_valida_integridade():
+    col_registros = Mock()
+    col_registros.find.return_value = [{"fonte": "X", "id_origem": "existente_1"}]
+    col_registros.bulk_write.return_value = Mock(
+        upserted_count=1,
+        matched_count=1,
+        upserted_ids={1: "oid_novo"},
+    )
+    col_datasets = Mock()
+    col_datasets.update_one.side_effect = PyMongoError("falha simulada em datasets")
+
+    col_analises = Mock()
+    col_analises.database = {"registros": col_registros, "datasets": col_datasets}
+
+    with pytest.raises(ErroLeituraAnalises, match="Falha ao salvar metadados do dataset"):
+        salvar_dataset(
+            col_analises,
+            "falha.csv",
+            [
+                {"id_origem": "existente_1", "fonte": "x", "texto_original": "Já existe"},
+                {"id_origem": "novo_1", "fonte": "X", "texto_original": "Novo órfão"},
+            ],
+            id_dataset="ds_falha",
+        )
+
+    # Deve remover vínculo `ds_falha` de ambos e deletar somente o novo órfão (`ids_datasets` vazio).
+    col_registros.update_many.assert_called_once()
+    col_registros.delete_many.assert_called_once()
+    filtro_delete = col_registros.delete_many.call_args[0][0]
+    assert filtro_delete["ids_datasets"] == {"$size": 0}
+    assert filtro_delete["$or"] == [{"fonte": "X", "id_origem": "novo_1"}]
+
+    # `possui_dataset` detecta dataset cujo conteúdo em `registros` foi perdido.
+    col_datasets.find_one.return_value = {"id_dataset": "ds_truncado", "quantidade_registros": 5}
+    col_registros.find_one.return_value = None
+    assert possui_dataset(col_analises, "ds_truncado") is False
+    col_registros.find_one.return_value = {"_id": "algum"}
+    assert possui_dataset(col_analises, "ds_truncado") is True

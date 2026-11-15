@@ -15,7 +15,7 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-from src.dados.repositorio import garantir_id_origem
+from src.dados.repositorio import garantir_id_origem, normalizar_fonte
 
 # Palavras muito comuns que não ajudam a encontrar o assunto.
 _PALAVRAS_VAZIAS = frozenset(
@@ -68,9 +68,9 @@ def pontuar(termos: list[str], texto: str) -> float:
 
 
 def chave(registro: dict[str, Any]) -> tuple[str, str]:
-    """Identifica um texto pela fonte e pelo id de origem (ou hash determinístico)."""
+    """Identifica um texto pela fonte normalizada e pelo id de origem (ou hash)."""
     return (
-        str(registro.get("fonte", "")).strip().casefold(),
+        normalizar_fonte(registro.get("fonte")).casefold(),
         garantir_id_origem(registro),
     )
 
@@ -159,7 +159,7 @@ def pesquisar(
     novos_do_x: list[dict[str, Any]] = []
     for registro in bruto:
         identificador = chave(registro)
-        if not isinstance(registro.get("id_origem"), str) or not registro["id_origem"].strip():
+        if not isinstance(registro.get("id_origem"), str) or registro["id_origem"] != identificador[1]:
             registro = {**registro, "id_origem": identificador[1]}
         if identificador in escolhidos:
             resultado.duplicatas += 1

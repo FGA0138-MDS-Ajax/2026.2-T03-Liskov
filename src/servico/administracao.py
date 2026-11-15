@@ -36,9 +36,11 @@ from src.dados.database import (
 from src.dados.repositorio import (
     ErroLeituraAnalises,
     RepositorioAnalises,
+    chave_natural_registro,
     criar_indices,
     criar_indices_complementares,
     garantir_id_origem,
+    normalizar_fonte,
     obter_colecao,
 )
 
@@ -572,11 +574,11 @@ def listar_fontes(
 
 def _registros_da_coleta(
     contexto: ContextoAdministracao, coleta: Coleta
-) -> tuple[list[dict[str, Any]], list[str | None]]:
-    """Textos a analisar e a origem de cada um: "base" ou "x" na pesquisa; None nas demais."""
+) -> tuple[list[dict[str, Any]], list[str | None], dict[str, Any] | None]:
+    """Textos a analisar, origem ("base"/"x") e metadados de cache pendente."""
     if coleta.fonte != FONTE_PESQUISA:
         registros = contexto.registros_da_fonte(coleta.fonte)
-        return registros, [None] * len(registros)
+        return registros, [None] * len(registros), None
     assert coleta.termo and coleta.quantidade
 
     with contexto.repositorio_analises() as repo:
@@ -597,9 +599,9 @@ def _registros_da_coleta(
         forcar_atualizacao=coleta.forcar_atualizacao,
     )
 
-    with contexto.repositorio_analises() as repo:
-        if resultado.do_x:
-            # Os tweets novos entram na base: próximas pesquisas os reaproveitam sem novo custo.
+    if resultado.do_x:
+        # Tweets novos ficam salvos na base mesmo se a classificação falhar depois.
+        with contexto.repositorio_analises() as repo:
             momento = datetime.now(UTC).strftime("%d/%m %H:%M")
             repo.salvar_dataset(
                 f"busca no X por “{coleta.termo}” ({momento} UTC)",
@@ -608,29 +610,34 @@ def _registros_da_coleta(
                 origem_coleta="xfetch",
                 metadados={"termo": coleta.termo},
             )
-        pode_cachear = not resultado.cache_reutilizado and (
-            not coleta.complementar_com_x
-            or resultado.consultou_x
-            or len(resultado.registros) >= coleta.quantidade
-        )
-        if pode_cachear:
-            chaves_cache = [
-                {"fonte": r["fonte"].strip(), "id_origem": garantir_id_origem(r)}
-                for r in resultado.registros
-            ]
-            repo.salvar_cache_pesquisa(
-                coleta.termo,
-                complementar_com_x=coleta.complementar_com_x,
-                quantidade_solicitada=coleta.quantidade,
-                quantidade_atendida=len(resultado.registros),
-                esgotado_na_origem=resultado.esgotado_na_origem,
-                origem={
-                    "base": len(resultado.da_base),
-                    "x": len(resultado.do_x),
-                    "duplicatas": resultado.duplicatas,
-                },
-                chaves_registros=chaves_cache,
-            )
+
+    pode_cachear = not resultado.cache_reutilizado and (
+        not coleta.complementar_com_x
+        or resultado.consultou_x
+        or len(resultado.registros) >= coleta.quantidade
+    )
+    cache_pendente: dict[str, Any] | None = None
+    if pode_cachear:
+        chaves_cache = [
+            {
+                "fonte": normalizar_fonte(r["fonte"]),
+                "id_origem": garantir_id_origem(r),
+            }
+            for r in resultado.registros
+        ]
+        cache_pendente = {
+            "consulta": coleta.termo,
+            "complementar_com_x": coleta.complementar_com_x,
+            "quantidade_solicitada": coleta.quantidade,
+            "quantidade_atendida": len(resultado.registros),
+            "esgotado_na_origem": resultado.esgotado_na_origem,
+            "origem": {
+                "base": len(resultado.da_base),
+                "x": len(resultado.do_x),
+                "duplicatas": resultado.duplicatas,
+            },
+            "chaves_registros": chaves_cache,
+        }
 
     contexto.repositorio.atualizar_coleta(
         coleta.id,
@@ -641,7 +648,7 @@ def _registros_da_coleta(
         },
         mensagem=resultado.aviso,
     )
-    return resultado.registros, resultado.origens
+    return resultado.registros, resultado.origens, cache_pendente
 
 
 def _resumir_resolvidos(
@@ -675,20 +682,20 @@ def executar_coleta(contexto: ContextoAdministracao, id_coleta: str) -> None:
     if coleta is None:
         return
     try:
-        registros, origens = _registros_da_coleta(contexto, coleta)
+        registros, origens, cache_pendente = _registros_da_coleta(contexto, coleta)
         repositorio.atualizar_coleta(
             id_coleta, situacao="em_andamento", textos_coletados=len(registros)
         )
         existentes: dict[tuple[str, str], dict[str, Any]] = {}
         if registros:
-            chaves = [(r["fonte"].strip(), garantir_id_origem(r)) for r in registros]
+            chaves = [chave_natural_registro(r) for r in registros]
             with contexto.repositorio_analises() as repo_analises:
                 existentes = repo_analises.obter_analises_por_chaves(chaves)
 
         resolvidos: dict[int, dict[str, Any]] = {}
         pendentes: list[tuple[int, dict[str, Any]]] = []
         for posicao, registro in enumerate(registros):
-            chave = (registro["fonte"].strip(), garantir_id_origem(registro))
+            chave = chave_natural_registro(registro)
             analise = existentes.get(chave)
             if (
                 analise is not None
@@ -699,7 +706,7 @@ def executar_coleta(contexto: ContextoAdministracao, id_coleta: str) -> None:
             else:
                 if (
                     not isinstance(registro.get("id_origem"), str)
-                    or not registro["id_origem"].strip()
+                    or registro["id_origem"] != chave[1]
                 ):
                     registro = {**registro, "id_origem": chave[1]}
                 pendentes.append((posicao, registro))
@@ -734,6 +741,9 @@ def executar_coleta(contexto: ContextoAdministracao, id_coleta: str) -> None:
                 por_sentimento=por_sentimento,
                 exemplos=exemplos,
             )
+        if cache_pendente is not None:
+            with contexto.repositorio_analises() as repo_cache:
+                repo_cache.salvar_cache_pesquisa(**cache_pendente)
         campos: dict[str, Any] = {"situacao": "concluida"}
         if not registros and not repositorio.obter_coleta(id_coleta).mensagem:
             campos["mensagem"] = "Nenhum texto encontrado para analisar."

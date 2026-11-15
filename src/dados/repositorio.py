@@ -1,7 +1,9 @@
 import hashlib
+import math
 import re
 import unicodedata
 from collections.abc import Iterable, Mapping
+from contextlib import suppress
 from datetime import UTC, date, datetime, time
 from typing import Any
 from uuid import uuid4
@@ -23,6 +25,9 @@ CAMPOS_TEXTO_OBRIGATORIOS = ("id_origem", "fonte", "texto_original")
 LIMITE_MAXIMO_PAGINA = 100
 LIMITE_CHAVES_EMBEDDED_DATASET = 50_000
 TAMANHO_LOTE_CONSULTA_CHAVES = 200
+_IDENTIFICADORES_INVALIDOS = frozenset(
+    {"none", "null", "nan", "<na>", "n/a", "undefined", "nil"}
+)
 
 
 class ErroAnaliseInvalida(ValueError):
@@ -341,8 +346,11 @@ def _serializar_data_iso(valor: Any) -> str | None:
     if valor is None:
         return None
     if isinstance(valor, datetime):
-        data = valor if valor.tzinfo is not None else valor.replace(tzinfo=UTC)
-        return data.astimezone(UTC).isoformat().replace("+00:00", "Z")
+        data = (valor if valor.tzinfo is not None else valor.replace(tzinfo=UTC)).astimezone(
+            UTC
+        )
+        data = data.replace(microsecond=(data.microsecond // 1000) * 1000)
+        return data.isoformat().replace("+00:00", "Z")
     if isinstance(valor, date):
         return datetime(valor.year, valor.month, valor.day, tzinfo=UTC).isoformat().replace(
             "+00:00", "Z"
@@ -354,9 +362,10 @@ def _normalizar_data_registro(valor: Any) -> datetime | str | None:
     if valor is None:
         return None
     if isinstance(valor, datetime):
-        return (valor if valor.tzinfo is not None else valor.replace(tzinfo=UTC)).astimezone(
+        data = (valor if valor.tzinfo is not None else valor.replace(tzinfo=UTC)).astimezone(
             UTC
         )
+        return data.replace(microsecond=(data.microsecond // 1000) * 1000)
     if isinstance(valor, date):
         return datetime(valor.year, valor.month, valor.day, tzinfo=UTC)
     if isinstance(valor, str):
@@ -373,22 +382,44 @@ def _normalizar_data_registro(valor: Any) -> datetime | str | None:
             data = datetime.fromisoformat(texto.replace("Z", "+00:00"))
         except ValueError:
             return texto
-        if data.tzinfo is not None:
-            return data.astimezone(UTC)
-        return texto
+        data = (data if data.tzinfo is not None else data.replace(tzinfo=UTC)).astimezone(UTC)
+        return data.replace(microsecond=(data.microsecond // 1000) * 1000)
     return str(valor)
+
+
+def normalizar_fonte(valor: Any) -> str:
+    """Remove espaços extras da fonte preservando grafia legível."""
+    if not isinstance(valor, str):
+        return ""
+    return " ".join(valor.strip().split())
+
+
+def _id_origem_valido(bruto: Any) -> str | None:
+    """Valida `id_origem` aceitando texto não nulo ou inteiro finito sem sentinela."""
+    if bruto is None or isinstance(bruto, (bool, dict, list, tuple, set, bytes, bytearray)):
+        return None
+    if isinstance(bruto, float):
+        if not math.isfinite(bruto) or not bruto.is_integer():
+            return None
+        return str(int(bruto))
+    if isinstance(bruto, int):
+        return str(bruto)
+    if not isinstance(bruto, str):
+        return None
+    identificador = " ".join(bruto.strip().split())
+    if not identificador or identificador.casefold() in _IDENTIFICADORES_INVALIDOS:
+        return None
+    return identificador
 
 
 def garantir_id_origem(registro: Mapping[str, Any]) -> str:
     """Retorna o identificador de origem ou gera hash SHA-256 determinístico."""
-    bruto = registro.get("id_origem")
-    if bruto is not None and not isinstance(bruto, bool):
-        identificador = str(bruto).strip()
-        if identificador:
-            return identificador
+    identificador = _id_origem_valido(registro.get("id_origem"))
+    if identificador is not None:
+        return identificador
 
-    fonte = str(registro.get("fonte", "")).strip().casefold()
-    texto = str(registro.get("texto_original", "")).strip()
+    fonte = normalizar_fonte(registro.get("fonte")).casefold()
+    texto = " ".join(str(registro.get("texto_original") or "").split())
     data_chave = _serializar_data_iso(_normalizar_data_registro(registro.get("data_publicacao"))) or ""
     payload = f"{fonte}\0{texto}\0{data_chave}".encode()
     return f"auto_{hashlib.sha256(payload).hexdigest()[:24]}"
@@ -396,7 +427,7 @@ def garantir_id_origem(registro: Mapping[str, Any]) -> str:
 
 def chave_natural_registro(registro: Mapping[str, Any]) -> tuple[str, str]:
     """Chave lógica estável `(fonte normalizada, id_origem)` para deduplicação."""
-    return (str(registro.get("fonte", "")).strip().casefold(), garantir_id_origem(registro))
+    return (normalizar_fonte(registro.get("fonte")).casefold(), garantir_id_origem(registro))
 
 
 def _normalizar_registro_bruto(
@@ -408,12 +439,12 @@ def _normalizar_registro_bruto(
         raise ErroAnaliseInvalida("Cada registro deve ser um mapeamento válido.")
     fonte_bruta = registro.get("fonte")
     texto_bruto = registro.get("texto_original")
-    if not isinstance(fonte_bruta, str) or not fonte_bruta.strip():
+    fonte = normalizar_fonte(fonte_bruta)
+    if not fonte:
         raise ErroAnaliseInvalida("Campo obrigatório ausente ou vazio: fonte")
     if not isinstance(texto_bruto, str) or not texto_bruto.strip():
         raise ErroAnaliseInvalida("Campo obrigatório ausente ou vazio: texto_original")
 
-    fonte = fonte_bruta.strip()
     id_origem = garantir_id_origem(registro)
     documento: dict[str, Any] = {
         "id_origem": id_origem,
@@ -473,6 +504,67 @@ def _serializar_registro_base(doc: Mapping[str, Any]) -> dict[str, Any] | None:
     return registro
 
 
+def _reconciliar_fontes_existentes(
+    col_registros: Collection,
+    por_chave: Mapping[tuple[str, str], dict[str, Any]],
+) -> dict[tuple[str, str], str]:
+    """Reaproveita a grafia de `fonte` já persistida quando difere apenas em caixa."""
+    fontes_existentes: dict[tuple[str, str], str] = {}
+    ids_lote = list({id_origem for _, id_origem in por_chave})
+    try:
+        for inicio in range(0, len(ids_lote), TAMANHO_LOTE_CONSULTA_CHAVES):
+            sub_ids = ids_lote[inicio : inicio + TAMANHO_LOTE_CONSULTA_CHAVES]
+            encontrados = col_registros.find(
+                {"id_origem": {"$in": sub_ids}},
+                {"_id": 0, "fonte": 1, "id_origem": 1},
+            )
+            if not isinstance(encontrados, Iterable):
+                continue
+            for doc_ex in encontrados:
+                if not isinstance(doc_ex, Mapping):
+                    continue
+                f_ex = doc_ex.get("fonte")
+                i_ex = doc_ex.get("id_origem")
+                if isinstance(f_ex, str) and isinstance(i_ex, str):
+                    chave_ex = (normalizar_fonte(f_ex).casefold(), i_ex.strip())
+                    if chave_ex in por_chave:
+                        fontes_existentes.setdefault(chave_ex, f_ex)
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao consultar registros no MongoDB; verifique a conexão."
+        ) from None
+    return fontes_existentes
+
+
+def _compensar_registros_dataset(
+    colecao: Collection,
+    *,
+    dataset_id: str,
+    chaves: list[dict[str, str]],
+    chaves_inseridas: list[dict[str, str]],
+) -> None:
+    """Remove vínculos e registros órfãos caso a gravação em `datasets` falhe."""
+    with suppress(Exception):
+        col_registros = _colecao_auxiliar(colecao, NOME_COLECAO_REGISTROS)
+        for inicio in range(0, len(chaves), TAMANHO_LOTE_CONSULTA_CHAVES):
+            lote = chaves[inicio : inicio + TAMANHO_LOTE_CONSULTA_CHAVES]
+            col_registros.update_many(
+                {"$or": [{"fonte": c["fonte"], "id_origem": c["id_origem"]} for c in lote]},
+                {"$pull": {"ids_datasets": dataset_id}},
+            )
+        for inicio in range(0, len(chaves_inseridas), TAMANHO_LOTE_CONSULTA_CHAVES):
+            lote_ins = chaves_inseridas[inicio : inicio + TAMANHO_LOTE_CONSULTA_CHAVES]
+            col_registros.delete_many(
+                {
+                    "$or": [
+                        {"fonte": c["fonte"], "id_origem": c["id_origem"]}
+                        for c in lote_ins
+                    ],
+                    "ids_datasets": {"$size": 0},
+                }
+            )
+
+
 def salvar_registros(
     colecao: Collection,
     registros: Iterable[Mapping[str, Any]],
@@ -487,20 +579,35 @@ def salvar_registros(
     for item in registros:
         recebidos += 1
         normalizado = _normalizar_registro_bruto(item, origem_coleta=origem_coleta)
-        chave = (normalizado["fonte"], normalizado["id_origem"])
+        chave = (normalizar_fonte(normalizado["fonte"]).casefold(), normalizado["id_origem"])
         if chave not in por_chave:
             por_chave[chave] = normalizado
         else:
-            por_chave[chave].update(normalizado)
+            existente_lote = por_chave[chave]
+            fonte_original = existente_lote["fonte"]
+            meta_ant = existente_lote.get("metadados")
+            meta_nov = normalizado.get("metadados")
+            existente_lote.update(normalizado)
+            existente_lote["fonte"] = fonte_original
+            if isinstance(meta_ant, dict) and isinstance(meta_nov, dict):
+                existente_lote["metadados"] = {**meta_ant, **meta_nov}
 
     if not por_chave:
-        return {"recebidos": recebidos, "inseridos": 0, "existentes": 0, "chaves": []}
+        return {
+            "recebidos": recebidos,
+            "inseridos": 0,
+            "existentes": 0,
+            "chaves": [],
+            "chaves_inseridas": [],
+        }
 
+    fontes_existentes = _reconciliar_fontes_existentes(col_registros, por_chave)
     agora = datetime.now(UTC)
     operacoes: list[UpdateOne] = []
     chaves_ordenadas: list[dict[str, str]] = []
-    for (fonte, id_origem), doc in por_chave.items():
-        chaves_ordenadas.append({"fonte": fonte, "id_origem": id_origem})
+    for (fonte_cf, id_origem), doc in por_chave.items():
+        fonte_canonica = fontes_existentes.get((fonte_cf, id_origem), doc["fonte"])
+        chaves_ordenadas.append({"fonte": fonte_canonica, "id_origem": id_origem})
         campos_set: dict[str, Any] = {
             "texto_original": doc["texto_original"],
             "atualizado_em": agora,
@@ -516,7 +623,7 @@ def salvar_registros(
                 campos_set[opcional] = doc[opcional]
 
         campos_insert: dict[str, Any] = {
-            "fonte": fonte,
+            "fonte": fonte_canonica,
             "id_origem": id_origem,
             "criado_em": agora,
         }
@@ -532,7 +639,7 @@ def salvar_registros(
 
         operacoes.append(
             UpdateOne(
-                {"fonte": fonte, "id_origem": id_origem},
+                {"fonte": fonte_canonica, "id_origem": id_origem},
                 atualizacao,
                 upsert=True,
             )
@@ -545,11 +652,28 @@ def salvar_registros(
             "Falha ao salvar registros no MongoDB; verifique a conexão."
         ) from None
 
+    upserted_ids = getattr(resultado, "upserted_ids", None)
+    if isinstance(upserted_ids, Mapping):
+        chaves_inseridas = [
+            chaves_ordenadas[idx]
+            for idx in sorted(upserted_ids)
+            if isinstance(idx, int) and 0 <= idx < len(chaves_ordenadas)
+        ]
+    else:
+        inseridos_fallback = int(getattr(resultado, "upserted_count", 0) or 0)
+        matched_fallback = int(getattr(resultado, "matched_count", 0) or 0)
+        chaves_inseridas = (
+            list(chaves_ordenadas)
+            if inseridos_fallback > 0 and matched_fallback == 0
+            else []
+        )
+
     return {
         "recebidos": recebidos,
         "inseridos": int(getattr(resultado, "upserted_count", 0) or 0),
         "existentes": int(getattr(resultado, "matched_count", 0) or 0),
         "chaves": chaves_ordenadas,
+        "chaves_inseridas": chaves_inseridas,
     }
 
 
@@ -604,6 +728,12 @@ def salvar_dataset(
             upsert=True,
         )
     except PyMongoError:
+        _compensar_registros_dataset(
+            colecao,
+            dataset_id=dataset_id,
+            chaves=chaves,
+            chaves_inseridas=resumo_escrita.get("chaves_inseridas", []),
+        )
         raise ErroLeituraAnalises(
             "Falha ao salvar metadados do dataset no MongoDB; verifique a conexão."
         ) from None
@@ -628,12 +758,22 @@ def salvar_dataset(
 
 
 def possui_dataset(colecao: Collection, id_dataset: str) -> bool:
-    """Informa se o dataset existe na coleção `datasets` do MongoDB."""
+    """Informa se o dataset existe íntegro no MongoDB."""
     if not isinstance(id_dataset, str) or not id_dataset.strip():
         return False
+    dataset_id = id_dataset.strip()
     col_datasets = _colecao_auxiliar(colecao, NOME_COLECAO_DATASETS)
     try:
-        return col_datasets.find_one({"id_dataset": id_dataset.strip()}, {"_id": 1}) is not None
+        doc = col_datasets.find_one(
+            {"id_dataset": dataset_id},
+            {"_id": 1, "quantidade_registros": 1},
+        )
+        if doc is None:
+            return False
+        if int(doc.get("quantidade_registros") or 0) > 0:
+            col_registros = _colecao_auxiliar(colecao, NOME_COLECAO_REGISTROS)
+            return col_registros.find_one({"ids_datasets": dataset_id}, {"_id": 1}) is not None
+        return True
     except PyMongoError:
         raise ErroLeituraAnalises(
             "Falha ao consultar datasets no MongoDB; verifique a conexão."
@@ -659,7 +799,7 @@ def _carregar_registros_dataset(
         item = _serializar_registro_base(doc)
         if item is None:
             continue
-        chave = (item["fonte"], item["id_origem"])
+        chave = (normalizar_fonte(item["fonte"]).casefold(), item["id_origem"])
         por_chave[chave] = item
         serializados.append(item)
 
@@ -672,12 +812,16 @@ def _carregar_registros_dataset(
     for ref in chaves_ordenadas:
         if not isinstance(ref, Mapping):
             continue
-        chave = (ref.get("fonte"), ref.get("id_origem"))
+        id_ref = ref.get("id_origem")
+        chave = (
+            normalizar_fonte(ref.get("fonte")).casefold(),
+            id_ref.strip() if isinstance(id_ref, str) else "",
+        )
         if chave in por_chave and chave not in usados:
             ordenados.append(por_chave[chave])
             usados.add(chave)
     for item in serializados:
-        chave = (item["fonte"], item["id_origem"])
+        chave = (normalizar_fonte(item["fonte"]).casefold(), item["id_origem"])
         if chave not in usados:
             ordenados.append(item)
     return ordenados
@@ -774,7 +918,7 @@ def listar_registros_base(colecao: Collection) -> list[dict[str, Any]]:
             registro = _serializar_registro_base(doc)
             if registro is None:
                 continue
-            chave = (registro["fonte"].casefold(), registro["id_origem"])
+            chave = (normalizar_fonte(registro["fonte"]).casefold(), registro["id_origem"])
             if chave not in por_chave:
                 por_chave[chave] = registro
             else:
@@ -796,35 +940,31 @@ def obter_analises_por_chaves(
     colecao: Collection,
     chaves: Iterable[tuple[str, str]],
 ) -> dict[tuple[str, str], dict[str, Any]]:
-    """Busca análises já persistidas para o conjunto de chaves `(fonte, id_origem)`."""
-    pares_unicos: list[tuple[str, str]] = []
-    vistos: set[tuple[str, str]] = set()
+    """Busca análises já persistidas para o conjunto de chaves `(fonte normalizada, id_origem)`."""
+    por_id: dict[str, set[str]] = {}
     for fonte, id_origem in chaves:
-        if (
-            not isinstance(fonte, str)
-            or not fonte.strip()
-            or not isinstance(id_origem, str)
-            or not id_origem.strip()
-        ):
+        fonte_cf = normalizar_fonte(fonte).casefold()
+        id_limpo = id_origem.strip() if isinstance(id_origem, str) else ""
+        if not fonte_cf or not id_limpo:
             continue
-        par = (fonte.strip(), id_origem.strip())
-        if par not in vistos:
-            vistos.add(par)
-            pares_unicos.append(par)
+        por_id.setdefault(id_limpo, set()).add(fonte_cf)
 
-    if not pares_unicos:
+    ids_unicos = list(por_id)
+    if not ids_unicos:
         return {}
 
     encontradas: dict[tuple[str, str], dict[str, Any]] = {}
     try:
-        for inicio in range(0, len(pares_unicos), TAMANHO_LOTE_CONSULTA_CHAVES):
-            lote = pares_unicos[inicio : inicio + TAMANHO_LOTE_CONSULTA_CHAVES]
-            filtro = {"$or": [{"fonte": f, "id_origem": i} for f, i in lote]}
+        for inicio in range(0, len(ids_unicos), TAMANHO_LOTE_CONSULTA_CHAVES):
+            lote_ids = ids_unicos[inicio : inicio + TAMANHO_LOTE_CONSULTA_CHAVES]
+            filtro = {"id_origem": {"$in": lote_ids}}
             for doc in colecao.find(filtro, {"_id": 0}):
                 fonte_doc = doc.get("fonte")
                 id_doc = doc.get("id_origem")
                 if isinstance(fonte_doc, str) and isinstance(id_doc, str):
-                    encontradas[(fonte_doc.strip(), id_doc.strip())] = doc
+                    chave = (normalizar_fonte(fonte_doc).casefold(), id_doc.strip())
+                    if chave[0] in por_id.get(chave[1], ()):
+                        encontradas[chave] = doc
     except PyMongoError:
         raise ErroLeituraAnalises(
             "Falha ao consultar análises existentes no MongoDB; verifique a conexão."

@@ -119,6 +119,19 @@ def _corresponde_filtro(doc: dict, filtro: dict | None) -> bool:
                 return False
             continue
         atual = doc.get(chave)
+        if isinstance(esperado, dict):
+            if "$in" in esperado:
+                alvos = esperado["$in"]
+                if isinstance(atual, list):
+                    if not any(item in alvos for item in atual):
+                        return False
+                elif atual not in alvos:
+                    return False
+                continue
+            if "$size" in esperado:
+                if not isinstance(atual, list) or len(atual) != esperado["$size"]:
+                    return False
+                continue
         if isinstance(atual, list):
             if esperado not in atual:
                 return False
@@ -179,6 +192,10 @@ class ColecaoMemoriaFalsa:
                 lista = doc.setdefault(k, [])
                 if v not in lista:
                     lista.append(v)
+        if "$pull" in atualizacao:
+            for k, v in atualizacao["$pull"].items():
+                if isinstance(doc.get(k), list):
+                    doc[k] = [item for item in doc[k] if item != v]
 
     def update_one(self, filtro: dict, atualizacao: dict, upsert: bool = False):
         for doc in self.documentos:
@@ -193,16 +210,31 @@ class ColecaoMemoriaFalsa:
             return Mock(matched_count=0, upserted_id=novo["_id"])
         return Mock(matched_count=0, upserted_id=None)
 
+    def update_many(self, filtro: dict, atualizacao: dict):
+        matched = 0
+        for doc in self.documentos:
+            if _corresponde_filtro(doc, filtro):
+                self._aplicar(doc, atualizacao, inserindo=False)
+                matched += 1
+        return Mock(matched_count=matched, modified_count=matched)
+
+    def delete_many(self, filtro: dict):
+        antes = len(self.documentos)
+        self.documentos = [doc for doc in self.documentos if not _corresponde_filtro(doc, filtro)]
+        return Mock(deleted_count=antes - len(self.documentos))
+
     def bulk_write(self, operacoes, ordered=False):
         upserted = 0
         matched = 0
-        for op in operacoes:
+        upserted_ids = {}
+        for idx, op in enumerate(operacoes):
             res = self.update_one(op._filter, op._doc, upsert=op._upsert)
             if res.upserted_id is not None:
                 upserted += 1
+                upserted_ids[idx] = res.upserted_id
             elif res.matched_count:
                 matched += 1
-        return Mock(upserted_count=upserted, matched_count=matched)
+        return Mock(upserted_count=upserted, matched_count=matched, upserted_ids=upserted_ids)
 
     def find_one(self, filtro=None, projecao=None):
         for doc in self.documentos:
@@ -847,3 +879,61 @@ def test_coleta_repetida_pula_reinferencia_no_pipeline(tmp_path):
     assert st_segunda["situacao"] == "concluida"
     assert st_segunda["textos_analisados"] == 2
     assert contexto.pipeline().lotes == [2], "não deveria reclassificar textos já analisados"
+
+
+def test_falha_no_pipeline_preserva_registros_do_x_sem_gravar_cache_prematuro(tmp_path):
+    class PipelineQueFalhaNaPrimeira:
+        def __init__(self) -> None:
+            self.chamadas = 0
+
+        def processar_registros(self, registros):
+            self.chamadas += 1
+            if self.chamadas == 1:
+                raise RuntimeError("falha transitória no classificador")
+            return PipelineFalso().processar_registros(registros)
+
+    pipeline_inst = PipelineQueFalhaNaPrimeira()
+    x = XFalso(_tweets("f1", "f2", "f3"))
+    contexto = _contexto(tmp_path, buscar_x=x, criar_pipeline=lambda: pipeline_inst)
+    app.dependency_overrides[obter_contexto] = lambda: contexto
+    try:
+        cliente = TestClient(app)
+        cabecalho = _entrar(cliente)
+        primeira = cliente.post(
+            "/coletas",
+            headers=cabecalho,
+            json={
+                "fonte": "pesquisa",
+                "termo": "vacina",
+                "quantidade": 3,
+                "complementar_com_x": True,
+            },
+        )
+        assert primeira.status_code == 202
+        st_falha = cliente.get(f"/coletas/{primeira.json()['id']}", headers=cabecalho).json()
+        assert st_falha["situacao"] == "falhou"
+
+        banco = contexto._colecao_analises.database
+        # Tweets adquiridos foram salvos na base, mas o cache não pode estar marcado como concluído.
+        assert len(banco["registros"].documentos) == 3
+        assert len(banco["analises"].documentos) == 0
+        assert len(banco["pesquisas"].documentos) == 0
+
+        segunda = cliente.post(
+            "/coletas",
+            headers=cabecalho,
+            json={
+                "fonte": "pesquisa",
+                "termo": "vacina",
+                "quantidade": 3,
+                "complementar_com_x": True,
+            },
+        )
+        st_ok = cliente.get(f"/coletas/{segunda.json()['id']}", headers=cabecalho).json()
+        assert st_ok["situacao"] == "concluida"
+        assert st_ok["textos_analisados"] == 3
+        assert len(banco["pesquisas"].documentos) == 1
+        # A segunda tentativa reaproveita os 3 registros salvos na base sem nova chamada paga ao X.
+        assert len(x.pedidos) == 1
+    finally:
+        app.dependency_overrides.clear()
