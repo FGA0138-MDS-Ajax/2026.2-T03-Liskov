@@ -9,3 +9,5 @@ backup-issues-*.json
 
 # Script administrativo local
 atualizar_issues_sentia.py
+.coverage
+.env

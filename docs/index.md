@@ -1,42 +1,75 @@
 # SentIA — Análise de Sentimentos
 
-O **SentIA** é uma plataforma web de análise de sentimentos em português desenvolvida pelo grupo **Liskov — Turma 03**, na disciplina de **Métodos de Desenvolvimento de Software (MDS)** da Universidade de Brasília — Faculdade do Gama (2026.2).
+O **SentIA** é uma plataforma web de análise de sentimentos em português desenvolvida pelo grupo **Liskov — Turma 03**, na disciplina de **Métodos de Desenvolvimento de Software (MDS)** da Universidade de Brasília — Faculdade do Gama.
 
-O projeto classifica textos segundo sua polaridade (`positivo`, `negativo`, `neutro`) e consolida métricas em painel web, seguindo o recorte da **Sprint 5 / preparação para inspeção cruzada (`LAMPORT → LISKOV`)** em `14/11/2026`, com linha de base técnica em `1723a7d` e documentação consolidada pós-merge na branch [`developer`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/developer) (PRs `#90`, `#91`, `#92`, `#94` e `#95` integrados).
+O sistema classifica textos em três polaridades — `positivo`, `negativo` e `neutro` — e oferece aquisição de dados, processamento, persistência e consulta por API REST e painel web.
 
-## Estado do produto no corte de 14/11/2026
+**Referência técnica desta página:** branch `developer`, commit `b91c7a5e4af972d98da6e5ded70b2243d60f5513`, após o merge do PR #96 (15/11/2026). Os documentos de inspeção, gestão, revisão acadêmica, métricas e QA estão mantidos na branch `developer`; este portal e as atas são mantidos na branch `docs`.
 
-- **Implementado e integrado (`developer` @ `1723a7d`):** importação CSV (`csv_importer.py`), adaptadores TweetSentBR/BPSAD, cliente XFetch (`xfetch.py`), pipeline em lote preservando texto original para `pysentimiento/bertweet-pt-sentiment` (proposta `ADR-001`) + baseline TF-IDF isolado (`baseline.py`), persistência/leitura e agregação MongoDB (`repositorio.py`, `leitura.py`), API FastAPI (`GET /health`, `POST /analises`, `GET /analises`, `GET /analises/resumo` e rotas administrativas autenticadas `/auth/login`, `/auth/logout`, `/datasets`, `/coletas*`) e painel Streamlit com clientes HTTP e modo offline (`mock`).
-- **Em modo simulado, memória ou caráter experimental:** o dashboard inicia por padrão com `SENTIA_FONTE_DADOS=mock` (17 registros fictícios); sessões, datasets importados pelo painel, jobs de coleta e a pesquisa híbrida lexical (`pesquisa.py`, PR `#81`) operam na memória do processo e aguardam ratificação da Product Owner (PO).
-- **Pendências das Sprints 5–7:** reprodução da avaliação BPSAD por classe (`#85` / PR `#89` aberto), listagem, gráficos de distribuição e resumo narrativo no dashboard (`#27–#30`, `#32`, `#61`), validação visual `T18` (`#31`), teste de usabilidade (`#63`), implantação web (`#62`) e publicação das versões revisadas dos documentos acadêmicos (`#86`).
+## Estado do produto no corte de 15/11/2026
 
-## Tecnologias atuais
+### Implementado na branch `developer`
 
-- **Linguagem e gerenciador de ambiente:** Python 3.11 + `uv` (`pyproject.toml` / `uv.lock`)
-- **Backend e persistência:** FastAPI, Uvicorn, PyMongo, MongoDB (`mongo:7` na CI — 814/814 testes, 93% cobertura em `1723a7d`)
-- **Painel:** Streamlit
-- **Processamento / ML:** `pysentimiento` (`bertweet-pt-sentiment`), `torch`, `scikit-learn` + `NLTK` (experimentos/baseline)
-- **Qualidade e entrega:** `pytest`, `pytest-cov`, `ruff`, GitHub Actions e MkDocs Material
+- Importação CSV, adaptadores TweetSentBR/BPSAD e auditoria de datasets.
+- Aquisição opcional paginada por XFetch, mediante configuração.
+- Pipeline de classificação em lote, classificador `pysentimiento/bertweet-pt-sentiment` e baseline experimental TF-IDF + Regressão Logística.
+- Persistência e consulta MongoDB de análises, registros, datasets/corpus e cache de pesquisas, centralizadas em `src/dados/database.py` e `src/dados/repositorio.py` após o PR #96.
+- API FastAPI com `/health`, `/analises`, `/analises/resumo` e rotas administrativas para autenticação, datasets e coletas.
+- Painel Streamlit com Dashboard e Administração, clientes HTTP e modo offline mock.
+
+### Limites e pendências
+
+- O modo padrão do painel pode ser `mock`; os 17 registros de demonstração são fictícios e não devem ser confundidos com dados reais.
+- Sessões administrativas e estados transitórios de jobs de coleta são mantidos na memória do processo; os dados funcionais de datasets, registros, análises e pesquisas são persistidos no MongoDB.
+- A pesquisa por assunto existente é lexical e não equivale a busca vetorial/embeddings.
+- A avaliação BPSAD, visualização completa do dashboard, validação de usabilidade, publicação web e decisões formais da Product Owner permanecem sujeitas aos respectivos registros de planejamento/aceite. Consulte as issues e relatórios atuais antes de declarar qualquer item concluído.
 
 ## Arquitetura implementada
 
-`src/apresentacao` (Streamlit) → `src/servico` (FastAPI) → `src/processamento` (Aquisição, Pipeline e Classificação) → `src/dados` & `src/persistencia` (MongoDB / memória)
+```text
+Usuário
+  ↓
+Apresentação — Streamlit (src/apresentacao)
+  ↓ HTTP/JSON
+Serviço — FastAPI (src/servico)
+  ↓
+Processamento — Aquisição + Pipeline + Classificação (src/processamento)
+  ↓
+Dados — MongoDB / PyMongo (src/dados)
+```
 
-*(Ver detalhes em [Arquitetura (`developer`)](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/arquitetura.md) e [Contrato único de dados (`#19`)](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/contratos-dados.md).)*
+A API pertence à camada `servico`. A persistência está centralizada em `src/dados/`; não há um pacote `src/persistencia/` na revisão técnica citada.
 
-## Documentação Consolidada na `developer` e Rastreabilidade da Inspeção
+Consulte a [arquitetura técnica](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/arquitetura.md) e o [contrato único de dados](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/contratos-dados.md).
 
-Este portal na branch `docs` concentra as **Atas de Reunião** ([Ata 1](atas-reuniao/ata-reuniao-1.md) · [Ata 2](atas-reuniao/ata-reuniao-2.md)), as **Instruções do MkDocs** ([MkDocs](instrucoes/instrucoes.md)) e o resumo institucional. Os documentos de engenharia, gestão, revisão acadêmica, métricas GQM, QA e dossiê de inspeção encontram-se **consolidados na branch `developer`** após a integração dos PRs [`#90`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90), [`#91`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/91), [`#92`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92), [`#94`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/94) e [`#95`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95) (`MERGED`; este portal segue em análise no [PR `#93`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/93), `OPEN` na `docs`):
+## Tecnologias
 
-| Área / Frente | Documentos Canônicos (`developer`) | Histórico de PRs e Situação |
-| --- | --- | --- |
-| **Índice de entrada e comandos** | [`README.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/README.md) · [`docs/README.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/README.md) | [PR `#92`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92) (`MERGED`) · [PR `#95`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95) (`MERGED`) |
-| **Dossiê de Inspeção e Roteiro Executável** | [`inspecao/README.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/README.md) · [`ROTEIRO_INSPECAO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/ROTEIRO_INSPECAO.md) · [`REGISTRO_PRE_INSPECAO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/REGISTRO_PRE_INSPECAO.md) | [PR `#92`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92) (`MERGED`) · [PR `#95`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95) (`MERGED`) |
-| **Matriz de Prontidão e Catálogo Único PO** | [`MATRIZ_EVIDENCIAS.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/MATRIZ_EVIDENCIAS.md) · [`PLANO_REGULARIZACAO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/PLANO_REGULARIZACAO.md) | [PR `#92`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92) (`MERGED`) · [PR `#95`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95) (`MERGED`) |
-| **Gestão: Sprints e Configuração** | [`PLANEJAMENTO_E_REPLANEJAMENTOS.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/gestao/PLANEJAMENTO_E_REPLANEJAMENTOS.md) · [`GESTAO_CONFIGURACAO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/gestao/GESTAO_CONFIGURACAO.md) | [PR `#92`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92) (`MERGED`) · [PR `#95`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95) (`MERGED`) |
-| **Revisão Acadêmica e ABNT** | [`VISAO_ATUALIZADA_RASCUNHO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/VISAO_ATUALIZADA_RASCUNHO.md) · [`ARQUITETURA_ATUALIZADA_RASCUNHO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/ARQUITETURA_ATUALIZADA_RASCUNHO.md) · [`MATRIZ_DIVERGENCIAS.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/MATRIZ_DIVERGENCIAS.md) · [`REVISAO_ABNT.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/REVISAO_ABNT.md) · [`DECISOES_PENDENTES_PO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/DECISOES_PENDENTES_PO.md) · [`RELATORIO_ENTREGA.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/RELATORIO_ENTREGA.md) ([`docs/revisao-academica/`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/developer/docs/revisao-academica)) | [PR `#90`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90) (`MERGED`) · [PR `#95`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95) (`MERGED`) |
-| **Métricas GQM e QA / Testes** | [`PLANO_GQM_VIGENTE.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/metricas/PLANO_GQM_VIGENTE.md) · [`REGISTRO_E_ANALISE.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/metricas/REGISTRO_E_ANALISE.md) · [`PLANO_TESTES_ATUAL.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/PLANO_TESTES_ATUAL.md) · [`MATRIZ_RASTREABILIDADE.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/MATRIZ_RASTREABILIDADE.md) · [`RELATORIO_EXECUCAO.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/RELATORIO_EXECUCAO.md) · [`DEFEITOS_E_CORRECOES.md`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/DEFEITOS_E_CORRECOES.md) ([`docs/metricas/`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/developer/docs/metricas) · [`docs/qa/inspecao/`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/developer/docs/qa/inspecao)) | [PR `#91`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/91) (`MERGED`) · [PR `#94`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/94) (`MERGED`) · [PR `#95`](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95) (`MERGED`) |
+- **Linguagem e ambiente:** Python 3.11+ e `uv`.
+- **Painel:** Streamlit.
+- **API:** FastAPI e Uvicorn.
+- **Banco:** MongoDB e PyMongo.
+- **Processamento:** pandas, NLTK e scikit-learn.
+- **Classificação:** PySentimiento e PyTorch para o classificador BERTweet.
+- **Qualidade:** Pytest, pytest-cov, Ruff e GitHub Actions.
+- **Documentação:** MkDocs Material.
+
+## Documentação consolidada na branch `developer`
+
+O portal mantém as atas de reunião e o guia de publicação. A documentação técnica e os registros de engenharia são mantidos na branch `developer`:
+
+| Área | Documentos principais |
+|---|---|
+| Entrada e arquitetura | [README do projeto](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/README.md), [índice técnico](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/README.md), [arquitetura](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/arquitetura.md) |
+| Desenvolvimento e contratos | [Contrato de dados](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/contratos-dados.md), [contrato API ↔ painel](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/frontend/CONTRATO-API.md), [guia do painel](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/frontend/README.md) |
+| Inspeção e gestão | [Dossiê de inspeção](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/README.md), [plano de regularização](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/PLANO_REGULARIZACAO.md), [planejamento](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/gestao/PLANEJAMENTO_E_REPLANEJAMENTOS.md) |
+| Revisão acadêmica | [Matriz de divergências](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/MATRIZ_DIVERGENCIAS.md), [decisões pendentes da PO](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/DECISOES_PENDENTES_PO.md) |
+| Métricas e QA | [Plano GQM](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/metricas/PLANO_GQM_VIGENTE.md), [plano de testes](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/PLANO_TESTES_ATUAL.md), [relatório de execução](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/RELATORIO_EXECUCAO.md) |
+| Aquisição e ML | [TweetSentBR](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/tweetsentbr.md), [BPSAD](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/bpsad.md), [XFetch](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/integracao_xfetch.md), [classificação](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/classificacao.md) |
+
+## Histórico do portal
+
+O [PR #93 — Portal MkDocs](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/93) foi integrado à branch `docs`. A branch `docs` possui um workflow próprio para publicar o portal em `gh-pages`; ela não deve ser mesclada integralmente em `developer` sem reconciliar o arquivo `.github/workflows/ci.yml`, que tem finalidades diferentes nas duas branches.
 
 ## Equipe
 
-Projeto desenvolvido pelo grupo **Liskov — T03**, na disciplina de Métodos de Desenvolvimento de Software (UnB/FGA).
+Projeto desenvolvido pelo grupo **Liskov — T03**, na disciplina MDS, UnB/FGA.
