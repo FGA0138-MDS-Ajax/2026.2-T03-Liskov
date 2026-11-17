@@ -7,7 +7,9 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 from src.apresentacao.componentes import MENSAGEM_DADOS_DE_EXEMPLO
+from src.apresentacao.contrato import ErroFonteDados
 from src.apresentacao.fontes.mock import ANALISES_DE_EXEMPLO, FonteMockComErro
+from src.apresentacao.secoes import listagem
 
 APP = str(Path(__file__).resolve().parents[1] / "src" / "apresentacao" / "app.py")
 
@@ -105,4 +107,101 @@ def test_resposta_http_invalida_nao_quebra_a_interface(monkeypatch, corpo):
     assert not app.exception
     assert "não segue o contrato" in app.error[0].value
     assert not app.metric
+    assert MENSAGEM_DADOS_DE_EXEMPLO not in avisos(app)
+
+
+# --- Listagem de análises (#27) ---------------------------------------------------
+
+
+def test_listagem_mostra_todas_as_analises_de_exemplo_com_as_colunas_previstas(monkeypatch):
+    app = executar_app(monkeypatch)
+    assert not app.exception
+    tabela = app.dataframe[0].value
+    assert len(tabela) == len(ANALISES_DE_EXEMPLO)
+    assert list(tabela.columns) == [
+        "Texto", "Sentimento", "Fonte", "Publicado em", "Processado em (UTC)", "Modelo",
+    ]
+    assert set(tabela["Sentimento"]) == {"Positivo", "Neutro", "Negativo"}
+    assert "Sem data" in set(tabela["Publicado em"])
+    # Ainda é mock: a tela precisa continuar dizendo isso.
+    assert MENSAGEM_DADOS_DE_EXEMPLO in avisos(app)
+
+
+def test_sem_dados_nao_mostra_tabela(monkeypatch):
+    app = executar_app(monkeypatch, cenario="vazio")
+    assert not app.dataframe
+
+
+def test_erro_da_fonte_nao_mostra_tabela(monkeypatch):
+    app = executar_app(monkeypatch, cenario="erro")
+    assert not app.dataframe
+
+
+def test_paginacao_navega_entre_paginas_sem_repetir_nem_perder_itens(monkeypatch):
+    monkeypatch.setattr(listagem, "TAMANHO_PAGINA", 6)
+    app = executar_app(monkeypatch)
+    textos = list(app.dataframe[0].value["Texto"])
+    assert len(textos) == 6
+    assert app.button(key="listagem_anterior").disabled
+    assert "Página 1 de 3" in app.caption[-1].value
+
+    for pagina in (2, 3):
+        app.button(key="listagem_proxima").click().run()
+        assert not app.exception
+        assert f"Página {pagina} de 3" in app.caption[-1].value
+        textos += list(app.dataframe[0].value["Texto"])
+
+    assert app.button(key="listagem_proxima").disabled
+    assert sorted(textos) == sorted(a.texto_original for a in ANALISES_DE_EXEMPLO)
+    assert "Exibindo 13 a 17 de 17 análises." in app.caption[-1].value
+
+
+def test_mudar_o_filtro_volta_a_listagem_para_a_primeira_pagina(monkeypatch):
+    monkeypatch.setattr(listagem, "TAMANHO_PAGINA", 4)
+    app = executar_app(monkeypatch)
+    app.button(key="listagem_proxima").click().run()
+    assert "Página 2 de" in app.caption[-1].value
+
+    app.selectbox(key="filtro_sentimento").select("Positivo")
+    app.button(key="aplicar_filtros").click().run()
+    assert not app.exception
+    assert set(app.dataframe[0].value["Sentimento"]) == {"Positivo"}
+    assert "Página 1 de 2" in app.caption[-1].value
+
+
+def test_filtro_de_sentimento_filtra_a_lista_na_fonte(monkeypatch):
+    app = executar_app(monkeypatch)
+    app.selectbox(key="filtro_sentimento").select("Negativo")
+    app.button(key="aplicar_filtros").click().run()
+    tabela = app.dataframe[0].value
+    esperado = sum(a.sentimento == "negativo" for a in ANALISES_DE_EXEMPLO)
+    assert len(tabela) == esperado
+    assert set(tabela["Sentimento"]) == {"Negativo"}
+
+
+def test_falha_so_na_listagem_mantem_os_indicadores_e_mostra_o_erro(monkeypatch):
+    def falhar(self, filtros, pagina=1, tamanho=20):
+        raise ErroFonteDados("Falha simulada na listagem.")
+
+    monkeypatch.setattr("src.apresentacao.fontes.mock.FonteMock.listar", falhar)
+    app = executar_app(monkeypatch)
+    assert not app.exception
+    assert [e.value for e in app.error] == ["Falha simulada na listagem."]
+    assert app.metric and not app.dataframe
+
+
+def test_modo_api_com_resposta_invalida_na_listagem_nao_quebra_a_tela(monkeypatch):
+    def responder(self, url, params=None, timeout=None):
+        corpo = (
+            {"total": 1, "por_sentimento": {"positivo": 1, "neutro": 0, "negativo": 0}}
+            if url.endswith("/resumo")
+            else {"itens": [{"id_origem": "x"}], "pagina": 1, "tamanho": 20, "total": 1}
+        )
+        return Mock(status_code=200, json=Mock(return_value=corpo))
+
+    monkeypatch.setattr("requests.Session.get", responder)
+    app = executar_app(monkeypatch, fonte="api")
+    assert not app.exception
+    assert "não segue o contrato" in app.error[0].value
+    assert not app.dataframe
     assert MENSAGEM_DADOS_DE_EXEMPLO not in avisos(app)

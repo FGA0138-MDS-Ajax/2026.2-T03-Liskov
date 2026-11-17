@@ -1,5 +1,6 @@
 """Cálculos de apresentação, sem dependência do Streamlit para facilitar testes."""
 
+import math
 import re
 from datetime import date
 
@@ -7,6 +8,7 @@ from src.apresentacao.contrato import (
     QUANTIDADE_BUSCA_MAXIMA,
     SENTIMENTOS,
     TAMANHO_MAXIMO_TERMO,
+    Analise,
     FiltrosAnalises,
     Sentimento,
 )
@@ -101,3 +103,66 @@ _MENCAO = re.compile(r"(?<![\w@])@\w+")
 def mascarar_mencoes(texto: str) -> str:
     """Troca `@perfil` por `@usuário`: o painel não identifica autores (decisão da PO)."""
     return _MENCAO.sub("@usuário", texto)
+
+
+# --- Listagem de análises (RF10, RF13) -------------------------------------------
+
+COLUNAS_LISTAGEM = (
+    "Texto",
+    "Sentimento",
+    "Fonte",
+    "Publicado em",
+    "Processado em (UTC)",
+    "Modelo",
+)
+SEM_DATA = "Sem data"
+
+
+def total_de_paginas(total: int, tamanho: int) -> int:
+    """Quantidade de páginas; sempre pelo menos 1, para a navegação nunca ficar em 0."""
+    if tamanho < 1:
+        raise ValueError("O tamanho da página deve ser positivo.")
+    return max(1, math.ceil(max(total, 0) / tamanho))
+
+
+def limitar_pagina(pagina: int, total: int, tamanho: int) -> int:
+    """Mantém a página dentro de 1..última, por exemplo quando os filtros reduzem o total."""
+    return min(max(pagina, 1), total_de_paginas(total, tamanho))
+
+
+def descrever_intervalo(pagina: int, tamanho: int, total: int, exibidos: int) -> str:
+    """Texto como "Exibindo 21 a 40 de 1.568 análises", sem inventar o que não veio."""
+    if total == 0 or exibidos == 0:
+        return "Nenhuma análise nesta página."
+    primeiro = (pagina - 1) * tamanho + 1
+    ultimo = primeiro + exibidos - 1
+    return (
+        f"Exibindo {formatar_inteiro(primeiro)} a {formatar_inteiro(ultimo)} "
+        f"de {formatar_inteiro(total)} análises."
+    )
+
+
+def montar_linhas_listagem(
+    analises: list[Analise], rotulos: dict[Sentimento, str]
+) -> list[dict[str, str]]:
+    """Converte análises em linhas de tabela, já no formato exibido ao usuário.
+
+    `@perfil` vira `@usuário` (decisão da PO) e a data de publicação ausente aparece
+    como "Sem data": datas nunca são inventadas. Datas chegam em UTC e assim são exibidas.
+    """
+    return [
+        {
+            "Texto": mascarar_mencoes(analise.texto_original),
+            # O sentimento é texto, não só cor: leitores de tela e daltonismo.
+            "Sentimento": rotulos[analise.sentimento],
+            "Fonte": analise.fonte,
+            "Publicado em": (
+                formatar_data(analise.data_publicacao.date())
+                if analise.data_publicacao is not None
+                else SEM_DATA
+            ),
+            "Processado em (UTC)": analise.data_processamento.strftime("%d/%m/%Y %H:%M"),
+            "Modelo": analise.modelo_nome,
+        }
+        for analise in analises
+    ]

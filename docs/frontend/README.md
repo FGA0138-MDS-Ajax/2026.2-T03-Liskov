@@ -12,7 +12,7 @@ interface acessa o sistema **somente pela API** e nunca importa banco ou process
 
 | Tela | Quem vê | O que faz |
 |---|---|---|
-| Dashboard | Todos | Filtros de período e sentimento e indicadores de total e percentual. Gráfico, listagem e resumo ainda serão adicionados (#27, #28, #29) |
+| Dashboard | Todos | Filtros de período e sentimento, indicadores de total e percentual e listagem paginada das análises (texto, sentimento, fonte, datas e modelo). Gráfico e resumo textual ainda serão adicionados (#28, #29) |
 | Entrar | Quem não fez login | Formulário de usuário e senha do Administrador |
 | Administração | Administrador com login | Importar dataset CSV e já analisá-lo, pesquisar um assunto (base do SentIA e, se faltar, o X), iniciar coleta e análise e ver o resultado por sentimento |
 
@@ -75,9 +75,10 @@ dois** e não use `pip install` neste projeto.
 | `SENTIA_API_TIMEOUT_SEGUNDOS` | número | Tempo máximo de espera |
 
 No modo `mock`, todas as telas exibem o aviso **"Dados de exemplo"**. Não remova esse
-aviso: mock não é integração concluída. O modo `api` ainda mostra erro porque as rotas de
-análises e de administração não existem (ver contrato). O cenário `erro` também simula a
-API de administração indisponível.
+aviso: mock não é integração concluída. O modo `api` consome as rotas já implementadas
+pelo backend (ver contrato); se a API estiver fora do ar ou responder fora do contrato, a tela
+mostra uma mensagem de erro e nunca cai para dados de exemplo. O cenário `erro` também simula
+a API de administração indisponível.
 
 ## Verificações
 

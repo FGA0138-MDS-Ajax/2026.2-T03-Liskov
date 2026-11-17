@@ -30,6 +30,7 @@ Owner em 07/11/2026.
 | Filtro de período | Implementado, com dados de exemplo | Dois campos ("a partir de" e "até") em vez de um intervalo: aceitam período aberto e têm rótulo próprio para leitores de tela |
 | Filtro de sentimento e "Aplicar filtros" | Implementado, com dados de exemplo | Há também o botão "Limpar" |
 | Indicadores | Implementado, com dados de exemplo | Percentuais somam sempre 100% |
+| Listagem das análises | Implementado | Não consta nos wireframes; exigida pela issue #27 e pelo teste T11. Paginada, 20 por página |
 | Distribuição de sentimentos | Pendente | Issue #28 |
 | Evolução no período | Em decisão | Fora do RF14; depende de alinhamento da equipe |
 | Menu lateral | Implementado | Navegação nativa do Streamlit |
