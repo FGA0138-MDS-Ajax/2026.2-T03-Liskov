@@ -1,8 +1,8 @@
 """Cliente HTTP da API do SentIA.
 
-Hoje o backend só oferece GET /health. As rotas /analises e /analises/resumo
-seguem a PROPOSTA de docs/frontend/CONTRATO-API.md e ainda não existem: até a
-conclusão das issues #19, #21 e #23, este modo mostra uma mensagem de erro.
+Consome GET /health, GET /analises e GET /analises/resumo, conforme
+docs/frontend/CONTRATO-API.md. Qualquer resposta fora do contrato vira
+ErroFonteDados, exibido na tela sem derrubá-la.
 """
 
 from datetime import UTC, datetime
@@ -98,6 +98,9 @@ class FonteApi:
             raise ErroFonteDados("A API recusou os filtros informados.")
         if resposta.status_code == 404:
             raise ErroFonteDados(f"A API não oferece a rota {rota}.")
+        if resposta.status_code == 503:
+            # A API responde 503 quando não alcança o MongoDB (ainda não configurado ou fora do ar).
+            raise ErroFonteDados("A API está no ar, mas o banco de dados está indisponível.")
         if resposta.status_code != 200:
             raise ErroFonteDados(
                 f"A API retornou um erro inesperado (HTTP {resposta.status_code})."

@@ -250,3 +250,36 @@ def test_repositorio_envia_filtros_paginacao_e_agregacao_ao_banco():
     banco.count_documents.assert_called_with({"data_publicacao": None, "sentimento": "positivo"})
     assert resumo == {"total": 2, "por_sentimento": {"positivo": 2, "negativo": 0, "neutro": 0},
                       "sem_data_publicacao": 3}
+
+
+def test_painel_completo_consome_a_api_real_sem_mock(cliente, monkeypatch):
+    """Teste de fumaça da #27: o painel (AppTest) lê indicadores e lista da API FastAPI.
+
+    Só a coleção do MongoDB é simulada; rotas, validação e serialização são as reais.
+    """
+    from tests.test_painel_ui import avisos, executar_app
+
+    from src.apresentacao.componentes import MENSAGEM_DADOS_DE_EXEMPLO
+    from src.apresentacao.secoes import listagem
+
+    def via_testclient(self, url, params=None, timeout=None):
+        return cliente.get(url.removeprefix("http://localhost:8000"), params=params)
+
+    monkeypatch.setattr("requests.Session.get", via_testclient)
+    monkeypatch.setattr(listagem, "TAMANHO_PAGINA", 4)
+    app = executar_app(monkeypatch, fonte="api")
+
+    assert not app.exception and not app.error
+    assert MENSAGEM_DADOS_DE_EXEMPLO not in avisos(app)
+    assert app.metric[0].value == "6"
+    tabela = app.dataframe[0].value
+    assert len(tabela) == 4
+    assert set(tabela["Fonte"]) == {"teste"}
+    assert "Página 1 de 2" in app.caption[-1].value
+
+    app.button(key="listagem_proxima").click().run()
+    assert not app.exception and not app.error
+    assert len(app.dataframe[0].value) == 2
+    assert "Página 2 de 2" in app.caption[-1].value
+    # Registros sem data de publicação chegam como "Sem data", nunca com data inventada.
+    assert set(app.dataframe[0].value["Publicado em"]) == {"Sem data", "30/09/2026"}

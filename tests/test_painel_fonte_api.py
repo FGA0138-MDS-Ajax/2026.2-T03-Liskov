@@ -6,6 +6,7 @@ que ainda não oferece as rotas de análises.
 
 from copy import deepcopy
 from datetime import UTC, date, datetime
+from unittest.mock import Mock
 
 import pytest
 import requests
@@ -318,3 +319,11 @@ def test_paginacao_invalida_na_requisicao_nao_acessa_http(parametros):
     with pytest.raises(ErroFonteDados, match="inteiros positivos"):
         fonte.listar(FiltrosAnalises(), **parametros)
     assert sessao.chamadas == []
+
+
+def test_banco_indisponivel_na_api_vira_mensagem_clara():
+    resposta = Mock(status_code=503)
+    sessao = Mock(get=Mock(return_value=resposta))
+    fonte = FonteApi("http://api", sessao=sessao)
+    with pytest.raises(ErroFonteDados, match="banco de dados está indisponível"):
+        fonte.resumir(FiltrosAnalises())

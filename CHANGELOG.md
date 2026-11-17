@@ -21,6 +21,11 @@ versões publicadas; outras frentes também podem registrar suas entregas aqui.
 
 ### Adicionado
 
+- Listagem paginada das análises no dashboard, consumindo `GET /analises` com os mesmos
+  filtros dos indicadores: texto (com `@menções` mascaradas), sentimento, fonte, data de
+  publicação ("Sem data" quando ausente), data de processamento em UTC e modelo. Tem estados
+  de carregamento, vazio e erro; no modo mock continua identificada como dados de exemplo (#27).
+- Teste de fumaça que executa o painel contra a API FastAPI real, com só o MongoDB simulado (#27).
 - Filtros de período e de sentimento no dashboard, com botão "Limpar" e aviso de quantos
   textos sem data ficaram fora do período, **com dados de exemplo** (#14).
 - Login do Administrador: sem login, o menu mostra só "Entrar" e as ferramentas de
