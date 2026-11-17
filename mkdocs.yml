@@ -10,6 +10,8 @@ theme:
 nav:
   - Início: index.md
 
+  - Documentos do Projeto: documentos.md
+
   - Atas de Reunião:
       - Ata 1: atas-reuniao/ata-reuniao-1.md
       - Ata 2: atas-reuniao/ata-reuniao-2.md
@@ -20,8 +22,9 @@ nav:
   - Repositório (developer):
       - Visão Geral (README): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/README.md
       - Índice de Documentação: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/README.md
+      - Pasta docs (main): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/main/docs
       - Arquitetura e Contratos:
-          - Arquitetura Técnica: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/arquitetura.md
+          - Arquitetura Técnica: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/metricas/arquitetura.md
           - "Contrato Único de Dados (#19)": https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/contratos-dados.md
           - Contrato API ↔ Painel: https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/frontend/CONTRATO-API.md
           - ADR-001 (BERTweet Stopwords): https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/decisoes/ADR-001-nao-remover-stopwords-no-bertweet.md

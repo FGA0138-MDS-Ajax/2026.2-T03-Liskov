@@ -6,6 +6,10 @@ O sistema classifica textos em três polaridades — `positivo`, `negativo` e `n
 
 **Referência técnica desta página:** branch `developer`, commit `b91c7a5e4af972d98da6e5ded70b2243d60f5513`, após o merge do PR #96 (15/11/2026). Os documentos de inspeção, gestão, revisão acadêmica, métricas e QA estão mantidos na branch `developer`; este portal e as atas são mantidos na branch `docs`.
 
+## Documentos do projeto
+
+Os Documentos de Visão e de Arquitetura, na versão inicial (1.0.0) e na atualizada (1.1.0), estão em [Documentos do projeto](documentos.md). A documentação técnica do código está na [pasta `docs` do repositório](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/main/docs).
+
 ## Estado do produto no corte de 15/11/2026
 
 ### Implementado na branch `developer`
@@ -40,7 +44,7 @@ Dados — MongoDB / PyMongo (src/dados)
 
 A API pertence à camada `servico`. A persistência está centralizada em `src/dados/`; não há um pacote `src/persistencia/` na revisão técnica citada.
 
-Consulte a [arquitetura técnica](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/arquitetura.md) e o [contrato único de dados](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/contratos-dados.md).
+Consulte a [arquitetura técnica](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/metricas/arquitetura.md) e o [contrato único de dados](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/contratos-dados.md).
 
 ## Tecnologias
 
@@ -59,7 +63,8 @@ O portal mantém as atas de reunião e o guia de publicação. A documentação 
 
 | Área | Documentos principais |
 |---|---|
-| Entrada e arquitetura | [README do projeto](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/README.md), [índice técnico](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/README.md), [arquitetura](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/arquitetura.md) |
+| Documentos de Visão e de Arquitetura | [Versões 1.0.0 e 1.1.0](documentos.md), [pasta `docs` do repositório](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/main/docs) |
+| Entrada e arquitetura | [README do projeto](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/README.md), [índice técnico](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/README.md), [arquitetura](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/metricas/arquitetura.md) |
 | Desenvolvimento e contratos | [Contrato de dados](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/contratos-dados.md), [contrato API ↔ painel](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/frontend/CONTRATO-API.md), [guia do painel](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/frontend/README.md) |
 | Inspeção e gestão | [Dossiê de inspeção](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/README.md), [plano de regularização](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/PLANO_REGULARIZACAO.md), [planejamento](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/gestao/PLANEJAMENTO_E_REPLANEJAMENTOS.md) |
 | Revisão acadêmica | [Matriz de divergências](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/MATRIZ_DIVERGENCIAS.md), [decisões pendentes da PO](https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/DECISOES_PENDENTES_PO.md) |
