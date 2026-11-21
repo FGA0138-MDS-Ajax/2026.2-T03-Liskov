@@ -95,6 +95,9 @@ def test_bertweet_configura_modelo_e_tamanho_do_lote(monkeypatch):
     import sys
     from unittest.mock import Mock
 
+    # Este teste verifica a criacao do analisador, nao a selecao de GPU.
+    monkeypatch.setenv("SENTIA_DISPOSITIVO", "cpu")
+
     from src.processamento.classificacao.bertweet import NOME_MODELO
 
     # Substitui o carregamento real pra não acabar baixando o modelo durante o teste

@@ -130,6 +130,38 @@ uv sync --locked --group ml
 
 Esse grupo instala `pysentimiento` e `torch` e pode exigir um download considerável na primeira execução. Sem ele, os testes e fluxos que usam um classificador simulado continuam disponíveis, mas a inferência BERTweet real não.
 
+### Configuração do dispositivo de inferência
+
+O dispositivo utilizado pelo BERTweet é configurado por meio das seguintes variáveis de ambiente:
+
+| Variável | Descrição |
+|---|---|
+| `SENTIA_DISPOSITIVO` | Aceita `cpu`, `cuda` ou `auto`. O padrão é `cpu`. |
+| `SENTIA_GPU_INDEX` | Índice físico da GPU utilizada. O padrão é `0`. |
+
+Se o runtime da GPU já tiver sido inicializado antes da seleção de uma GPU física diferente do índice zero, será necessário reiniciar o processo. Nesse cenário, o modo auto utiliza a CPU; o modo cuda informa o erro.
+
+Os modos de execução são:
+
+- `cpu`: executa a inferência no processador, utilizando precisão FP32.
+- `cuda`: exige uma GPU compatível e gera erro se ela não estiver disponível. Na GPU, o modelo utiliza precisão FP16.
+- `auto`: utiliza a GPU quando disponível e, caso contrário, utiliza a CPU.
+
+Em máquinas com múltiplas GPUs, `SENTIA_GPU_INDEX` permite selecionar a placa desejada. Mesmo quando uma GPU física diferente da primeira é selecionada, o dispositivo pode aparecer internamente como `cuda:0`, devido ao isolamento feito pelo PyTorch.
+
+Se ocorrer falta de memória da GPU (OOM) durante a inferência de um lote, o classificador tenta novamente o lote afetado na CPU e continua a inferência nesse dispositivo.
+
+Exemplo de configuração no `.env`:
+
+```dotenv
+SENTIA_DISPOSITIVO=cuda
+SENTIA_GPU_INDEX=1
+```
+
+Para executar sem GPU, utilize `SENTIA_DISPOSITIVO=cpu`. A configuração auto permite selecionar automaticamente entre GPU e CPU.
+
+A disponibilidade de GPU depende da instalação de uma versão do PyTorch compatível com o hardware e os respectivos drivers. A instalação do grupo ML, isoladamente, não garante suporte a GPU.
+
 ### 2. Configurar o MongoDB
 
 Inicie uma instância MongoDB e configure `MONGODB_URI` no `.env`. Para uma instância local com a configuração padrão do exemplo:
@@ -200,6 +232,8 @@ Acesse [http://localhost:8501](http://localhost:8501). Para o painel consultar e
 | `SENTIA_SESSAO_MINUTOS` | Duração das sessões administrativas. |
 | `SENTIA_LIMITE_CSV_MB` | Limite de tamanho dos arquivos CSV enviados. |
 | `SENTIA_LIMITE_COLETA` | Limite de textos por coleta. |
+| `SENTIA_DISPOSITIVO` | `cpu`, `cuda` ou `auto`; define o dispositivo de inferência do BERTweet. Padrão: `cpu`. |
+| `SENTIA_GPU_INDEX` | Índice físico da GPU selecionada para a inferência do BERTweet. Padrão: `0`. |
 | `XFETCH_API_KEY` | Chave opcional do serviço externo XFetch; pode envolver cobrança. |
 
 A lista completa e os valores de exemplo estão em [`.env.example`](.env.example).
