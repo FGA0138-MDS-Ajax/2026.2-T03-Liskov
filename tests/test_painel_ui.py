@@ -205,3 +205,57 @@ def test_modo_api_com_resposta_invalida_na_listagem_nao_quebra_a_tela(monkeypatc
     assert "não segue o contrato" in app.error[0].value
     assert not app.dataframe
     assert MENSAGEM_DADOS_DE_EXEMPLO not in avisos(app)
+
+
+# --- Gráfico de distribuição (#28) -------------------------------------------------
+
+
+def grafico(app):
+    return app.get("vega_lite_chart")
+
+
+def test_grafico_aparece_com_os_mesmos_numeros_dos_indicadores(monkeypatch):
+    app = executar_app(monkeypatch)
+    assert not app.exception
+    assert len(grafico(app)) == 1
+    tabela = app.table[0].value
+    assert list(tabela["Sentimento"]) == ["Positivo", "Neutro", "Negativo"]
+    esperado = [sum(a.sentimento == s for a in ANALISES_DE_EXEMPLO)
+                for s in ("positivo", "neutro", "negativo")]
+    assert [int(q) for q in tabela["Quantidade"]] == esperado
+    assert sum(esperado) == len(ANALISES_DE_EXEMPLO)
+    assert app.metric[0].value == str(len(ANALISES_DE_EXEMPLO))
+
+
+def test_grafico_acompanha_o_filtro_de_sentimento(monkeypatch):
+    app = executar_app(monkeypatch)
+    app.selectbox(key="filtro_sentimento").select("Negativo")
+    app.button(key="aplicar_filtros").click().run()
+    assert not app.exception
+    quantidades = [int(q) for q in app.table[0].value["Quantidade"]]
+    assert quantidades[0] == 0 and quantidades[1] == 0 and quantidades[2] > 0
+
+
+def test_sem_dados_ou_com_erro_nao_mostra_grafico(monkeypatch):
+    for cenario in ("vazio", "erro"):
+        app = executar_app(monkeypatch, cenario=cenario)
+        assert not app.exception
+        assert not grafico(app)
+
+
+def test_especificacao_do_grafico_usa_as_cores_do_tema_e_ordem_fixa():
+    from src.apresentacao.secoes.distribuicao import CORES, ORDEM, construir_grafico
+
+    linhas = [
+        {"Sentimento": "Positivo", "Quantidade": 8, "Percentual": 47, "Rótulo": "8 (47%)"},
+        {"Sentimento": "Neutro", "Quantidade": 4, "Percentual": 24, "Rótulo": "4 (24%)"},
+        {"Sentimento": "Negativo", "Quantidade": 5, "Percentual": 29, "Rótulo": "5 (29%)"},
+    ]
+    especificacao = construir_grafico(linhas).to_dict()
+    barras, valores = especificacao["layer"]
+    assert barras["mark"]["type"] == "bar" and valores["mark"]["type"] == "text"
+    assert barras["encoding"]["color"]["scale"] == {"domain": ORDEM, "range": CORES}
+    assert barras["encoding"]["y"]["sort"] == ORDEM
+    # Sem legenda de cor: o nome do sentimento já está no eixo e no valor.
+    assert barras["encoding"]["color"]["legend"] is None
+    assert [d["Quantidade"] for d in next(iter(especificacao["datasets"].values()))] == [8, 4, 5]

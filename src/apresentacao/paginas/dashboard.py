@@ -1,5 +1,5 @@
-"""Dashboard do Usuário (RF13): filtros, indicadores e listagem de análises (#27).
-Gráfico e resumo textual ainda serão adicionados (issues #28 e #29)."""
+"""Dashboard do Usuário (RF13): filtros, indicadores, gráfico de distribuição (#28) e
+listagem de análises (#27). O resumo textual ainda será adicionado (issue #29)."""
 
 import streamlit as st
 
@@ -7,7 +7,7 @@ from src.apresentacao.componentes import estado_erro, estado_vazio
 from src.apresentacao.config import carregar_configuracao
 from src.apresentacao.contrato import ErroFonteDados
 from src.apresentacao.fontes import criar_fonte
-from src.apresentacao.secoes import filtros, indicadores, listagem
+from src.apresentacao.secoes import distribuicao, filtros, indicadores, listagem
 from src.apresentacao.transformacoes import filtros_ativos, formatar_inteiro
 
 
@@ -44,4 +44,5 @@ def renderizar() -> None:
         return
 
     indicadores.renderizar(resumo)
+    distribuicao.renderizar(resumo)
     listagem.renderizar(fonte, filtros_aplicados, resumo.total)

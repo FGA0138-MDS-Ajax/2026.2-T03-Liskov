@@ -31,7 +31,7 @@ Owner em 07/11/2026.
 | Filtro de sentimento e "Aplicar filtros" | Implementado, com dados de exemplo | Há também o botão "Limpar" |
 | Indicadores | Implementado, com dados de exemplo | Percentuais somam sempre 100% |
 | Listagem das análises | Implementado | Não consta nos wireframes; exigida pela issue #27 e pelo teste T11. Paginada, 20 por página |
-| Distribuição de sentimentos | Pendente | Issue #28 |
+| Distribuição de sentimentos | Implementado | Barras horizontais com quantidade e percentual escritos em cada barra, na mesma ordem e cores dos indicadores; tabela equivalente em um expansor (issue #28) |
 | Evolução no período | Em decisão | Fora do RF14; depende de alinhamento da equipe |
 | Menu lateral | Implementado | Navegação nativa do Streamlit |
 | Botão "Usuário" | Substituído | Sem login, o menu mostra "Entrar"; com login, "Administração" |
