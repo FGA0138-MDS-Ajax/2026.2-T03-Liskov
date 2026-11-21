@@ -12,7 +12,7 @@ interface acessa o sistema **somente pela API** e nunca importa banco ou process
 
 | Tela | Quem vê | O que faz |
 |---|---|---|
-| Dashboard | Todos | Filtros de período e sentimento, indicadores de total e percentual e listagem paginada das análises (texto, sentimento, fonte, datas e modelo). Gráfico e resumo textual ainda serão adicionados (#28, #29) |
+| Dashboard | Todos | Filtros de período e sentimento, indicadores de total e percentual gráfico de distribuição dos sentimentos e listagem paginada das análises (texto, sentimento, fonte, datas e modelo). O resumo textual ainda será adicionado (#29) |
 | Entrar | Quem não fez login | Formulário de usuário e senha do Administrador |
 | Administração | Administrador com login | Importar dataset CSV e já analisá-lo, pesquisar um assunto (base do SentIA e, se faltar, o X), iniciar coleta e análise e ver o resultado por sentimento |
 

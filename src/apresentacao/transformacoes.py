@@ -10,6 +10,7 @@ from src.apresentacao.contrato import (
     TAMANHO_MAXIMO_TERMO,
     Analise,
     FiltrosAnalises,
+    ResumoAnalises,
     Sentimento,
 )
 
@@ -165,4 +166,29 @@ def montar_linhas_listagem(
             "Modelo": analise.modelo_nome,
         }
         for analise in analises
+    ]
+
+
+# --- Distribuição dos sentimentos (RF14, US15) -------------------------------------
+
+
+def montar_distribuicao(
+    resumo: ResumoAnalises, rotulos: dict[Sentimento, str]
+) -> list[dict[str, str | int]]:
+    """Uma linha por sentimento, sempre na ordem positivo, neutro, negativo.
+
+    Todas as classes aparecem, mesmo com zero, para o gráfico não esconder o que não
+    existe. As quantidades são as do resumo e os percentuais somam exatamente 100.
+    """
+    percentuais = calcular_percentuais(resumo.por_sentimento)
+    return [
+        {
+            "Sentimento": rotulos[s],
+            "Quantidade": resumo.por_sentimento.get(s, 0),
+            "Percentual": percentuais[s],
+            "Rótulo": (
+                f"{formatar_inteiro(resumo.por_sentimento.get(s, 0))} ({percentuais[s]}%)"
+            ),
+        }
+        for s in SENTIMENTOS
     ]

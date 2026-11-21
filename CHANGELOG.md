@@ -21,6 +21,10 @@ versões publicadas; outras frentes também podem registrar suas entregas aqui.
 
 ### Adicionado
 
+- Gráfico de distribuição dos sentimentos no dashboard: barras com a quantidade e o
+  percentual de cada classe no filtro aplicado, usando o mesmo resumo dos indicadores. O
+  sentimento é identificado por nome e valor escrito, não só por cor, e há uma tabela
+  equivalente para leitores de tela. Classes sem registros aparecem com zero (#28).
 - Listagem paginada das análises no dashboard, consumindo `GET /analises` com os mesmos
   filtros dos indicadores: texto (com `@menções` mascaradas), sentimento, fonte, data de
   publicação ("Sem data" quando ausente), data de processamento em UTC e modelo. Tem estados

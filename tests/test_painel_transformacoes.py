@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from src.apresentacao.contrato import Analise
+from src.apresentacao.contrato import Analise, ResumoAnalises
 from src.apresentacao.transformacoes import (
     COLUNAS_LISTAGEM,
     SEM_DATA,
@@ -12,6 +12,7 @@ from src.apresentacao.transformacoes import (
     descrever_intervalo,
     formatar_inteiro,
     limitar_pagina,
+    montar_distribuicao,
     montar_linhas_listagem,
     total_de_paginas,
 )
@@ -124,3 +125,31 @@ def test_mencoes_sao_mascaradas_na_listagem():
 
 def test_lista_vazia_gera_zero_linhas():
     assert montar_linhas_listagem([], ROTULOS) == []
+
+
+# --- Distribuição dos sentimentos (#28) --------------------------------------------
+
+
+def test_distribuicao_tem_todas_as_classes_na_ordem_fixa():
+    resumo = ResumoAnalises(total=10, por_sentimento={"negativo": 6, "positivo": 3, "neutro": 1})
+    linhas = montar_distribuicao(resumo, ROTULOS)
+    assert [l["Sentimento"] for l in linhas] == ["Positivo", "Neutro", "Negativo"]
+    assert [l["Quantidade"] for l in linhas] == [3, 1, 6]
+    assert sum(l["Percentual"] for l in linhas) == 100
+
+
+def test_distribuicao_mostra_zero_em_vez_de_esconder_a_classe():
+    resumo = ResumoAnalises(total=4, por_sentimento={"positivo": 4, "neutro": 0, "negativo": 0})
+    linhas = montar_distribuicao(resumo, ROTULOS)
+    assert [l["Quantidade"] for l in linhas] == [4, 0, 0]
+    assert [l["Rótulo"] for l in linhas] == ["4 (100%)", "0 (0%)", "0 (0%)"]
+
+
+def test_distribuicao_usa_o_formato_brasileiro_nos_milhares():
+    resumo = ResumoAnalises(total=1568, por_sentimento={"positivo": 1000, "neutro": 400, "negativo": 168})
+    assert montar_distribuicao(resumo, ROTULOS)[0]["Rótulo"] == "1.000 (64%)"
+
+
+def test_distribuicao_com_classe_ausente_no_resumo_conta_zero():
+    resumo = ResumoAnalises(total=2, por_sentimento={"positivo": 2})
+    assert [l["Quantidade"] for l in montar_distribuicao(resumo, ROTULOS)] == [2, 0, 0]
