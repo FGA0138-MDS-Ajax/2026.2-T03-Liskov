@@ -259,3 +259,50 @@ def test_especificacao_do_grafico_usa_as_cores_do_tema_e_ordem_fixa():
     # Sem legenda de cor: o nome do sentimento já está no eixo e no valor.
     assert barras["encoding"]["color"]["legend"] is None
     assert [d["Quantidade"] for d in next(iter(especificacao["datasets"].values()))] == [8, 4, 5]
+
+
+# --- Resumo textual (#29) ----------------------------------------------------------
+
+
+def texto_do_resumo(app) -> str:
+    """O resumo é o único `markdown` que começa com "Total de" ou "Nenhuma análise"."""
+    textos = [m.value for m in app.markdown]
+    achados = [t for t in textos if t.startswith(("Total de", "Nenhuma análise"))]
+    assert len(achados) == 1, textos
+    return achados[0]
+
+
+def test_resumo_textual_aparece_e_bate_com_indicadores_e_grafico(monkeypatch):
+    app = executar_app(monkeypatch)
+    assert not app.exception
+    texto = texto_do_resumo(app)
+    assert f"Total de {len(ANALISES_DE_EXEMPLO)} análises" in texto
+    tabela = app.table[0].value
+    for sentimento, quantidade in zip(tabela["Sentimento"], tabela["Quantidade"], strict=True):
+        assert f"{sentimento} {int(quantidade)} (" in texto
+    percentuais = [metrica.value for metrica in app.metric[1:]]
+    assert all(p in texto for p in percentuais)
+
+
+def test_resumo_textual_acompanha_o_filtro_de_sentimento(monkeypatch):
+    app = executar_app(monkeypatch)
+    app.selectbox(key="filtro_sentimento").select("Negativo")
+    app.button(key="aplicar_filtros").click().run()
+    assert not app.exception
+    texto = texto_do_resumo(app)
+    assert "com sentimento negativo" in texto
+    assert "predominante:" not in texto
+
+
+def test_resumo_textual_sem_dados_informa_ausencia_sem_afirmar_sentimento(monkeypatch):
+    app = executar_app(monkeypatch, cenario="vazio")
+    assert not app.exception
+    texto = texto_do_resumo(app)
+    assert "não há distribuição nem sentimento predominante" in texto
+    assert "%" not in texto
+
+
+def test_resumo_textual_nao_aparece_com_erro_da_fonte(monkeypatch):
+    app = executar_app(monkeypatch, cenario="erro")
+    assert not app.exception
+    assert not [m for m in app.markdown if m.value.startswith(("Total de", "Nenhuma análise"))]

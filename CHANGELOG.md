@@ -21,6 +21,10 @@ versões publicadas; outras frentes também podem registrar suas entregas aqui.
 
 ### Adicionado
 
+- Resumo textual no dashboard: síntese da seleção atual com o total de análises, a distribuição
+  por sentimento e o sentimento predominante, montada por regras a partir do mesmo resumo dos
+  indicadores e do gráfico (sem modelo de linguagem). Informa empates, avisa quando a base é
+  pequena e, sem dados, informa a ausência de registros sem afirmar sentimentos (#29).
 - Gráfico de distribuição dos sentimentos no dashboard: barras com a quantidade e o
   percentual de cada classe no filtro aplicado, usando o mesmo resumo dos indicadores. O
   sentimento é identificado por nome e valor escrito, não só por cor, e há uma tabela
