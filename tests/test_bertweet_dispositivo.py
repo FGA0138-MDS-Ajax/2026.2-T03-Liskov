@@ -332,7 +332,7 @@ def test_analisador_com_slots_usa_predict_sem_type_error():
 
 
 def test_oom_na_inferencia_direta_recria_modelo_na_cpu(monkeypatch):
-    import torch
+    torch = pytest.importorskip("torch")
 
     monkeypatch.setattr(torch.cuda, "is_initialized", lambda: False)
     monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
