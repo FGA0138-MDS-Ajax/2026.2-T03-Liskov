@@ -59,8 +59,7 @@ def montar_filtros(
     return FiltrosAnalises(inicio=inicio, fim=fim, sentimento=sentimento)
 
 
-def descrever_filtros(filtros: FiltrosAnalises, rotulos: dict[Sentimento, str]) -> str:
-    """Resume os filtros em texto, para quem não enxerga os campos do formulário."""
+def _partes_dos_filtros(filtros: FiltrosAnalises, rotulos: dict[Sentimento, str]) -> list[str]:
     partes = []
     if filtros.inicio and filtros.fim:
         partes.append(
@@ -72,9 +71,18 @@ def descrever_filtros(filtros: FiltrosAnalises, rotulos: dict[Sentimento, str]) 
         partes.append(f"publicadas até {formatar_data(filtros.fim)}")
     if filtros.sentimento:
         partes.append(f"com sentimento {rotulos[filtros.sentimento].lower()}")
-    if not partes:
-        return "Exibindo todas as análises."
-    return "Exibindo análises " + ", ".join(partes) + "."
+    return partes
+
+
+def descrever_selecao(filtros: FiltrosAnalises, rotulos: dict[Sentimento, str]) -> str:
+    """Descreve a seleção atual, por exemplo "análises publicadas de 01/10/2026 a 31/10/2026"."""
+    partes = _partes_dos_filtros(filtros, rotulos)
+    return "análises " + ", ".join(partes) if partes else "todas as análises"
+
+
+def descrever_filtros(filtros: FiltrosAnalises, rotulos: dict[Sentimento, str]) -> str:
+    """Resume os filtros em texto, para quem não enxerga os campos do formulário."""
+    return f"Exibindo {descrever_selecao(filtros, rotulos)}."
 
 
 def filtros_ativos(filtros: FiltrosAnalises) -> bool:
@@ -192,3 +200,80 @@ def montar_distribuicao(
         }
         for s in SENTIMENTOS
     ]
+
+
+# --- Resumo textual (RF15, US16) ---------------------------------------------------
+
+# Abaixo disso a proporção muda muito com poucos textos novos; o resumo avisa.
+BASE_PEQUENA = 10
+
+
+def _plural(quantidade: int, singular: str, plural: str) -> str:
+    return singular if quantidade == 1 else plural
+
+
+def _lista_em_texto(itens: list[str]) -> str:
+    if len(itens) <= 2:
+        return " e ".join(itens)
+    return ", ".join(itens[:-1]) + " e " + itens[-1]
+
+
+def montar_resumo_textual(
+    resumo: ResumoAnalises, filtros: FiltrosAnalises, rotulos: dict[Sentimento, str]
+) -> str:
+    """Síntese em linguagem natural do resumo e dos filtros aplicados (RF15).
+
+    É um texto montado por regras a partir das contagens da API, não gerado por modelo:
+    só afirma o que os números sustentam. Sem registros, não cita distribuição nem
+    sentimento predominante. Com empate no topo, informa o empate. Com filtro de
+    sentimento, não declara predominância, porque só uma classe foi selecionada.
+    """
+    partes = _partes_dos_filtros(filtros, rotulos)
+    filtros_em_texto = ", ".join(partes)
+    if resumo.total == 0:
+        onde = f" para os filtros aplicados ({filtros_em_texto})" if partes else ""
+        return (
+            f"Nenhuma análise encontrada{onde}. Sem registros, não há "
+            "distribuição nem sentimento predominante a informar."
+        )
+
+    percentuais = calcular_percentuais(resumo.por_sentimento)
+    contagens = {s: resumo.por_sentimento.get(s, 0) for s in SENTIMENTOS}
+    total = formatar_inteiro(resumo.total)
+    distribuicao = ", ".join(
+        f"{rotulos[s]} {formatar_inteiro(contagens[s])} ({percentuais[s]}%)"
+        for s in SENTIMENTOS
+    )
+    frases = [
+        f"Total de {total} {_plural(resumo.total, 'análise', 'análises')}"
+        + (f", considerando os filtros: {filtros_em_texto}." if partes else ", sem filtros."),
+        f"Distribuição: {distribuicao}.",
+    ]
+
+    if filtros.sentimento is not None:
+        frases.append(
+            f"Como o filtro seleciona só o sentimento {rotulos[filtros.sentimento].lower()}, "
+            "não há comparação entre sentimentos a destacar."
+        )
+    else:
+        maior = max(contagens.values())
+        lideres = [s for s in SENTIMENTOS if contagens[s] == maior]
+        if len(lideres) == 1:
+            lider = lideres[0]
+            frases.append(
+                f"Sentimento predominante: {rotulos[lider].lower()}, com "
+                f"{percentuais[lider]}% das análises."
+            )
+        else:
+            nomes = _lista_em_texto([rotulos[s].lower() for s in lideres])
+            frases.append(
+                f"Empate entre {nomes}, com {formatar_inteiro(maior)} "
+                f"{_plural(maior, 'análise', 'análises')} cada; nenhum sentimento predomina."
+            )
+
+    if resumo.total < BASE_PEQUENA:
+        frases.append(
+            f"A base é pequena (menos de {BASE_PEQUENA} análises); os percentuais podem "
+            "mudar bastante com novos textos."
+        )
+    return " ".join(frases)

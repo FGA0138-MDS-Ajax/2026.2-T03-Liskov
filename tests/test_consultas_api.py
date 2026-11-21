@@ -274,6 +274,10 @@ def test_painel_completo_consome_a_api_real_sem_mock(cliente, monkeypatch):
     assert app.metric[0].value == "6"
     assert len(app.get("vega_lite_chart")) == 1
     assert [int(q) for q in app.table[0].value["Quantidade"]] == [3, 1, 2]
+    resumo_textual = [m.value for m in app.markdown if m.value.startswith("Total de")]
+    assert len(resumo_textual) == 1
+    assert "Total de 6 análises" in resumo_textual[0]
+    assert "Positivo 3 (50%), Neutro 1 (17%), Negativo 2 (33%)" in resumo_textual[0]
     tabela = app.dataframe[0].value
     assert len(tabela) == 4
     assert set(tabela["Fonte"]) == {"teste"}

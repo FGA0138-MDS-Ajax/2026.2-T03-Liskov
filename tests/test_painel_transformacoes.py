@@ -1,10 +1,10 @@
 """Cálculos exibidos no painel (critério da issue #28: percentuais somam 100%)."""
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 import pytest
 
-from src.apresentacao.contrato import Analise, ResumoAnalises
+from src.apresentacao.contrato import Analise, FiltrosAnalises, ResumoAnalises
 from src.apresentacao.transformacoes import (
     COLUNAS_LISTAGEM,
     SEM_DATA,
@@ -14,6 +14,7 @@ from src.apresentacao.transformacoes import (
     limitar_pagina,
     montar_distribuicao,
     montar_linhas_listagem,
+    montar_resumo_textual,
     total_de_paginas,
 )
 
@@ -153,3 +154,87 @@ def test_distribuicao_usa_o_formato_brasileiro_nos_milhares():
 def test_distribuicao_com_classe_ausente_no_resumo_conta_zero():
     resumo = ResumoAnalises(total=2, por_sentimento={"positivo": 2})
     assert [l["Quantidade"] for l in montar_distribuicao(resumo, ROTULOS)] == [2, 0, 0]
+
+
+# --- Resumo textual (#29) ----------------------------------------------------------
+
+SEM_FILTROS = FiltrosAnalises()
+
+
+def _resumo(positivo: int, neutro: int, negativo: int) -> ResumoAnalises:
+    return ResumoAnalises(
+        total=positivo + neutro + negativo,
+        por_sentimento={"positivo": positivo, "neutro": neutro, "negativo": negativo},
+    )
+
+
+def test_resumo_textual_informa_total_distribuicao_e_predominancia():
+    texto = montar_resumo_textual(_resumo(8, 4, 5), SEM_FILTROS, ROTULOS)
+    assert texto == (
+        "Total de 17 análises, sem filtros. "
+        "Distribuição: Positivo 8 (47%), Neutro 4 (24%), Negativo 5 (29%). "
+        "Sentimento predominante: positivo, com 47% das análises."
+    )
+
+
+def test_resumo_textual_usa_os_mesmos_percentuais_dos_indicadores():
+    resumo = _resumo(2, 2, 3)
+    percentuais = calcular_percentuais(resumo.por_sentimento)
+    texto = montar_resumo_textual(resumo, SEM_FILTROS, ROTULOS)
+    assert f"Negativo 3 ({percentuais['negativo']}%)" in texto
+    assert f"{percentuais['negativo']}% das análises" in texto
+
+
+def test_resumo_textual_descreve_os_filtros_aplicados():
+    filtros = FiltrosAnalises(inicio=date(2026, 10, 1), fim=date(2026, 10, 31))
+    texto = montar_resumo_textual(_resumo(30, 10, 10), filtros, ROTULOS)
+    assert "considerando os filtros: publicadas de 01/10/2026 a 31/10/2026." in texto
+    assert "Total de 50 análises" in texto
+
+
+def test_resumo_textual_sem_registros_nao_afirma_sentimento_nem_numeros():
+    texto = montar_resumo_textual(_resumo(0, 0, 0), SEM_FILTROS, ROTULOS)
+    assert texto.startswith("Nenhuma análise encontrada.")
+    assert "não há distribuição nem sentimento predominante" in texto
+    assert "%" not in texto and "predominante:" not in texto
+
+
+def test_resumo_textual_sem_registros_cita_os_filtros():
+    filtros = FiltrosAnalises(sentimento="negativo")
+    texto = montar_resumo_textual(_resumo(0, 0, 0), filtros, ROTULOS)
+    assert "com sentimento negativo" in texto
+
+
+def test_resumo_textual_empate_no_topo_nao_declara_predominancia():
+    texto = montar_resumo_textual(_resumo(5, 5, 2), SEM_FILTROS, ROTULOS)
+    assert "Empate entre positivo e neutro, com 5 análises cada" in texto
+    assert "predominante:" not in texto
+
+
+def test_resumo_textual_empate_triplo():
+    texto = montar_resumo_textual(_resumo(4, 4, 4), SEM_FILTROS, ROTULOS)
+    assert "Empate entre positivo, neutro e negativo, com 4 análises cada" in texto
+
+
+def test_resumo_textual_com_filtro_de_sentimento_nao_compara_classes():
+    filtros = FiltrosAnalises(sentimento="positivo")
+    texto = montar_resumo_textual(_resumo(8, 0, 0), filtros, ROTULOS)
+    assert "com sentimento positivo" in texto
+    assert "predominante:" not in texto
+    assert "só o sentimento positivo" in texto
+
+
+def test_resumo_textual_no_singular_e_com_base_pequena():
+    texto = montar_resumo_textual(_resumo(1, 0, 0), SEM_FILTROS, ROTULOS)
+    assert "Total de 1 análise, sem filtros." in texto
+    assert "A base é pequena" in texto
+
+
+def test_resumo_textual_base_grande_nao_traz_o_aviso_de_base_pequena():
+    assert "A base é pequena" not in montar_resumo_textual(_resumo(8, 4, 5), SEM_FILTROS, ROTULOS)
+
+
+def test_resumo_textual_usa_o_formato_brasileiro_nos_milhares():
+    texto = montar_resumo_textual(_resumo(1500, 100, 30), SEM_FILTROS, ROTULOS)
+    assert "Total de 1.630 análises" in texto
+    assert "Positivo 1.500" in texto

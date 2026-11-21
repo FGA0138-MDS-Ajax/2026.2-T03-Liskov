@@ -12,7 +12,7 @@ interface acessa o sistema **somente pela API** e nunca importa banco ou process
 
 | Tela | Quem vê | O que faz |
 |---|---|---|
-| Dashboard | Todos | Filtros de período e sentimento, indicadores de total e percentual gráfico de distribuição dos sentimentos e listagem paginada das análises (texto, sentimento, fonte, datas e modelo). O resumo textual ainda será adicionado (#29) |
+| Dashboard | Todos | Filtros de período e sentimento, indicadores de total e percentual, gráfico de distribuição dos sentimentos e listagem paginada das análises (texto, sentimento, fonte, datas e modelo). e resumo textual da seleção atual (total, distribuição e predominância) |
 | Entrar | Quem não fez login | Formulário de usuário e senha do Administrador |
 | Administração | Administrador com login | Importar dataset CSV e já analisá-lo, pesquisar um assunto (base do SentIA e, se faltar, o X), iniciar coleta e análise e ver o resultado por sentimento |
 
@@ -79,6 +79,34 @@ aviso: mock não é integração concluída. O modo `api` consome as rotas já i
 pelo backend (ver contrato); se a API estiver fora do ar ou responder fora do contrato, a tela
 mostra uma mensagem de erro e nunca cai para dados de exemplo. O cenário `erro` também simula
 a API de administração indisponível.
+
+## Resumo textual
+
+O dashboard mostra uma síntese em linguagem natural da seleção atual (issue #29). O texto é
+montado por regras em `transformacoes.montar_resumo_textual`, a partir do mesmo resumo dos
+indicadores e do gráfico. **Não usa modelo de linguagem** e só afirma o que os números sustentam:
+
+- **Com dados:** total, distribuição por sentimento (mesmos percentuais dos indicadores, que
+  somam 100) e o sentimento predominante.
+- **Empate no topo:** informa o empate e não declara predominância.
+- **Filtro de sentimento:** não declara predominância, porque só uma classe foi selecionada.
+- **Base pequena** (menos de 10 análises): avisa que os percentuais podem mudar bastante.
+- **Sem dados:** informa a ausência de registros, sem citar distribuição nem predominância.
+
+Exemplos (dados de exemplo, sem filtros):
+
+> Total de 17 análises, sem filtros. Distribuição: Positivo 8 (47%), Neutro 4 (24%),
+> Negativo 5 (29%). Sentimento predominante: positivo, com 47% das análises.
+
+> Total de 10 análises, considerando os filtros: com sentimento negativo. Distribuição: Positivo 0 (0%),
+> Neutro 0 (0%), Negativo 10 (100%). Como o filtro seleciona só o sentimento negativo, não há
+> comparação entre sentimentos a destacar.
+
+> Nenhuma análise encontrada para os filtros aplicados (publicadas de 01/01/2026 a
+> 31/01/2026). Sem registros, não há distribuição nem sentimento predominante a informar.
+
+Teste funcional: `tests/test_painel_ui.py` (seção "Resumo textual") confere que o texto bate
+com os indicadores e com o gráfico, acompanha os filtros e não afirma sentimento sem dados.
 
 ## Verificações
 
