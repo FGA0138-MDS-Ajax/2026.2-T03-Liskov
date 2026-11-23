@@ -123,6 +123,8 @@ def test_oom_na_gpu_recria_analisador_na_cpu_e_repete_lote(monkeypatch, caplog):
     )
     monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(cuda=cuda))
     monkeypatch.setenv("SENTIA_DISPOSITIVO", "cuda")
+
+    caminho_modelo = "/home/ricar/models/sentia/modelo-c"
     chamadas_factory = []
     analisador_gpu = SimpleNamespace(
         predict=lambda textos: (_ for _ in ()).throw(
@@ -131,17 +133,25 @@ def test_oom_na_gpu_recria_analisador_na_cpu_e_repete_lote(monkeypatch, caplog):
     )
 
     def factory(**kwargs):
-        chamadas_factory.append(__import__("os").environ.get("ACCELERATE_USE_CPU"))
+        chamadas_factory.append({
+            "cpu": __import__("os").environ.get("ACCELERATE_USE_CPU"),
+            "model_name": kwargs["model_name"],
+        })
         if len(chamadas_factory) == 1:
             return analisador_gpu
         return AnalisadorSimples()
 
     monkeypatch.setattr(ClassificadorBertweet, "_obter_factory", staticmethod(lambda: factory))
     with caplog.at_level(logging.WARNING):
-        clf = ClassificadorBertweet()
+        clf = ClassificadorBertweet(nome_modelo=caminho_modelo)
         assert clf.prever(["texto"]) == ["positivo"]
 
-    assert chamadas_factory == ["false", "true"]
+    assert [chamada["cpu"] for chamada in chamadas_factory] == ["false", "true"]
+    assert [chamada["model_name"] for chamada in chamadas_factory] == [
+        caminho_modelo,
+        caminho_modelo,
+    ]
+    assert clf.nome_modelo == caminho_modelo
     assert clf.dispositivo_ativo == "cpu"
     assert "Memória insuficiente na GPU" in caplog.text
 
@@ -196,6 +206,7 @@ def test_criar_analisador_configura_precisao(
 
     clf = ClassificadorBertweet.__new__(ClassificadorBertweet)
     clf.tamanho_lote = 32
+    clf.nome_modelo = "pysentimiento/bertweet-pt-sentiment"
     clf._factory = lambda **kwargs: analisador
 
     resultado = clf._criar_analisador(dispositivo)
