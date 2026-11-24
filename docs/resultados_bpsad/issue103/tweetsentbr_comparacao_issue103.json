@@ -1,0 +1,240 @@
+{
+  "experimento": "tweetsentbr_comparacao_issue103",
+  "criado_em_utc": "2026-11-24T00:33:15.818133+00:00",
+  "dados": {
+    "arquivo": "Datasets/tweetsent.csv",
+    "sha256": "8b7be5d0a6bb982c99bf0613ac71f9f8eed49849586a5019b2db2094a6136060",
+    "quantidade": 8530,
+    "distribuicao_real": {
+      "negativo": 2403,
+      "neutro": 2174,
+      "positivo": 3953
+    },
+    "ressalva": "Avaliação exploratória. O modelo original foi treinado com TweetSentBR; portanto, os resultados não constituem evidência independente de generalização."
+  },
+  "configuracao": {
+    "max_length": 128,
+    "batch_size": 16,
+    "classes": [
+      "negativo",
+      "neutro",
+      "positivo"
+    ],
+    "preprocessamento": "preprocess_tweet(lang='pt')",
+    "temperatura_c": 0.951787,
+    "temperatura_estimativa": "Estimativa obtida exclusivamente na calibração interna do BPSAD; não reajustada no TweetSentBR.",
+    "modelos": [
+      {
+        "nome": "Original - sem calibração",
+        "origem": "pysentimiento/bertweet-pt-sentiment",
+        "temperatura": 1.0
+      },
+      {
+        "nome": "C completo - sem calibração",
+        "origem": "/home/ricar/models/sentia/issue-103-bertweet-ft-v3-raiz-pesos/melhor_modelo",
+        "temperatura": 1.0
+      },
+      {
+        "nome": "C completo - temperatura fixa",
+        "origem": "/home/ricar/models/sentia/issue-103-bertweet-ft-v3-raiz-pesos/melhor_modelo",
+        "temperatura": 0.951787
+      }
+    ]
+  },
+  "ambiente": {
+    "python": "3.12.3",
+    "plataforma": "Linux-6.18.58.1-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "torch": "2.15.0+cpu",
+    "numpy": "2.5.5",
+    "pandas": "3.1.1",
+    "transformers": "5.24.0",
+    "pysentimiento": "0.7.3",
+    "scikit_learn": "1.9.1",
+    "dispositivo": "cpu"
+  },
+  "resultados": [
+    {
+      "modelo": "Original - sem calibração",
+      "accuracy": 0.8390386869871044,
+      "f1_macro": 0.8269500106841906,
+      "metricas_por_classe": {
+        "negativo": {
+          "precision": 0.8768755516328332,
+          "recall": 0.826883062838119,
+          "f1": 0.8511458556436068,
+          "suporte": 2403
+        },
+        "neutro": {
+          "precision": 0.7113271344040575,
+          "recall": 0.7741490340386384,
+          "f1": 0.741409691629956,
+          "suporte": 2174
+        },
+        "positivo": {
+          "precision": 0.8945613134940995,
+          "recall": 0.8821148494814065,
+          "f1": 0.8882944847790091,
+          "suporte": 3953
+        }
+      },
+      "log_loss": 0.4261777698993683,
+      "brier": 0.23451349252947842,
+      "ece_15_bins": 0.018405921856795234,
+      "matriz_confusao": [
+        [
+          1987,
+          299,
+          117
+        ],
+        [
+          197,
+          1683,
+          294
+        ],
+        [
+          82,
+          384,
+          3487
+        ]
+      ],
+      "distribuicao_prevista": {
+        "negativo": {
+          "quantidade": 2266,
+          "percentual": 26.56506447831184
+        },
+        "neutro": {
+          "quantidade": 2366,
+          "percentual": 27.737397420867527
+        },
+        "positivo": {
+          "quantidade": 3898,
+          "percentual": 45.69753810082064
+        }
+      },
+      "neutros_como_positivos": 294,
+      "temperatura_aplicada": 1.0
+    },
+    {
+      "modelo": "C completo - sem calibração",
+      "accuracy": 0.648651817116061,
+      "f1_macro": 0.5447890743031012,
+      "metricas_por_classe": {
+        "negativo": {
+          "precision": 0.9232296492389146,
+          "recall": 0.5805243445692884,
+          "f1": 0.71282575370465,
+          "suporte": 2403
+        },
+        "neutro": {
+          "precision": 0.5412844036697247,
+          "recall": 0.10855565777368906,
+          "f1": 0.18084291187739462,
+          "suporte": 2174
+        },
+        "positivo": {
+          "precision": 0.5927388728543217,
+          "recall": 0.9870984062737161,
+          "f1": 0.7406985573272589,
+          "suporte": 3953
+        }
+      },
+      "log_loss": 0.7170078754425049,
+      "brier": 0.42946149660679755,
+      "ece_15_bins": 0.08423678032259029,
+      "matriz_confusao": [
+        [
+          1395,
+          167,
+          841
+        ],
+        [
+          98,
+          236,
+          1840
+        ],
+        [
+          18,
+          33,
+          3902
+        ]
+      ],
+      "distribuicao_prevista": {
+        "negativo": {
+          "quantidade": 1511,
+          "percentual": 17.713950762016413
+        },
+        "neutro": {
+          "quantidade": 436,
+          "percentual": 5.1113716295427905
+        },
+        "positivo": {
+          "quantidade": 6583,
+          "percentual": 77.1746776084408
+        }
+      },
+      "neutros_como_positivos": 1840,
+      "temperatura_aplicada": 1.0
+    },
+    {
+      "modelo": "C completo - temperatura fixa",
+      "accuracy": 0.648651817116061,
+      "f1_macro": 0.5447890743031012,
+      "metricas_por_classe": {
+        "negativo": {
+          "precision": 0.9232296492389146,
+          "recall": 0.5805243445692884,
+          "f1": 0.71282575370465,
+          "suporte": 2403
+        },
+        "neutro": {
+          "precision": 0.5412844036697247,
+          "recall": 0.10855565777368906,
+          "f1": 0.18084291187739462,
+          "suporte": 2174
+        },
+        "positivo": {
+          "precision": 0.5927388728543217,
+          "recall": 0.9870984062737161,
+          "f1": 0.7406985573272589,
+          "suporte": 3953
+        }
+      },
+      "log_loss": 0.7209222316741943,
+      "brier": 0.4324231594021719,
+      "ece_15_bins": 0.09129677380305241,
+      "matriz_confusao": [
+        [
+          1395,
+          167,
+          841
+        ],
+        [
+          98,
+          236,
+          1840
+        ],
+        [
+          18,
+          33,
+          3902
+        ]
+      ],
+      "distribuicao_prevista": {
+        "negativo": {
+          "quantidade": 1511,
+          "percentual": 17.713950762016413
+        },
+        "neutro": {
+          "quantidade": 436,
+          "percentual": 5.1113716295427905
+        },
+        "positivo": {
+          "quantidade": 6583,
+          "percentual": 77.1746776084408
+        }
+      },
+      "neutros_como_positivos": 1840,
+      "temperatura_aplicada": 0.951787
+    }
+  ]
+}

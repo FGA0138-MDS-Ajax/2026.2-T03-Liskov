@@ -116,6 +116,53 @@ def test_bertweet_configura_modelo_e_tamanho_do_lote(monkeypatch):
     )
 
 
+
+@pytest.mark.parametrize("nome_modelo", ["", "   ", None, 123])
+def test_bertweet_rejeita_nome_modelo_invalido(nome_modelo):
+    with pytest.raises(ValueError, match="nome_modelo"):
+        ClassificadorBertweet(
+            analisador=AnalisadorFalso(),
+            nome_modelo=nome_modelo,
+        )
+
+
+def test_bertweet_usa_modelo_original_por_padrao(monkeypatch):
+    import sys
+    from unittest.mock import Mock
+
+    monkeypatch.setenv("SENTIA_DISPOSITIVO", "cpu")
+    criar_analisador = Mock(return_value=AnalisadorFalso())
+    monkeypatch.setitem(
+        sys.modules,
+        "pysentimiento",
+        SimpleNamespace(create_analyzer=criar_analisador),
+    )
+
+    clf = ClassificadorBertweet()
+
+    assert clf.nome_modelo == "pysentimiento/bertweet-pt-sentiment"
+    assert criar_analisador.call_args.kwargs["model_name"] == clf.nome_modelo
+
+
+def test_bertweet_carrega_modelo_local_selecionado(monkeypatch):
+    import sys
+    from unittest.mock import Mock
+
+    caminho_modelo = "/home/ricar/models/sentia/modelo-c"
+    monkeypatch.setenv("SENTIA_DISPOSITIVO", "cpu")
+    criar_analisador = Mock(return_value=AnalisadorFalso())
+    monkeypatch.setitem(
+        sys.modules,
+        "pysentimiento",
+        SimpleNamespace(create_analyzer=criar_analisador),
+    )
+
+    clf = ClassificadorBertweet(nome_modelo=caminho_modelo)
+
+    assert clf.nome_modelo == caminho_modelo
+    assert criar_analisador.call_args.kwargs["model_name"] == caminho_modelo
+
+
 def test_bertweet_preserva_negacoes_antes_da_inferencia():
     from unittest.mock import Mock
 

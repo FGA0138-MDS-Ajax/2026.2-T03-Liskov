@@ -34,14 +34,22 @@ class ClassificadorBertweet:
     dispositivo e recuperação de OOM aplicam-se ao analisador criado aqui.
     """
 
-    def __init__(self, analisador=None, tamanho_lote: int = 32):
+    def __init__(
+        self,
+        analisador=None,
+        tamanho_lote: int = 32,
+        nome_modelo: str = NOME_MODELO,
+    ):
         if isinstance(tamanho_lote, bool) or not isinstance(tamanho_lote, int):
             raise TypeError("tamanho_lote deve ser um número inteiro")
         if tamanho_lote <= 0:
             raise ValueError("tamanho_lote deve ser maior que zero")
 
         self.tamanho_lote = tamanho_lote
-        self.nome_modelo = NOME_MODELO
+        if not isinstance(nome_modelo, str) or not nome_modelo.strip():
+            raise ValueError("nome_modelo deve ser uma string não vazia")
+
+        self.nome_modelo = nome_modelo.strip()
         self._factory = None
         self.dispositivo_ativo = "injetado"
 
@@ -168,7 +176,7 @@ class ClassificadorBertweet:
             analisador = self._factory(
                 task="sentiment",
                 lang="pt",
-                model_name=NOME_MODELO,
+                model_name=self.nome_modelo,
                 batch_size=self.tamanho_lote,
             )
 
