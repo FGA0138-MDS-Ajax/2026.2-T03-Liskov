@@ -1,0 +1,254 @@
+{
+  "experimento": "avaliacao_teste_pc1_issue103",
+  "criado_em_utc": "2026-11-24T00:42:34.119183+00:00",
+  "dados": {
+    "arquivo": "data/BPSAD/amostra_pc1.csv",
+    "sha256_amostra": "607fd459fdf7cb1721d154dce7322d9256d9dcd9d4cc712ccc589907eeb659b6",
+    "particao": "teste",
+    "quantidade": 2000,
+    "distribuicao_real": {
+      "positivo": 1371,
+      "negativo": 319,
+      "neutro": 310
+    },
+    "ressalva_metodologica": "A divisão de teste foi preservada fora do ajuste fino e da calibração desta experiência. O BERTweet original já havia sido avaliado historicamente nesta partição. A independência dos dados em relação ao pré-treinamento do modelo não foi comprovada. Portanto, os resultados não constituem uma estimativa comprovadamente independente de generalização."
+  },
+  "configuracao": {
+    "modelos": [
+      {
+        "nome": "Original",
+        "origem": "pysentimiento/bertweet-pt-sentiment"
+      },
+      {
+        "nome": "C completo - 3 épocas",
+        "origem": "/home/ricar/models/sentia/issue-103-bertweet-ft-v3-raiz-pesos/melhor_modelo"
+      }
+    ],
+    "temperaturas_definidas_na_validacao_interna": {
+      "Original": 2.081848,
+      "C completo - 3 épocas": 0.951787
+    },
+    "max_length": 128,
+    "batch_size": 16,
+    "classes": [
+      "negativo",
+      "neutro",
+      "positivo"
+    ],
+    "ece_bins": 15,
+    "nenhum_ajuste_no_teste": true
+  },
+  "ambiente": {
+    "python": "3.12.3",
+    "plataforma": "Linux-6.18.58.1-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "torch": "2.15.0+cpu",
+    "numpy": "2.5.5",
+    "pandas": "3.1.1",
+    "scikit_learn": "1.9.1",
+    "transformers": "5.24.0",
+    "pysentimiento": "0.7.3",
+    "dispositivo": "cpu"
+  },
+  "resultados": [
+    {
+      "variante": "Original - sem calibração",
+      "accuracy": 0.677,
+      "f1_macro": 0.5543063931312299,
+      "log_loss": 0.9685428738594055,
+      "brier_multiclasse": 0.4974783703063321,
+      "ece_15_bins": 0.18821847131848335,
+      "matriz_confusao": [
+        [
+          249,
+          37,
+          33
+        ],
+        [
+          90,
+          74,
+          146
+        ],
+        [
+          136,
+          204,
+          1031
+        ]
+      ],
+      "metricas_por_classe": {
+        "negativo": {
+          "precision": 0.5242105263157895,
+          "recall": 0.780564263322884,
+          "f1": 0.6272040302267002,
+          "suporte": 319
+        },
+        "neutro": {
+          "precision": 0.23492063492063492,
+          "recall": 0.23870967741935484,
+          "f1": 0.2368,
+          "suporte": 310
+        },
+        "positivo": {
+          "precision": 0.8520661157024794,
+          "recall": 0.7520058351568198,
+          "f1": 0.7989151491669896,
+          "suporte": 1371
+        }
+      },
+      "distribuicao_previsoes": {
+        "negativo": 475,
+        "neutro": 315,
+        "positivo": 1210
+      }
+    },
+    {
+      "variante": "Original - temperatura 2.081848",
+      "accuracy": 0.677,
+      "f1_macro": 0.5543063931312299,
+      "log_loss": 0.759336531162262,
+      "brier_multiclasse": 0.43495078006709936,
+      "ece_15_bins": 0.049003915265202515,
+      "matriz_confusao": [
+        [
+          249,
+          37,
+          33
+        ],
+        [
+          90,
+          74,
+          146
+        ],
+        [
+          136,
+          204,
+          1031
+        ]
+      ],
+      "metricas_por_classe": {
+        "negativo": {
+          "precision": 0.5242105263157895,
+          "recall": 0.780564263322884,
+          "f1": 0.6272040302267002,
+          "suporte": 319
+        },
+        "neutro": {
+          "precision": 0.23492063492063492,
+          "recall": 0.23870967741935484,
+          "f1": 0.2368,
+          "suporte": 310
+        },
+        "positivo": {
+          "precision": 0.8520661157024794,
+          "recall": 0.7520058351568198,
+          "f1": 0.7989151491669896,
+          "suporte": 1371
+        }
+      },
+      "distribuicao_previsoes": {
+        "negativo": 475,
+        "neutro": 315,
+        "positivo": 1210
+      }
+    },
+    {
+      "variante": "C completo - 3 épocas - sem calibração",
+      "accuracy": 0.778,
+      "f1_macro": 0.6725769030577403,
+      "log_loss": 0.5561013221740723,
+      "brier_multiclasse": 0.31483175091422366,
+      "ece_15_bins": 0.029229547873139364,
+      "matriz_confusao": [
+        [
+          217,
+          61,
+          41
+        ],
+        [
+          34,
+          139,
+          137
+        ],
+        [
+          41,
+          130,
+          1200
+        ]
+      ],
+      "metricas_por_classe": {
+        "negativo": {
+          "precision": 0.7431506849315068,
+          "recall": 0.6802507836990596,
+          "f1": 0.7103109656301145,
+          "suporte": 319
+        },
+        "neutro": {
+          "precision": 0.4212121212121212,
+          "recall": 0.4483870967741935,
+          "f1": 0.434375,
+          "suporte": 310
+        },
+        "positivo": {
+          "precision": 0.8708272859216255,
+          "recall": 0.87527352297593,
+          "f1": 0.8730447435431066,
+          "suporte": 1371
+        }
+      },
+      "distribuicao_previsoes": {
+        "negativo": 292,
+        "neutro": 330,
+        "positivo": 1378
+      }
+    },
+    {
+      "variante": "C completo - 3 épocas - temperatura 0.951787",
+      "accuracy": 0.778,
+      "f1_macro": 0.6725769030577403,
+      "log_loss": 0.5551995635032654,
+      "brier_multiclasse": 0.31434106097276837,
+      "ece_15_bins": 0.02348223027586938,
+      "matriz_confusao": [
+        [
+          217,
+          61,
+          41
+        ],
+        [
+          34,
+          139,
+          137
+        ],
+        [
+          41,
+          130,
+          1200
+        ]
+      ],
+      "metricas_por_classe": {
+        "negativo": {
+          "precision": 0.7431506849315068,
+          "recall": 0.6802507836990596,
+          "f1": 0.7103109656301145,
+          "suporte": 319
+        },
+        "neutro": {
+          "precision": 0.4212121212121212,
+          "recall": 0.4483870967741935,
+          "f1": 0.434375,
+          "suporte": 310
+        },
+        "positivo": {
+          "precision": 0.8708272859216255,
+          "recall": 0.87527352297593,
+          "f1": 0.8730447435431066,
+          "suporte": 1371
+        }
+      },
+      "distribuicao_previsoes": {
+        "negativo": 292,
+        "neutro": 330,
+        "positivo": 1378
+      }
+    }
+  ]
+}

@@ -1,0 +1,349 @@
+{
+  "experimento": "calibracao_bertweet_issue103",
+  "criado_em_utc": "2026-11-24T00:21:11.116968+00:00",
+  "dados": {
+    "arquivo_validacao": "data/BPSAD/calibracao_pc1/validacao.csv",
+    "sha256_validacao": "4dc9c1a1ad5a6232eeaf1c51b7fecb36c0dbe65fdb287f687f9f4cad8c277881",
+    "total_validacao": 1600,
+    "quantidade_calibracao": 800,
+    "quantidade_avaliacao": 800,
+    "semente_divisao": 103,
+    "fracao_calibracao": 0.5,
+    "distribuicao_total": {
+      "negativo": 255,
+      "neutro": 248,
+      "positivo": 1097
+    }
+  },
+  "metodologia": {
+    "ajuste_temperatura": "somente na parte de calibracao",
+    "ajuste_limiar_neutro": "somente na parte de calibracao",
+    "checkpoint_selecionado_com_validacao_completa": true,
+    "ressalva": "O subconjunto de avaliacao nao participou do ajuste da temperatura ou do limiar. Entretanto, nao constitui teste independente do treinamento, pois a selecao do checkpoint utilizou a validacao completa de 1600 exemplos. Os rotulos BPSAD sao derivados de avaliacoes por estrelas."
+  },
+  "configuracao": {
+    "modelos": [
+      {
+        "nome": "Original",
+        "origem": "pysentimiento/bertweet-pt-sentiment"
+      },
+      {
+        "nome": "C completo - 3 épocas",
+        "origem": "/home/ricar/models/sentia/issue-103-bertweet-ft-v3-raiz-pesos/melhor_modelo"
+      }
+    ],
+    "max_length": 128,
+    "batch_size": 16,
+    "classes": [
+      "negativo",
+      "neutro",
+      "positivo"
+    ]
+  },
+  "ambiente": {
+    "python": "3.12.3",
+    "plataforma": "Linux-6.18.58.1-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "torch": "2.15.0+cpu",
+    "numpy": "2.5.5",
+    "scikit_learn": "1.9.1",
+    "transformers": "5.24.0",
+    "pysentimiento": "0.7.3",
+    "dispositivo": "cpu"
+  },
+  "modelos": [
+    {
+      "modelo": "Original",
+      "origem": "pysentimiento/bertweet-pt-sentiment",
+      "temperatura": 2.081847906112671,
+      "limiar_neutro": 0.3099999999999999,
+      "f1_macro_na_parte_de_calibracao": 0.5459807363853001,
+      "resultados": {
+        "sem_calibracao": {
+          "modelo": "Original - original",
+          "accuracy": 0.66625,
+          "f1_macro": 0.5451847028080866,
+          "log_loss": 1.0043914318084717,
+          "brier": 0.5229124179690205,
+          "ece": 0.2074725148081779,
+          "por_classe": {
+            "negativo": {
+              "precision": 0.5580110497237569,
+              "recall": 0.7890625,
+              "f1": 0.6537216828478964,
+              "suporte": 128
+            },
+            "neutro": {
+              "precision": 0.18382352941176472,
+              "recall": 0.20161290322580644,
+              "f1": 0.19230769230769232,
+              "suporte": 124
+            },
+            "positivo": {
+              "precision": 0.8426501035196687,
+              "recall": 0.7427007299270073,
+              "f1": 0.7895247332686712,
+              "suporte": 548
+            }
+          },
+          "matriz_confusao": [
+            [
+              101,
+              18,
+              9
+            ],
+            [
+              32,
+              25,
+              67
+            ],
+            [
+              48,
+              93,
+              407
+            ]
+          ],
+          "neutros_como_positivos": 67
+        },
+        "temperatura": {
+          "modelo": "Original - temperatura",
+          "accuracy": 0.66625,
+          "f1_macro": 0.5451847028080866,
+          "log_loss": 0.7763458490371704,
+          "brier": 0.44985409140551413,
+          "ece": 0.07400330696254968,
+          "por_classe": {
+            "negativo": {
+              "precision": 0.5580110497237569,
+              "recall": 0.7890625,
+              "f1": 0.6537216828478964,
+              "suporte": 128
+            },
+            "neutro": {
+              "precision": 0.18382352941176472,
+              "recall": 0.20161290322580644,
+              "f1": 0.19230769230769232,
+              "suporte": 124
+            },
+            "positivo": {
+              "precision": 0.8426501035196687,
+              "recall": 0.7427007299270073,
+              "f1": 0.7895247332686712,
+              "suporte": 548
+            }
+          },
+          "matriz_confusao": [
+            [
+              101,
+              18,
+              9
+            ],
+            [
+              32,
+              25,
+              67
+            ],
+            [
+              48,
+              93,
+              407
+            ]
+          ],
+          "neutros_como_positivos": 67
+        },
+        "temperatura_e_limiar_neutro": {
+          "modelo": "Original - temperatura + limiar neutro",
+          "accuracy": 0.62,
+          "f1_macro": 0.5325840402241081,
+          "log_loss": 0.7763458490371704,
+          "brier": 0.44985409140551413,
+          "ece": 0.10947207491844893,
+          "por_classe": {
+            "negativo": {
+              "precision": 0.5695364238410596,
+              "recall": 0.671875,
+              "f1": 0.6164874551971327,
+              "suporte": 128
+            },
+            "neutro": {
+              "precision": 0.18181818181818182,
+              "recall": 0.3064516129032258,
+              "f1": 0.22822822822822822,
+              "suporte": 124
+            },
+            "positivo": {
+              "precision": 0.8454545454545455,
+              "recall": 0.6788321167883211,
+              "f1": 0.7530364372469636,
+              "suporte": 548
+            }
+          },
+          "matriz_confusao": [
+            [
+              86,
+              33,
+              9
+            ],
+            [
+              27,
+              38,
+              59
+            ],
+            [
+              38,
+              138,
+              372
+            ]
+          ],
+          "neutros_como_positivos": 59
+        }
+      }
+    },
+    {
+      "modelo": "C completo - 3 épocas",
+      "origem": "/home/ricar/models/sentia/issue-103-bertweet-ft-v3-raiz-pesos/melhor_modelo",
+      "temperatura": 0.9517865777015686,
+      "limiar_neutro": 0.5149999999999998,
+      "f1_macro_na_parte_de_calibracao": 0.6523285401132076,
+      "resultados": {
+        "sem_calibracao": {
+          "modelo": "C completo - 3 épocas - original",
+          "accuracy": 0.76375,
+          "f1_macro": 0.6554151790255257,
+          "log_loss": 0.5681978464126587,
+          "brier": 0.32608149232872846,
+          "ece": 0.03887697748839857,
+          "por_classe": {
+            "negativo": {
+              "precision": 0.8165137614678899,
+              "recall": 0.6953125,
+              "f1": 0.7510548523206751,
+              "suporte": 128
+            },
+            "neutro": {
+              "precision": 0.3488372093023256,
+              "recall": 0.3629032258064516,
+              "f1": 0.3557312252964427,
+              "suporte": 124
+            },
+            "positivo": {
+              "precision": 0.8487544483985765,
+              "recall": 0.8704379562043796,
+              "f1": 0.8594594594594595,
+              "suporte": 548
+            }
+          },
+          "matriz_confusao": [
+            [
+              89,
+              22,
+              17
+            ],
+            [
+              11,
+              45,
+              68
+            ],
+            [
+              9,
+              62,
+              477
+            ]
+          ],
+          "neutros_como_positivos": 68
+        },
+        "temperatura": {
+          "modelo": "C completo - 3 épocas - temperatura",
+          "accuracy": 0.76375,
+          "f1_macro": 0.6554151790255257,
+          "log_loss": 0.5676231980323792,
+          "brier": 0.3256937432956032,
+          "ece": 0.026693819388747236,
+          "por_classe": {
+            "negativo": {
+              "precision": 0.8165137614678899,
+              "recall": 0.6953125,
+              "f1": 0.7510548523206751,
+              "suporte": 128
+            },
+            "neutro": {
+              "precision": 0.3488372093023256,
+              "recall": 0.3629032258064516,
+              "f1": 0.3557312252964427,
+              "suporte": 124
+            },
+            "positivo": {
+              "precision": 0.8487544483985765,
+              "recall": 0.8704379562043796,
+              "f1": 0.8594594594594595,
+              "suporte": 548
+            }
+          },
+          "matriz_confusao": [
+            [
+              89,
+              22,
+              17
+            ],
+            [
+              11,
+              45,
+              68
+            ],
+            [
+              9,
+              62,
+              477
+            ]
+          ],
+          "neutros_como_positivos": 68
+        },
+        "temperatura_e_limiar_neutro": {
+          "modelo": "C completo - 3 épocas - temperatura + limiar neutro",
+          "accuracy": 0.78,
+          "f1_macro": 0.642839687194526,
+          "log_loss": 0.5676231980323792,
+          "brier": 0.3256937432956032,
+          "ece": 0.03827971689403059,
+          "por_classe": {
+            "negativo": {
+              "precision": 0.7833333333333333,
+              "recall": 0.734375,
+              "f1": 0.7580645161290323,
+              "suporte": 128
+            },
+            "neutro": {
+              "precision": 0.36904761904761907,
+              "recall": 0.25,
+              "f1": 0.2980769230769231,
+              "suporte": 124
+            },
+            "positivo": {
+              "precision": 0.837248322147651,
+              "recall": 0.9105839416058394,
+              "f1": 0.8723776223776224,
+              "suporte": 548
+            }
+          },
+          "matriz_confusao": [
+            [
+              94,
+              15,
+              19
+            ],
+            [
+              15,
+              31,
+              78
+            ],
+            [
+              11,
+              38,
+              499
+            ]
+          ],
+          "neutros_como_positivos": 78
+        }
+      }
+    }
+  ]
+}

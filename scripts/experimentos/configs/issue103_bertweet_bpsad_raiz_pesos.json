@@ -1,0 +1,47 @@
+{
+  "experimento": "issue103_bertweet_finetuning_bpsad_raiz_pesos",
+  "modelo_base": "pysentimiento/bertweet-pt-sentiment",
+  "arquivos": {
+    "desenvolvimento": "data/BPSAD/calibracao_pc1/desenvolvimento.csv",
+    "validacao": "data/BPSAD/calibracao_pc1/validacao.csv"
+  },
+  "sha256": {
+    "desenvolvimento": "693192731106f2dc55c005d69e7efee77637ee275698a55043a4bf5b69308742",
+    "validacao": "4dc9c1a1ad5a6232eeaf1c51b7fecb36c0dbe65fdb287f687f9f4cad8c277881"
+  },
+  "quantidades": {
+    "desenvolvimento": 6400,
+    "validacao": 1600
+  },
+  "classes": {
+    "negativo": 0,
+    "neutro": 1,
+    "positivo": 2
+  },
+  "preprocessamento": {
+    "lang": "pt",
+    "usar_padrao_pysentimiento": true
+  },
+  "tokenizacao": {
+    "max_length": 128,
+    "truncation": true
+  },
+  "treinamento": {
+    "seed": 42,
+    "learning_rate": 2e-05,
+    "num_train_epochs": 3,
+    "per_device_train_batch_size": 4,
+    "per_device_eval_batch_size": 8,
+    "gradient_accumulation_steps": 4,
+    "weight_decay": 0.01,
+    "warmup_ratio": 0.1,
+    "max_grad_norm": 1.0,
+    "fp16": false,
+    "bf16": false,
+    "gradient_checkpointing": false,
+    "dataloader_num_workers": 0,
+    "save_total_limit": 2,
+    "metric_for_best_model": "f1_macro"
+  },
+  "saida": "~/models/sentia/issue-103-bertweet-ft-v3-raiz-pesos"
+}
