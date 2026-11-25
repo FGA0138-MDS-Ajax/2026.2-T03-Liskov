@@ -14,6 +14,7 @@ from .rotulos import ROTULOS, normalizar_rotulo
 
 NOME_MODELO = "pysentimiento/bertweet-pt-sentiment"
 logger = logging.getLogger(__name__)
+REVISAO_MODELO = "726612815d49447cbfe3f55bbfc2993c1f5fad10"
 
 
 class ClassificadorBertweet:
@@ -79,7 +80,29 @@ class ClassificadorBertweet:
     def _obter_factory():
         from pysentimiento import create_analyzer
 
-        return create_analyzer
+        def criar_analisador_versionado(*, model_name, **kwargs):
+            if model_name == NOME_MODELO:
+                from huggingface_hub import snapshot_download
+
+                caminho_modelo = snapshot_download(
+                    repo_id=NOME_MODELO,
+                    revision=REVISAO_MODELO,
+                    ignore_patterns=["pytorch_model.bin"],
+                )
+
+                logger.info(
+                    "Snapshot BERTweet resolvido na revisão %s.",
+                    REVISAO_MODELO,
+                )
+
+                model_name = caminho_modelo
+
+            return create_analyzer(
+                model_name=model_name,
+                **kwargs,
+            )
+
+        return criar_analisador_versionado
 
     @staticmethod
     def _ler_configuracao() -> tuple[str, int]:
