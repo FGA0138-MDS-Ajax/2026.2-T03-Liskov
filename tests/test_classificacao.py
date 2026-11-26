@@ -21,6 +21,24 @@ class AnalisadorFalso:
                 saida.append(SimpleNamespace(output="NEU", probas={"POS": 0.1, "NEG": 0.1, "NEU": 0.8}))
         return saida
 
+#O objetivo dessa fixture é simular o download do Hugging Face
+#enquanto rola os testes, sem ter que precisar baixar o modelo real
+@pytest.fixture
+def snapshot_bertweet(monkeypatch):
+    import sys
+    from unittest.mock import Mock
+
+    snapshot = Mock(
+        return_value="/cache/bertweet/snapshot-fixo"
+    )
+
+    monkeypatch.setitem(
+        sys.modules,
+        "huggingface_hub",
+        SimpleNamespace(snapshot_download=snapshot),
+    )
+
+    return snapshot
 
 def test_normalizar_rotulo():
     assert normalizar_rotulo("POS") == "positivo"
@@ -91,14 +109,12 @@ def test_bertweet_rejeita_dicionarios_antes_da_inferencia(entrada):
     analisador.predict.assert_not_called()
 
 
-def test_bertweet_configura_modelo_e_tamanho_do_lote(monkeypatch):
+def test_bertweet_configura_modelo_e_tamanho_do_lote(monkeypatch, snapshot_bertweet):
     import sys
     from unittest.mock import Mock
 
     # Este teste verifica a criacao do analisador, nao a selecao de GPU.
     monkeypatch.setenv("SENTIA_DISPOSITIVO", "cpu")
-
-    from src.processamento.classificacao.bertweet import NOME_MODELO
 
     # Substitui o carregamento real pra não acabar baixando o modelo durante o teste
     criar_analisador = Mock(return_value=AnalisadorFalso())
@@ -111,11 +127,15 @@ def test_bertweet_configura_modelo_e_tamanho_do_lote(monkeypatch):
     criar_analisador.assert_called_once_with(
         task="sentiment",
         lang="pt",
-        model_name=NOME_MODELO,
+        model_name=snapshot_bertweet.return_value,
         batch_size=7,
     )
-
-
+    # Nova verificação
+    snapshot_bertweet.assert_called_once_with(
+        repo_id="pysentimiento/bertweet-pt-sentiment",
+        revision="726612815d49447cbfe3f55bbfc2993c1f5fad10",
+        ignore_patterns=["pytorch_model.bin"],
+    )
 
 @pytest.mark.parametrize("nome_modelo", ["", "   ", None, 123])
 def test_bertweet_rejeita_nome_modelo_invalido(nome_modelo):
@@ -126,7 +146,7 @@ def test_bertweet_rejeita_nome_modelo_invalido(nome_modelo):
         )
 
 
-def test_bertweet_usa_modelo_original_por_padrao(monkeypatch):
+def test_bertweet_usa_modelo_original_por_padrao(monkeypatch, snapshot_bertweet):
     import sys
     from unittest.mock import Mock
 
@@ -141,10 +161,10 @@ def test_bertweet_usa_modelo_original_por_padrao(monkeypatch):
     clf = ClassificadorBertweet()
 
     assert clf.nome_modelo == "pysentimiento/bertweet-pt-sentiment"
-    assert criar_analisador.call_args.kwargs["model_name"] == clf.nome_modelo
+    assert criar_analisador.call_args.kwargs["model_name"] == snapshot_bertweet.return_value
+    snapshot_bertweet.assert_called_once()
 
-
-def test_bertweet_carrega_modelo_local_selecionado(monkeypatch):
+def test_bertweet_carrega_modelo_local_selecionado(monkeypatch, snapshot_bertweet):
     import sys
     from unittest.mock import Mock
 
@@ -161,7 +181,49 @@ def test_bertweet_carrega_modelo_local_selecionado(monkeypatch):
 
     assert clf.nome_modelo == caminho_modelo
     assert criar_analisador.call_args.kwargs["model_name"] == caminho_modelo
+    snapshot_bertweet.assert_not_called()
 
+def test_bertweet_preserva_revisao_no_fallback_cpu(monkeypatch, snapshot_bertweet):
+    import sys
+    from unittest.mock import Mock
+
+    monkeypatch.setenv("SENTIA_DISPOSITIVO", "cuda")
+    monkeypatch.setenv("SENTIA_GPU_INDEX", "0")
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
+
+    cuda_simulada = SimpleNamespace(
+        is_initialized=lambda: False,
+        is_available=lambda: True,
+        device_count=lambda: 1,
+        empty_cache=lambda: None,
+    )
+
+    monkeypatch.setitem(
+        sys.modules,
+        "torch",
+        SimpleNamespace(cuda=cuda_simulada),
+    )
+
+    analisador_gpu = Mock()
+    analisador_gpu.predict.side_effect = RuntimeError("CUDA out of memory")
+
+    criar_analisador = Mock(
+        side_effect=[analisador_gpu, AnalisadorFalso()]
+    )
+
+    monkeypatch.setitem(
+        sys.modules,
+        "pysentimiento",
+        SimpleNamespace(create_analyzer=criar_analisador),
+    )
+
+    clf = ClassificadorBertweet()
+
+    assert clf.prever("muito bom") == ["positivo"]
+    assert snapshot_bertweet.call_count == 2
+
+    for chamada in snapshot_bertweet.call_args_list:
+        assert chamada.kwargs["revision"] == "726612815d49447cbfe3f55bbfc2993c1f5fad10"
 
 def test_bertweet_preserva_negacoes_antes_da_inferencia():
     from unittest.mock import Mock

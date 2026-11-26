@@ -21,7 +21,14 @@ A primeira inicialização baixa os arquivos do modelo para o cache do
 Hugging Face. Os pesos não devem ser versionados no Git.
 
 Modelo declarado: `pysentimiento/bertweet-pt-sentiment`.
-A revisão exata do checkpoint ainda precisa ser fixada.
+Revisão fixada: `726612815d49447cbfe3f55bbfc2993c1f5fad10`.
+
+O carregamento do modelo padrão utiliza `snapshot_download` do
+Hugging Face, garantindo a seleção de uma revisão específica
+dos arquivos do modelo e do tokenizador (R-08, issue #110).
+
+A seleção de modelos locais personalizados permanece disponível
+e não aciona o download do checkpoint padrão.
 
 ## Entrada e saída
 
@@ -54,6 +61,9 @@ Os modos de execução são:
 Em máquinas com múltiplas GPUs, `SENTIA_GPU_INDEX` permite selecionar a placa desejada. O dispositivo lógico pode aparecer como `cuda:0`, mesmo quando outra GPU física foi selecionada, devido ao isolamento dos dispositivos pelo PyTorch.
 
 Se ocorrer falta de memória da GPU (OOM) durante a inferência de um lote, o classificador registra um aviso, recria o analisador na CPU, tenta novamente o lote afetado e continua a inferência nesse dispositivo.
+
+Durante o fallback para CPU, a revisão fixada do modelo padrão
+é preservada, garantindo o carregamento do mesmo checkpoint.
 
 Exemplo de configuração:
 
@@ -181,7 +191,7 @@ Não representa medição de acurácia ou avaliação independente.
 
 - Avaliação independente e comparação com baseline (#17).
 - Pipeline de registros com IDs, fonte e metadados (#9).
-- Fixação da revisão do modelo e das versões das dependências.
+- Verificação das versões das dependências para fins de reprodutibilidade.
 - Benchmark complementar com amostra representativa e textos de comprimentos variados.
 - Revisão por outro integrante, verificação da CI e aceite da PO.
 
