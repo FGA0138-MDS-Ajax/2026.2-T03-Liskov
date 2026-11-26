@@ -25,6 +25,8 @@ respostas simuladas **não comprovam integração**.
 | `GET /coletas/fontes` | **Implementada** | Administração (PR #75) |
 | `POST /coletas` | **Implementada** | Administração (PR #75) |
 | `GET /coletas/{id}` | **Implementada** | Administração (PR #75) |
+| `POST /pesquisas` | **Implementada** | Busca do Usuário no X, sem login (#120) |
+| `GET /pesquisas/{id}` | **Implementada** | Acompanhamento da busca do Usuário (#120) |
 
 **Por que `/analises/resumo`?** Indicadores, gráfico e resumo precisam de totais sobre
 todos os registros filtrados. Calculá-los no painel exigiria baixar todas as páginas,
@@ -262,6 +264,25 @@ Administrador informa o assunto, a meta de textos e se o X pode completar a meta
   `mensagem` explicando quantos textos a base tinha.
 - Todas as coletas devolvem `por_sentimento` e até 10 `exemplos`; o painel mascara
   `@menções` antes de exibir.
+- O cache de uma pesquisa vale **30 dias** (decisão da PO de 25 e 26/11). Depois disso, a
+  mesma pesquisa pode voltar ao X.
+
+### Busca do Usuário no X (`POST /pesquisas` e `GET /pesquisas/{id}`, #120)
+
+Sem login. O dashboard oferece a busca quando há filtro de assunto e menos de 50 análises
+sobre ele. Corpo: `{"termo": "custo de vida"}`, e só isso: a API ignora quantidade e
+"forçar atualização". Devolve `202` com a mesma estrutura de coleta acima; o painel
+acompanha por `GET /pesquisas/{id}`, que responde `404` para coletas da Administração.
+
+- **Meta fixa de 50 textos.** A base vem primeiro; o X completa só a diferença.
+- **Limite diário de buscas no X**, somando todos os usuários (padrão 15,
+  `SENTIA_LIMITE_BUSCAS_X_DIA`). Só conta a busca que chama o X; base e cache não contam.
+  O dia é contado em UTC e o contador fica na coleção `buscas_x_publicas`, por isso
+  sobrevive a reinícios. A Administração não entra nesse limite.
+- **Cache de 30 dias:** repetir o assunto dentro do prazo não chama o X.
+- Sem chave do XFetch ou com o limite esgotado, a busca termina como `concluida` só com a
+  base e uma `mensagem` clara. Nenhum texto pago ao X é descartado.
+- `termo` vazio ou com mais de 100 caracteres: `422` com `mensagem`.
 
 **Base persistida no MongoDB e cache de pesquisas (`src/dados/repositorio.py`):** a "base" combina `registros` (CSVs importados, `TweetSentBR` e pesquisas anteriores no X) e `analises`, evitando duplicatas pela chave `(fonte, id_origem)`. Consultas equivalentes já concluídas reutilizam a base e o cache em `pesquisas` para evitar novas chamadas pagas ao XFetch (a menos que `forcar_atualizacao` seja `true`). A busca na base continua lexical por palavras normalizadas (sem acento e por radical; consultas de até 3 palavras exigem todas no texto), enquanto busca semântica com embeddings permanece evolução futura. Cada consulta nova ao XFetch é **paga**; a chave fica só no `.env` da API (`XFETCH_API_KEY`). Sem ela, a pesquisa usa só a base.
 

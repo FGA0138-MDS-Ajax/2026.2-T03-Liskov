@@ -13,6 +13,7 @@ from src.apresentacao.contrato import (
     FONTE_PESQUISA,
     SENTIMENTOS,
     SITUACOES_COLETA,
+    TAMANHO_MAXIMO_TERMO,
     Coleta,
     ErroAutenticacao,
     ErroFonteDados,
@@ -259,6 +260,26 @@ class AdministracaoApi:
                 "complementar_com_x": complementar_com_x,
             },
         )
+        return self._coleta(dados)
+
+    def buscar_como_usuario(self, termo: str) -> Coleta:
+        """Sem login (#120): a API decide a meta e o limite de buscas no X."""
+        termo = " ".join(termo.split())
+        if not termo or len(termo) > TAMANHO_MAXIMO_TERMO:
+            raise ErroFonteDados(
+                f"Informe um assunto de até {TAMANHO_MAXIMO_TERMO} caracteres."
+            )
+        dados = self._chamar(
+            "post",
+            "/pesquisas",
+            esperado=(202,),
+            recusa="A API recusou a busca.",
+            json={"termo": termo},
+        )
+        return self._coleta(dados)
+
+    def consultar_busca_usuario(self, id_busca: str) -> Coleta:
+        dados = self._chamar("get", f"/pesquisas/{quote(id_busca, safe='')}")
         return self._coleta(dados)
 
     def consultar_coleta(self, sessao: SessaoAdministrador, id_coleta: str) -> Coleta:

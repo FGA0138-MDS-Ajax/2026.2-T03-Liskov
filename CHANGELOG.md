@@ -21,6 +21,13 @@ versões publicadas; outras frentes também podem registrar suas entregas aqui.
 
 ### Adicionado
 
+- Busca do Usuário no X pelo dashboard (#120): com o filtro de assunto e menos de 50
+  análises, o botão "Buscar no X" completa o assunto com textos recentes, sem login, por
+  `POST /pesquisas` e `GET /pesquisas/{id}`. Meta fixa de 50; o X só completa o que falta;
+  limite diário de buscas no X (padrão 15, `SENTIA_LIMITE_BUSCAS_X_DIA`), em que só conta a
+  busca que chama o X; cache de 30 dias para todas as pesquisas. Sem chave ou com o limite
+  esgotado, mostra a base com aviso. A Administração não entra no limite.
+
 - Filtro por assunto no dashboard e na API (#113): campo "Assunto" ao lado de período e
   sentimento, e `?assunto=` em `GET /analises` e `GET /analises/resumo`. Usa a mesma regra
   da pesquisa do Administrador (maiúsculas e acentos não importam; palavras vazias
