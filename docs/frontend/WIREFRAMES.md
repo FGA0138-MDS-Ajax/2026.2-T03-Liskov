@@ -89,6 +89,23 @@ mostra a mensagem da issue #113 e não exibe gráficos.
 | 820 px | ![Dashboard atual em 820 px](wireframes/registro-2026-11-25/antes/dashboard-820.png) | ![Dashboard proposto em 820 px](wireframes/registro-2026-11-25/proposta/dashboard-820.png) |
 | 390 px | ![Dashboard atual em 390 px](wireframes/registro-2026-11-25/antes/dashboard-390.png) | ![Dashboard proposto em 390 px](wireframes/registro-2026-11-25/proposta/dashboard-390.png) |
 
+### Tema claro e escuro (1440 px)
+
+Acrescentado em 26/11/2026. A troca fica no menu ⋮ do canto superior direito (System, Light e
+Dark); em "System", o painel segue o tema do computador. É um recurso nativo do Streamlit, ligado
+pelas seções `[theme.light]` e `[theme.dark]` do `config.toml`.
+
+| Tema claro | Tema escuro |
+|---|---|
+| ![Dashboard proposto no tema claro](wireframes/registro-2026-11-25/proposta/tema-light-dashboard.png) | ![Dashboard proposto no tema escuro](wireframes/registro-2026-11-25/proposta/tema-dark-dashboard.png) |
+
+- **Cores próprias para o escuro**: o azul e os tons de sentimento do tema claro ficam com pouco
+  contraste sobre o fundo escuro, por isso o escuro usa tons mais claros. Gráficos, barras e
+  etiquetas da tabela mudam junto com o tema.
+- **Menu ⋮ visível**: hoje o painel usa `toolbarMode = "minimal"`, que esconde o menu e, com ele,
+  a troca de tema; a proposta usa `"viewer"`.
+- **Funcionalidade nova**: entra só com aval da Product Owner, numa issue própria.
+
 ### Administração e login (1440 px)
 
 | Tela | Antes | Proposta |
