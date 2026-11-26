@@ -1,0 +1,2470 @@
+
+<!doctype html>
+<html lang="pt" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Portal de documentação do projeto SentIA — Grupo Liskov (T03), MDS UnB/FGA (2026.2)">
+      
+      
+      
+      
+        <link rel="prev" href="../ata-reuniao-3/">
+      
+      
+        <link rel="next" href="../../instrucoes/instrucoes/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
+    
+    
+      
+        <title>Ata 4 - SentIA - Análise de Sentimentos</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ata-de-reuniao-04-acompanhamento-da-sprint-7" class="md-skip">
+          Pular para conteúdo
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Cabeçalho">
+    <a href="../.." title="SentIA - Análise de Sentimentos" class="md-header__button md-logo" aria-label="SentIA - Análise de Sentimentos" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SentIA - Análise de Sentimentos
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Ata 4
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Buscar" placeholder="Buscar" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Pesquisar">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Limpar" aria-label="Limpar" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Inicializando busca
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    FGA0138-MDS-Ajax/2026.2-T03-Liskov
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navegação" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SentIA - Análise de Sentimentos" class="md-nav__button md-logo" aria-label="SentIA - Análise de Sentimentos" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SentIA - Análise de Sentimentos
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov" title="Ir para repositório" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    FGA0138-MDS-Ajax/2026.2-T03-Liskov
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Início
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../documentos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentos do Projeto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Atas de Reunião
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Atas de Reunião
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ata-reuniao-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ata 1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ata-reuniao-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ata 2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ata-reuniao-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ata 3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ata 4
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ata 4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#informacoes-gerais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Informações gerais
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-objetivo-da-reuniao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Objetivo da reunião
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-situacao-das-sprints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Situação das Sprints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-decisoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Decisões
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Decisões">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-revisao-das-decisoes-de-2311" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Revisão das decisões de 23/11
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-decisoes-novas-ou-alteradas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Decisões novas ou alteradas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-redistribuicao-de-tarefas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Redistribuição de tarefas
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-andamento-da-sprint-7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Andamento da Sprint 7
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-prazos-combinados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Prazos combinados
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-ensaio-e-apresentacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Ensaio e apresentação
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-encaminhamentos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Encaminhamentos
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-pendencias-nao-resolvidas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Pendências não resolvidas
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Instruções
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Instruções
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../instrucoes/instrucoes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MkDocs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repositório (developer)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Repositório (developer)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/README.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visão Geral (README)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/README.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Índice de Documentação
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/tree/main/docs" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pasta docs (main)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura e Contratos
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Arquitetura e Contratos
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/metricas/arquitetura.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura Técnica
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/contratos-dados.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contrato Único de Dados (#19)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/frontend/CONTRATO-API.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contrato API ↔ Painel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/decisoes/ADR-001-nao-remover-stopwords-no-bertweet.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-001 (BERTweet Stopwords)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inspeção Cruzada e Gestão (PRs #92 e #95 — MERGED)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Inspeção Cruzada e Gestão (PRs #92 e #95 — MERGED)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/README.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dossiê de Inspeção (README)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/ROTEIRO_INSPECAO.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roteiro e Checklist Executável
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/MATRIZ_EVIDENCIAS.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Matriz de Evidências e Prontidão
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/REGISTRO_PRE_INSPECAO.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registro de Pré-Inspeção
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/inspecao/PLANO_REGULARIZACAO.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plano de Regularização e PO Unificado
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/gestao/PLANEJAMENTO_E_REPLANEJAMENTOS.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Planejamento e Replanejamentos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/gestao/GESTAO_CONFIGURACAO.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gestão de Configuração
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_6" id="__nav_5_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Revisão Acadêmica e ABNT (PR #90 — MERGED)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Revisão Acadêmica e ABNT (PR #90 — MERGED)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/VISAO_ATUALIZADA_RASCUNHO.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visão Atualizada (Rascunho)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/ARQUITETURA_ATUALIZADA_RASCUNHO.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arquitetura Atualizada (Rascunho)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/MATRIZ_DIVERGENCIAS.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Matriz de Divergências (D01–D29)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/REVISAO_ABNT.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Revisão ABNT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/DECISOES_PENDENTES_PO.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisões Pendentes PO (PO-01–PO-14)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/revisao-academica/RELATORIO_ENTREGA.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Relatório de Entrega (#90)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_7" id="__nav_5_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Métricas GQM e QA / Testes (PRs #91 e #94 — MERGED)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Métricas GQM e QA / Testes (PRs #91 e #94 — MERGED)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/metricas/PLANO_GQM_VIGENTE.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plano GQM Vigente
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/metricas/REGISTRO_E_ANALISE.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registro e Análise de Métricas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/PLANO_TESTES_ATUAL.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plano de Testes Atual
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/MATRIZ_RASTREABILIDADE.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Matriz T01–T18
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/RELATORIO_EXECUCAO.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Relatório de Execução
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/blob/developer/docs/qa/inspecao/DEFEITOS_E_CORRECOES.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Defeitos e Correções
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Histórico de PRs da Inspeção
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Histórico de PRs da Inspeção
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/90" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PR #90 — Revisão Acadêmica (MERGED)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/91" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PR #91 — Métricas GQM e QA (MERGED)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/92" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PR #92 — Dossiê e Gestão (MERGED)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/94" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PR #94 — Regularização GQM (MERGED)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/95" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PR #95 — Consolidação Pós-Merge (MERGED)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/FGA0138-MDS-Ajax/2026.2-T03-Liskov/pull/93" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PR #93 — Portal MkDocs (MERGED em docs)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Índice">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Índice
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#informacoes-gerais" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Informações gerais
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-objetivo-da-reuniao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Objetivo da reunião
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-situacao-das-sprints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Situação das Sprints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-decisoes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Decisões
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Decisões">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-revisao-das-decisoes-de-2311" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Revisão das decisões de 23/11
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-decisoes-novas-ou-alteradas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Decisões novas ou alteradas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-redistribuicao-de-tarefas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Redistribuição de tarefas
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-andamento-da-sprint-7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Andamento da Sprint 7
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-prazos-combinados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Prazos combinados
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-ensaio-e-apresentacao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Ensaio e apresentação
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-encaminhamentos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Encaminhamentos
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-pendencias-nao-resolvidas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Pendências não resolvidas
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="ata-de-reuniao-04-acompanhamento-da-sprint-7">Ata de Reunião 04 — Acompanhamento da Sprint 7</h1>
+<h2 id="informacoes-gerais">Informações gerais</h2>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Informação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Projeto</td>
+<td>SentIA — Análise de Sentimentos</td>
+</tr>
+<tr>
+<td>Equipe</td>
+<td>Liskov — Turma 03</td>
+</tr>
+<tr>
+<td>Disciplina</td>
+<td>Métodos de Desenvolvimento de Software (MDS) — UnB/FGA, 2026.2</td>
+</tr>
+<tr>
+<td>Data</td>
+<td>25/11/2026 (quarta-feira)</td>
+</tr>
+<tr>
+<td>Horário</td>
+<td>Início às 19h58 (horário de Brasília)</td>
+</tr>
+<tr>
+<td>Duração</td>
+<td>Cerca de 32 minutos de pauta (gravação de 53 minutos)</td>
+</tr>
+<tr>
+<td>Plataforma</td>
+<td>Microsoft Teams</td>
+</tr>
+<tr>
+<td>Condução</td>
+<td>Hellen Clicia Barros Rego (Product Owner)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Participantes:</strong> Hellen Clicia Barros Rego, Renato Rodrigues Campos Filho, Breno Weber Rabelo, Gabriel Souza de Matos, Ricardo Eduardo da Silva Leal, Maria Eduarda de Jezus Guimaraes e Juliana Silva Teixeira.</p>
+<p><strong>Ausente:</strong> Julia Neiva Lima.</p>
+<h2 id="1-objetivo-da-reuniao">1. Objetivo da reunião</h2>
+<p>Acompanhar a Sprint 7 (24 a 30/11), revisar as decisões da reunião de 23/11, redistribuir tarefas atrasadas e combinar os prazos finais da documentação e do ensaio.</p>
+<h2 id="2-situacao-das-sprints">2. Situação das Sprints</h2>
+<ul>
+<li><strong>Sprint 6:</strong> fechada no GitHub em 24/11, com 7 issues concluídas (#27, #28, #29, #59, #61, #102 e #103). As issues #26 e #32 passaram para a Sprint 7.</li>
+<li><strong>Sprint 7:</strong> em andamento, com 11 issues abertas. O projeto terá 7 Sprints no total.</li>
+</ul>
+<h2 id="3-decisoes">3. Decisões</h2>
+<h3 id="31-revisao-das-decisoes-de-2311">3.1 Revisão das decisões de 23/11</h3>
+<p>A PO relembrou as decisões da reunião anterior, sem contestação: TweetSentBR e BPSAD avaliam o modelo, e CSV e XFetch são os dados analisados (D-02). Textos sem data aparecem na visão geral e saem só quando se aplica o filtro de período (D-04). A consulta é aberta, e só o Administrador faz login (D-07). O BERTweet recebe o texto inteiro, sem remoção de stopwords (D-12).</p>
+<p>Sobre o XFetch, há cerca de 51.000 créditos. A PO já está com a chave e fez um teste em 25/11.</p>
+<h3 id="32-decisoes-novas-ou-alteradas">3.2 Decisões novas ou alteradas</h3>
+<table>
+<thead>
+<tr>
+<th>Assunto</th>
+<th>Decisão</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Pesquisa do Usuário no XFetch (D-01)</strong></td>
+<td><strong>Ampliada.</strong> Além de escolher o assunto, o Usuário também pode acionar a busca no XFetch. Justificativa (Breno): o professor e os monitores podem querer testar o sistema fora do horário da apresentação, então todos precisam conseguir pesquisar. A PO fará as adaptações e vai alinhar os detalhes com Breno.</td>
+</tr>
+<tr>
+<td><strong>Quantidade "suficiente" de textos</strong></td>
+<td><strong>No mínimo 50 textos por assunto.</strong> Se a base tiver menos de 50 textos sobre o assunto, o sistema completa com os textos mais recentes do XFetch, dos últimos 30 dias. A PO havia proposto 30 e fechou 50 com Breno.</td>
+</tr>
+<tr>
+<td><strong>Gasto do XFetch</strong></td>
+<td>Breno explicou que a pesquisa só vai ao XFetch para completar o que falta até a meta de 50: a base é consultada primeiro, e o XFetch traz apenas a diferença. Pesquisas repetidas reaproveitam o resultado guardado, então um teste de carga só gasta créditos com pesquisas novas.</td>
+</tr>
+<tr>
+<td><strong>Publicação na web (#62)</strong></td>
+<td><strong>Renato</strong> fica responsável pela publicação de tudo: banco, modelo e painel. Também documenta o deploy. Renato informou que nunca publicou um sistema completo e vai estudar como fazer.</td>
+</tr>
+<tr>
+<td><strong>Novo protótipo de alta fidelidade</strong></td>
+<td><strong>Aprovado.</strong> A PO apresentou o novo protótipo do painel e da administração (PR #114 e Figma), com mais cores e informações: importação de dataset com o formato esperado, pesquisa por assunto e identificação do Administrador logado. A equipe aprovou a implementação. Renato perguntou sobre modo escuro; a PO disse que é possível aplicá-lo. <strong>Decidido pela PO em 26/11, depois da reunião: o modo escuro será implementado.</strong></td>
+</tr>
+<tr>
+<td><strong>Nuvem de palavras (#30)</strong></td>
+<td><strong>Continua opcional.</strong> Só é implementada se sobrar tempo.</td>
+</tr>
+<tr>
+<td><strong>Possível novo dataset</strong></td>
+<td>Gabriel pediu um novo dataset por causa de problemas com o BPSAD. Breno vai prepará-lo em 26/11, à tarde. Pode haver mudança no dataset de avaliação.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-redistribuicao-de-tarefas">4. Redistribuição de tarefas</h2>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Antes</th>
+<th>Agora</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>#113 Usuário filtra as análises por assunto</td>
+<td>Renato e Hellen</td>
+<td>Hellen</td>
+</tr>
+<tr>
+<td>#26 Validar consultas e filtros na API</td>
+<td>Renato</td>
+<td>Hellen</td>
+</tr>
+<tr>
+<td>#32 Validar dashboard, gráficos, filtros e resumo integrado</td>
+<td>Renato</td>
+<td>Hellen</td>
+</tr>
+<tr>
+<td>#31 Responsividade (prints em todas as larguras)</td>
+<td>Juliana</td>
+<td>Hellen</td>
+</tr>
+<tr>
+<td>#63 Teste de usabilidade</td>
+<td>Hellen</td>
+<td>Renato, junto com o deploy</td>
+</tr>
+<tr>
+<td>#62 Publicação na web</td>
+<td>Renato e Hellen</td>
+<td>Renato</td>
+</tr>
+</tbody>
+</table>
+<p>Renato fica com a sua parte da documentação (#86), as suas issues atrasadas (#110, #111 e #112) e o deploy com a documentação dele.</p>
+<h2 id="5-andamento-da-sprint-7">5. Andamento da Sprint 7</h2>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Situação relatada</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>#86 Documentação final</td>
+<td>Até 25/11, só a parte de Breno estava feita. A PO marcou a parte de Breno na Arquitetura como concluída. Os demais ainda não tinham alterado a Visão e a Arquitetura.</td>
+</tr>
+<tr>
+<td>#110 Repositório conforme o plano de gestão de configuração</td>
+<td>Prazo em 25/11. Responsáveis: Renato, Breno, Ricardo e Gabriel. Gabriel estava trabalhando em uma parte. Renato convidou quem puder para trabalhar com ele no laboratório do ITRAC em 26/11.</td>
+</tr>
+<tr>
+<td>#111 Métricas</td>
+<td>Responsáveis: Hellen, Renato, Ricardo e Gabriel. Nenhum dado tinha sido coletado ainda; a PO também não havia feito a sua parte. É preciso atualizar o histórico de planejamento, conforme apontado na inspeção.</td>
+</tr>
+<tr>
+<td>#31 Responsividade</td>
+<td>A PO vai implementar o novo protótipo e anexar os prints de responsividade.</td>
+</tr>
+<tr>
+<td>#102 Suporte a GPU AMD</td>
+<td>Renato voltou a pedir o suporte a AMD. Gabriel disse que a melhoria da GPU foi feita por Ricardo e que vai verificar o PyTorch. <strong>Decidido pela PO em 26/11: fica com quem implementou (Ricardo), até 27/11.</strong></td>
+</tr>
+<tr>
+<td>Execução do modelo na GPU</td>
+<td>Renato não conseguiu rodar o modelo na GPU. Falta instalar a versão certa do PyTorch e uma configuração no <code>.env</code>, que a PO enviou a ele no chat. Roda no Linux e funcionou na máquina da PO. A PO pediu a Ricardo e Gabriel que coloquem os comandos de instalação no README até 26/11.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Inspeção:</strong> a equipe perdeu mais pontos na documentação. A versão final v1.2.0 incorpora as críticas do professor e da inspeção.</p>
+<h2 id="6-prazos-combinados">6. Prazos combinados</h2>
+<ul>
+<li><strong>Documentação (#86): 26/11, até as 23h59.</strong> Depois, a PO faz a ABNT e a revisão final. A PO foi clara: não aceita a documentação depois de 26/11.</li>
+<li><strong>Demais pendências: até sexta-feira, 27/11, no ensaio.</strong> O sábado, 28/11, fica de folga para resolver o que atrasar ou não der tempo (decidido pela PO em 26/11).</li>
+</ul>
+<h2 id="7-ensaio-e-apresentacao">7. Ensaio e apresentação</h2>
+<ul>
+<li><strong>Reunião de ensaio:</strong> sexta-feira, 27/11, entre 19h e 19h30, <strong>online</strong>. Breno, e talvez Maria Eduarda, não podem na sexta. Quem não puder participa no sábado, 28/11; o horário será decidido em grupo.</li>
+</ul>
+<blockquote>
+<p>Correção de 26/11: a primeira versão desta ata registrou "sexta-feira, 28/11" e "sábado, 29/11". Em 2026, 27/11 é sexta e 28/11 é sábado.
+- <strong>Formato da apresentação:</strong> dividir o projeto por partes, conforme a familiaridade de cada um. Por exemplo, Renato fala dos testes, e Breno ou Hellen mostram o sistema funcionando. Segundo relatos de quem já cursou a disciplina, o professor quer principalmente ver o sistema rodando e fazendo o que foi prometido. Hellen e Renato vão planejar a apresentação antes de sexta.</p>
+</blockquote>
+<h2 id="8-encaminhamentos">8. Encaminhamentos</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Ação</th>
+<th>Responsável</th>
+<th>Prazo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Concluir a sua parte da documentação (#86)</td>
+<td>Todos</td>
+<td>26/11, 23h59</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Adaptar a #113 e o painel para o Usuário acionar o XFetch, com o mínimo de 50 textos</td>
+<td>Hellen, alinhando com Breno</td>
+<td>27/11</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Implementar o novo protótipo, com modo escuro, e registrar os prints de responsividade (#31)</td>
+<td>Hellen</td>
+<td>27/11</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Executar as validações #26 e #32</td>
+<td>Hellen</td>
+<td>27/11</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Publicar banco, modelo e painel na web e documentar o deploy (#62)</td>
+<td>Renato</td>
+<td>27/11</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Teste de usabilidade (#63)</td>
+<td>Renato</td>
+<td>27/11</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Concluir as issues #110, #111 e #112</td>
+<td>Responsáveis de cada issue</td>
+<td>27/11</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Preparar um novo dataset para avaliação</td>
+<td>Breno</td>
+<td>26/11, à tarde</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Colocar no README os comandos de instalação do PyTorch para GPU</td>
+<td>Ricardo e Gabriel</td>
+<td>26/11</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Verificar o suporte a GPU AMD</td>
+<td>Ricardo (quem implementou)</td>
+<td>27/11</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Enviar foto para o README</td>
+<td>Todos</td>
+<td>Antes da entrega</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Preencher a planilha de distribuição das atividades</td>
+<td>Hellen</td>
+<td>Antes da entrega</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Enviar a lista de presença para assinatura</td>
+<td>Hellen</td>
+<td>25/11</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Planejar a divisão da apresentação</td>
+<td>Hellen e Renato</td>
+<td>27/11</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Atualizar o site do projeto e publicar as atas</td>
+<td>Hellen</td>
+<td>Antes da entrega</td>
+</tr>
+</tbody>
+</table>
+<h2 id="9-pendencias-nao-resolvidas">9. Pendências não resolvidas</h2>
+<ul>
+<li>Horário do encontro de sábado (28/11) para quem não puder na sexta: <strong>será decidido em grupo</strong>.</li>
+</ul>
+<p>Resolvidas pela PO em 26/11, depois da reunião:
+- Modo escuro: <strong>será implementado</strong>, junto com o novo protótipo.
+- Suporte a GPU AMD: <strong>Ricardo</strong>, que implementou a melhoria da GPU, <strong>até 27/11</strong>.
+- Prazos: tudo que estava para 28/11 passa para <strong>sexta, 27/11</strong>. O sábado, 28/11, fica de folga para o que atrasar.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copiado para \u00e1rea de transfer\u00eancia", "clipboard.copy": "Copiar para \u00e1rea de transfer\u00eancia", "search.result.more.one": "mais 1 nesta p\u00e1gina", "search.result.more.other": "# mais nesta p\u00e1gina", "search.result.none": "Nenhum documento encontrado", "search.result.one": "1 documento encontrado", "search.result.other": "# documentos encontrados", "search.result.placeholder": "Digite para iniciar a busca", "search.result.term.missing": "Ausente", "select.version": "Selecione a vers\u00e3o"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>
