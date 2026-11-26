@@ -75,7 +75,9 @@ def renderizar(fonte: FonteAnalises, filtros: FiltrosAnalises, total: int) -> No
             "Texto": st.column_config.TextColumn("Texto", width=260),
             "Sentimento": st.column_config.TextColumn("Sentimento", width=105),
             "Fonte": st.column_config.TextColumn("Fonte", width=125),
-            "Publicado em": st.column_config.TextColumn("Publicado em", width=105),
+            "Publicado em (UTC)": st.column_config.TextColumn(
+                "Publicado em (UTC)", width=130
+            ),
             "Processado em (UTC)": st.column_config.TextColumn(
                 "Processado em (UTC)", width=150
             ),

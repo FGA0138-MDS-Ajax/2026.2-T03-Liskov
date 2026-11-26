@@ -16,6 +16,7 @@ from src.apresentacao.contrato import (
     ResumoAnalises,
     Sentimento,
 )
+from src.comum.busca_textual import corresponde
 
 MODELO_FICTICIO = "modelo-de-exemplo"
 _PROCESSADO_EM = datetime(2026, 11, 1, 12, 0, tzinfo=UTC)
@@ -61,10 +62,12 @@ class FonteMock:
         self._analises = ANALISES_DE_EXEMPLO if analises is None else analises
 
     def _filtrar(self, filtros: FiltrosAnalises) -> tuple[list[Analise], int]:
+        # Mesma regra de assunto da API (src/comum/busca_textual.py).
         selecionadas = [
             a
             for a in self._analises
-            if filtros.sentimento is None or a.sentimento == filtros.sentimento
+            if (filtros.sentimento is None or a.sentimento == filtros.sentimento)
+            and (not filtros.assunto or corresponde(filtros.assunto, a.texto_original))
         ]
         if filtros.inicio is None and filtros.fim is None:
             return selecionadas, 0

@@ -37,6 +37,7 @@ contrariando a meta de resposta em até 2 segundos e a regra de filtrar no banco
 | `inicio` | `AAAA-MM-DD` | Inclusivo |
 | `fim` | `AAAA-MM-DD` | Inclusivo; `inicio` depois de `fim` retorna 422 |
 | `sentimento` | `positivo`, `neutro` ou `negativo` | Outro valor retorna 422 |
+| `assunto` | Texto, até 100 caracteres | Palavras procuradas em `texto_original` (#113). Espaços repetidos viram um só; em branco vale como sem filtro; acima de 100 caracteres retorna 422 |
 
 Somente em `/analises`: `pagina` (padrão 1, a partir de 1) e `tamanho` (padrão 20,
 máximo 100); valores fora dos limites retornam 422. A ordenação usa
@@ -48,6 +49,16 @@ O período usa `data_publicacao`: `inicio` começa às 00:00:00 UTC e `fim` incl
 todo o último dia em UTC. Datas inexistentes, fora de `AAAA-MM-DD` ou intervalos
 invertidos retornam 422. Registros sem publicação (campo ausente ou nulo) só são
 excluídos quando há filtro temporal. A data de referência precisa de validação da PO.
+**Decisão da PO (26/11/2026):** as datas são armazenadas, filtradas e exibidas em UTC,
+porque os textos vêm de fontes e fusos diferentes; o painel mostra "Publicado em (UTC)".
+
+O `assunto` segue a mesma regra da pesquisa do Administrador, em
+`src/comum/busca_textual.py`: sem diferença de maiúsculas e acentos, palavras vazias
+ignoradas e cada termo comparado pelo radical (5 primeiros caracteres; termos menores
+exigem a palavra inteira). Até 3 termos, todos precisam aparecer; com mais, 2/3. O
+MongoDB aplica a regra com expressões regulares montadas pelo sistema: o texto digitado
+nunca vira expressão regular. Assunto só com símbolos não encontra nada. No resumo,
+`sem_data_publicacao` conta só os textos do assunto.
 
 `pagina` e `tamanho` devem ser inteiros positivos; `total` é inteiro não negativo.
 Na resposta JSON, booleanos, números fracionários e números em strings são rejeitados

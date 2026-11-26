@@ -1,6 +1,8 @@
 """Dashboard do Usuário (RF13): filtros, indicadores, gráfico de distribuição (#28),
 resumo textual (#29) e listagem de análises (#27)."""
 
+from dataclasses import replace
+
 import streamlit as st
 
 from src.apresentacao.componentes import estado_erro, estado_vazio
@@ -37,11 +39,18 @@ def renderizar() -> None:
         )
 
     if resumo.total == 0:
-        estado_vazio(
-            "Nenhuma análise encontrada para os filtros aplicados."
-            if filtros_ativos(filtros_aplicados)
-            else "Nenhuma análise encontrada."
-        )
+        if filtros_aplicados.assunto:
+            mensagem = f"Nenhum texto sobre “{filtros_aplicados.assunto}” na base"
+            mensagem += (
+                " com os outros filtros aplicados."
+                if filtros_ativos(replace(filtros_aplicados, assunto=None))
+                else "."
+            )
+        elif filtros_ativos(filtros_aplicados):
+            mensagem = "Nenhuma análise encontrada para os filtros aplicados."
+        else:
+            mensagem = "Nenhuma análise encontrada."
+        estado_vazio(mensagem)
         secao_resumo.renderizar(resumo, filtros_aplicados)
         return
 

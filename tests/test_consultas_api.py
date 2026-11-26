@@ -288,4 +288,4 @@ def test_painel_completo_consome_a_api_real_sem_mock(cliente, monkeypatch):
     assert len(app.dataframe[0].value) == 2
     assert "Página 2 de 2" in app.caption[-1].value
     # Registros sem data de publicação chegam como "Sem data", nunca com data inventada.
-    assert set(app.dataframe[0].value["Publicado em"]) == {"Sem data", "30/09/2026"}
+    assert set(app.dataframe[0].value["Publicado em (UTC)"]) == {"Sem data", "30/09/2026"}

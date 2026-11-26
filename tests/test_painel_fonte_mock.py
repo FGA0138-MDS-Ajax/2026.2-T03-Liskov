@@ -56,3 +56,25 @@ def test_colecao_vazia_retorna_lista_vazia():
     fonte = FonteMock(analises=[])
     assert fonte.listar(FiltrosAnalises()).itens == []
     assert fonte.resumir(FiltrosAnalises()).total == 0
+
+
+def test_filtro_de_assunto_usa_a_mesma_regra_da_api():
+    from src.comum.busca_textual import corresponde
+
+    fonte = FonteMock()
+    filtros = FiltrosAnalises(assunto="ATENDIMENTO")
+    pagina = fonte.listar(filtros, tamanho=100)
+
+    esperados = [a for a in ANALISES_DE_EXEMPLO if corresponde("ATENDIMENTO", a.texto_original)]
+    assert len(esperados) == 2
+    assert [a.id_origem for a in pagina.itens] == [a.id_origem for a in esperados]
+    assert fonte.resumir(filtros).total == 2
+
+
+def test_filtro_de_assunto_combinado_com_periodo_conta_sem_data_so_do_assunto():
+    fonte = FonteMock()
+    # "programa" aparece em dois textos de exemplo, os dois sem data.
+    resumo = fonte.resumir(FiltrosAnalises(inicio=date(2026, 8, 1), assunto="programa"))
+
+    assert resumo.total == 0
+    assert resumo.sem_data_publicacao == 2

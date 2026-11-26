@@ -106,7 +106,7 @@ def test_linha_da_listagem_tem_as_colunas_previstas_e_formatos_brasileiros():
     (linha,) = montar_linhas_listagem([_analise()], ROTULOS)
     assert tuple(linha) == COLUNAS_LISTAGEM
     assert linha["Sentimento"] == "Positivo"
-    assert linha["Publicado em"] == "03/10/2026"
+    assert linha["Publicado em (UTC)"] == "03/10/2026"
     assert linha["Processado em (UTC)"] == "10/11/2026 14:05"
     assert linha["Fonte"] == "teste"
     assert linha["Modelo"] == "modelo-teste"
@@ -114,7 +114,7 @@ def test_linha_da_listagem_tem_as_colunas_previstas_e_formatos_brasileiros():
 
 def test_data_de_publicacao_ausente_nunca_e_inventada():
     (linha,) = montar_linhas_listagem([_analise(data_publicacao=None)], ROTULOS)
-    assert linha["Publicado em"] == SEM_DATA
+    assert linha["Publicado em (UTC)"] == SEM_DATA
 
 
 def test_mencoes_sao_mascaradas_na_listagem():

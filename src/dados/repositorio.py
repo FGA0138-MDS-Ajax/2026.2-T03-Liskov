@@ -15,6 +15,12 @@ from pymongo.collection import Collection
 from pymongo.errors import BulkWriteError, DuplicateKeyError, PyMongoError
 from pymongo.mongo_client import MongoClient
 
+from src.comum.busca_textual import (
+    minimo_de_termos,
+    padrao_do_termo,
+    termos_da_consulta,
+)
+
 NOME_BANCO_PADRAO = "sentia"
 NOME_COLECAO = "analises"
 NOME_COLECAO_REGISTROS = "registros"
@@ -244,10 +250,52 @@ def _validar_data_filtro(valor: Any, campo: str) -> date | None:
     return valor
 
 
+TAMANHO_MAXIMO_ASSUNTO = 100
+
+
+def _condicao_assunto(assunto: str) -> dict[str, Any]:
+    """Filtro por assunto (#113) com a mesma regra da pesquisa do Administrador.
+
+    Cada termo vira uma expressão regular fechada (o texto digitado nunca é usado
+    como regex crua) e o MongoDB conta quantos termos aparecem no texto, sem trazer
+    os documentos para o Python. Assim a paginação e os totais continuam no banco.
+    """
+    termos = termos_da_consulta(assunto)
+    if not termos:
+        # Só pontuação ou símbolos: nenhum texto é sobre "isso".
+        return {"$expr": {"$eq": [1, 0]}}
+    texto = {"$ifNull": ["$texto_original", ""]}
+    presentes = [
+        {
+            "$cond": [
+                {"$regexMatch": {"input": texto, "regex": padrao_do_termo(termo)}},
+                1,
+                0,
+            ]
+        }
+        for termo in termos
+    ]
+    return {"$expr": {"$gte": [{"$add": presentes}, minimo_de_termos(termos)]}}
+
+
+def _validar_assunto(assunto: str | None) -> str | None:
+    if assunto is None:
+        return None
+    if not isinstance(assunto, str):
+        raise ErroConsultaInvalida("assunto deve ser um texto.")
+    assunto = " ".join(assunto.split())
+    if len(assunto) > TAMANHO_MAXIMO_ASSUNTO:
+        raise ErroConsultaInvalida(
+            f"assunto deve ter no máximo {TAMANHO_MAXIMO_ASSUNTO} caracteres."
+        )
+    return assunto or None
+
+
 def _filtro_consulta(
     inicio: date | None = None,
     fim: date | None = None,
     sentimento: str | None = None,
+    assunto: str | None = None,
 ) -> dict[str, Any]:
     inicio_validado = _validar_data_filtro(inicio, "inicio")
     fim_validado = _validar_data_filtro(fim, "fim")
@@ -272,6 +320,9 @@ def _filtro_consulta(
         periodo["$lte"] = datetime.combine(fim_validado, time.max, UTC)
     if periodo:
         filtro["data_publicacao"] = periodo
+    assunto_validado = _validar_assunto(assunto)
+    if assunto_validado is not None:
+        filtro.update(_condicao_assunto(assunto_validado))
     return filtro
 
 
@@ -283,6 +334,7 @@ def listar_analises(
     sentimento: str | None = None,
     pagina: int = 1,
     tamanho: int = 20,
+    assunto: str | None = None,
 ) -> dict[str, Any]:
     if type(pagina) is not int or pagina < 1:
         raise ErroConsultaInvalida("pagina deve ser um inteiro maior ou igual a 1.")
@@ -291,7 +343,7 @@ def listar_analises(
             f"tamanho deve ser um inteiro entre 1 e {LIMITE_MAXIMO_PAGINA}."
         )
 
-    filtro = _filtro_consulta(inicio, fim, sentimento)
+    filtro = _filtro_consulta(inicio, fim, sentimento, assunto)
     try:
         total = colecao.count_documents(filtro)
         # A chave única (fonte, id_origem) desempata datas iguais de forma estável.
@@ -315,8 +367,9 @@ def resumir_analises(
     inicio: date | None = None,
     fim: date | None = None,
     sentimento: str | None = None,
+    assunto: str | None = None,
 ) -> dict[str, Any]:
-    filtro = _filtro_consulta(inicio, fim, sentimento)
+    filtro = _filtro_consulta(inicio, fim, sentimento, assunto)
     contagens = {classe: 0 for classe in ("positivo", "negativo", "neutro")}
     try:
         for grupo in colecao.aggregate([
@@ -327,9 +380,9 @@ def resumir_analises(
                 contagens[grupo["_id"]] = grupo["total"]
         sem_data = 0
         if inicio is not None or fim is not None:
-            filtro_sem_data: dict[str, Any] = {"data_publicacao": None}
-            if sentimento is not None:
-                filtro_sem_data["sentimento"] = sentimento
+            # Mesmos filtros, menos o período: quantos textos sem data ficaram de fora.
+            filtro_sem_data = _filtro_consulta(sentimento=sentimento, assunto=assunto)
+            filtro_sem_data["data_publicacao"] = None
             sem_data = colecao.count_documents(filtro_sem_data)
     except PyMongoError:
         raise ErroLeituraAnalises(
@@ -1102,6 +1155,7 @@ class RepositorioAnalises:
         sentimento: str | None = None,
         pagina: int = 1,
         tamanho: int = 20,
+        assunto: str | None = None,
     ) -> dict[str, Any]:
         return listar_analises(
             self.colecao,
@@ -1110,6 +1164,7 @@ class RepositorioAnalises:
             sentimento=sentimento,
             pagina=pagina,
             tamanho=tamanho,
+            assunto=assunto,
         )
 
     def resumir_analises(
@@ -1118,12 +1173,14 @@ class RepositorioAnalises:
         inicio: date | None = None,
         fim: date | None = None,
         sentimento: str | None = None,
+        assunto: str | None = None,
     ) -> dict[str, Any]:
         return resumir_analises(
             self.colecao,
             inicio=inicio,
             fim=fim,
             sentimento=sentimento,
+            assunto=assunto,
         )
 
     def listar_registros_base(self) -> list[dict[str, Any]]:
