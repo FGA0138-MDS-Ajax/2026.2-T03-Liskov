@@ -64,7 +64,11 @@ def renderizar() -> None:
         secao_resumo.renderizar(resumo, filtros_aplicados)
         return
 
-    indicadores.renderizar(resumo)
-    distribuicao.renderizar(resumo)
-    secao_resumo.renderizar(resumo, filtros_aplicados)
+    indicadores.renderizar(resumo, filtros_aplicados)
+    # Distribuição e resumo lado a lado; em telas estreitas, o Streamlit empilha (#121).
+    esquerda, direita = st.columns(2)
+    with esquerda:
+        distribuicao.renderizar(resumo)
+    with direita:
+        secao_resumo.renderizar(resumo, filtros_aplicados)
     listagem.renderizar(fonte, filtros_aplicados, resumo.total)

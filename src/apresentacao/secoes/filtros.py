@@ -69,13 +69,11 @@ def renderizar() -> FiltrosAnalises:
             rotulo = st.selectbox(
                 "Sentimento", [TODOS, *ROTULOS.values()], key="filtro_sentimento"
             )
-        # Duas colunas preservam os rótulos dos botões com o menu aberto em tablets.
-        col_aplicar, col_limpar = st.columns(2)
-        with col_aplicar:
+        # Botões juntos numa linha, com a largura do próprio rótulo: nunca são cortados.
+        with st.container(horizontal=True):
             aplicar = st.form_submit_button(
                 "Aplicar filtros", type="primary", key="aplicar_filtros"
             )
-        with col_limpar:
             st.form_submit_button("Limpar", key="limpar_filtros", on_click=_limpar_filtros)
 
     if aplicar:

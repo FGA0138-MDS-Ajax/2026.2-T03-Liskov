@@ -21,6 +21,12 @@ versões publicadas; outras frentes também podem registrar suas entregas aqui.
 
 ### Adicionado
 
+- Dashboard com o layout de alta fidelidade e tema claro e escuro (#121): troca no menu ⋮;
+  cartões com barra de proporção; distribuição em rosca com legenda escrita e tabela; resumo
+  com barra, lado a lado com a distribuição; etiqueta de sentimento na tabela; paletas por
+  tema em `tema.py`, com contraste conferido em teste. T18 repetido nos dois temas
+  (`docs/frontend/evidencias/t18-2026-11-27-temas/`, 64 de 64 capturas sem problema).
+
 - Busca do Usuário no X pelo dashboard (#120): com o filtro de assunto e menos de 50
   análises, o botão "Buscar no X" completa o assunto com textos recentes, sem login, por
   `POST /pesquisas` e `GET /pesquisas/{id}`. Meta fixa de 50; o X só completa o que falta;

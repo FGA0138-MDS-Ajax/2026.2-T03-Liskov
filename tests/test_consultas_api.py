@@ -272,7 +272,7 @@ def test_painel_completo_consome_a_api_real_sem_mock(cliente, monkeypatch):
     assert not app.exception and not app.error
     assert MENSAGEM_DADOS_DE_EXEMPLO not in avisos(app)
     assert app.metric[0].value == "6"
-    assert len(app.get("vega_lite_chart")) == 1
+    assert len(app.get("vega_lite_chart")) == 2  # rosca e barra do resumo (#121)
     assert [int(q) for q in app.table[0].value["Quantidade"]] == [3, 1, 2]
     resumo_textual = [m.value for m in app.markdown if m.value.startswith("Total de")]
     assert len(resumo_textual) == 1
