@@ -8,8 +8,14 @@ import streamlit as st
 from src.apresentacao.componentes import estado_erro, estado_vazio
 from src.apresentacao.config import carregar_configuracao
 from src.apresentacao.contrato import ErroFonteDados
-from src.apresentacao.fontes import criar_fonte
-from src.apresentacao.secoes import distribuicao, filtros, indicadores, listagem
+from src.apresentacao.fontes import criar_administracao, criar_fonte
+from src.apresentacao.secoes import (
+    busca_x,
+    distribuicao,
+    filtros,
+    indicadores,
+    listagem,
+)
 from src.apresentacao.secoes import resumo as secao_resumo
 from src.apresentacao.transformacoes import filtros_ativos, formatar_inteiro
 
@@ -22,7 +28,8 @@ def renderizar() -> None:
     )
 
     filtros_aplicados = filtros.renderizar()
-    fonte = criar_fonte(carregar_configuracao())
+    configuracao = carregar_configuracao()
+    fonte = criar_fonte(configuracao)
     try:
         with st.spinner("Carregando análises..."):
             resumo = fonte.resumir(filtros_aplicados)
@@ -37,6 +44,9 @@ def renderizar() -> None:
             "período.",
             icon=":material/event_busy:",
         )
+
+    # Com assunto e menos de 50 análises, o Usuário pode completar com o X (#120).
+    busca_x.renderizar(filtros_aplicados, resumo.total, criar_administracao(configuracao))
 
     if resumo.total == 0:
         if filtros_aplicados.assunto:

@@ -155,6 +155,8 @@ QUANTIDADE_BUSCA_PADRAO = 5
 PASSO_QUANTIDADE_BUSCA = 5
 QUANTIDADE_BUSCA_MAXIMA = 100
 TAMANHO_MAXIMO_TERMO = 100
+# Busca do Usuário sem login (#120): a API completa com o X até esta meta, fixa.
+META_PESQUISA_USUARIO = 50
 
 
 class FonteAdministracao(Protocol):
@@ -179,5 +181,10 @@ class FonteAdministracao(Protocol):
         quantidade: int,
         complementar_com_x: bool,
     ) -> Coleta: ...
+
+    # Busca do Usuário (#120): sem login, meta fixa e limite diário de buscas no X.
+    def buscar_como_usuario(self, termo: str) -> Coleta: ...
+
+    def consultar_busca_usuario(self, id_busca: str) -> Coleta: ...
 
     def consultar_coleta(self, sessao: SessaoAdministrador, id_coleta: str) -> Coleta: ...

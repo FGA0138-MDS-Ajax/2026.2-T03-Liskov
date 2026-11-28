@@ -65,6 +65,10 @@ ID_TWEETSENTBR = "tweetsentbr"
 FONTE_PESQUISA = "pesquisa"
 TAMANHO_MAXIMO_TERMO = 100
 QUANTIDADE_MAXIMA_PESQUISA = 100
+# Busca do Usuário sem login (#120, decisões da PO de 25 e 26/11): meta fixa de 50
+# textos e no máximo 15 buscas no X por dia, somando todos os usuários.
+META_PESQUISA_USUARIO = 50
+LIMITE_BUSCAS_X_DIA_PADRAO = 15
 MAXIMO_EXEMPLOS = 100
 SENTIMENTOS = ("positivo", "neutro", "negativo")
 
@@ -109,6 +113,8 @@ class Coleta:
     quantidade: int | None = None
     complementar_com_x: bool = False
     forcar_atualizacao: bool = False
+    # Busca do Usuário sem login (#120): só aparece em /pesquisas, com limite diário.
+    publica: bool = False
     # Pesquisa: quantos textos vieram da base, quantos do X e quantos repetidos saíram.
     origem: dict[str, int] | None = None
     por_sentimento: dict[str, int] = field(default_factory=lambda: dict.fromkeys(SENTIMENTOS, 0))
@@ -212,6 +218,7 @@ class RepositorioAdministracao:
         quantidade: int | None = None,
         complementar_com_x: bool = False,
         forcar_atualizacao: bool = False,
+        publica: bool = False,
     ) -> Coleta:
         with self._trava:
             coleta = Coleta(
@@ -221,6 +228,7 @@ class RepositorioAdministracao:
                 quantidade=quantidade,
                 complementar_com_x=complementar_com_x,
                 forcar_atualizacao=forcar_atualizacao,
+                publica=publica,
             )
             self.coletas[coleta.id] = coleta
             return replace(coleta)
@@ -282,6 +290,7 @@ class ContextoAdministracao:
         limite_coleta: int = LIMITE_COLETA_PADRAO,
         caminho_tweetsentbr: Path = CAMINHO_PADRAO_TWEETSENTBR,
         buscar_x: Callable[[str, int], list[dict[str, Any]]] | None = None,
+        limite_buscas_x_dia: int = LIMITE_BUSCAS_X_DIA_PADRAO,
         colecao_analises: Collection | None = None,
         provedor_colecao: Callable[[], AbstractContextManager[Collection]] = _abrir_colecao_analises,
     ) -> None:
@@ -295,6 +304,7 @@ class ContextoAdministracao:
         self.caminho_tweetsentbr = caminho_tweetsentbr
         # Sem função de busca (sem XFETCH_API_KEY), a busca no X fica desligada.
         self.buscar_x = buscar_x
+        self.limite_buscas_x_dia = limite_buscas_x_dia
         self._colecao_analises = colecao_analises
         self._provedor_colecao = provedor_colecao
         self._trava_tweetsentbr = threading.Lock()
@@ -322,6 +332,9 @@ class ContextoAdministracao:
             * 1024
             * 1024,
             limite_coleta=_inteiro_do_ambiente("SENTIA_LIMITE_COLETA", LIMITE_COLETA_PADRAO),
+            limite_buscas_x_dia=_inteiro_do_ambiente(
+                "SENTIA_LIMITE_BUSCAS_X_DIA", LIMITE_BUSCAS_X_DIA_PADRAO
+            ),
         )
 
     def pipeline(self) -> Any:
@@ -589,15 +602,18 @@ def _registros_da_coleta(
             complementar_com_x=coleta.complementar_com_x,
         )
 
-    resultado = pesquisar(
-        coleta.termo,
-        coleta.quantidade,
-        base,
-        buscar_x=contexto.buscar_x,
-        complementar_com_x=coleta.complementar_com_x,
-        cache_pesquisa=cache,
-        forcar_atualizacao=coleta.forcar_atualizacao,
-    )
+    if coleta.publica:
+        resultado = _pesquisar_como_usuario(contexto, coleta, base, cache)
+    else:
+        resultado = pesquisar(
+            coleta.termo,
+            coleta.quantidade,
+            base,
+            buscar_x=contexto.buscar_x,
+            complementar_com_x=coleta.complementar_com_x,
+            cache_pesquisa=cache,
+            forcar_atualizacao=coleta.forcar_atualizacao,
+        )
 
     if resultado.do_x:
         # Tweets novos ficam salvos na base mesmo se a classificação falhar depois.
@@ -649,6 +665,88 @@ def _registros_da_coleta(
         mensagem=resultado.aviso,
     )
     return resultado.registros, resultado.origens, cache_pendente
+
+
+class LimiteBuscasXAtingido(Exception):
+    """O limite diário de buscas no X do Usuário acabou (#120)."""
+
+
+def _formatar_dia(valor: Any) -> str | None:
+    if not isinstance(valor, datetime):
+        return None
+    return (valor if valor.tzinfo else valor.replace(tzinfo=UTC)).strftime("%d/%m")
+
+
+def _pesquisar_como_usuario(
+    contexto: ContextoAdministracao,
+    coleta: Coleta,
+    base: list[dict[str, Any]],
+    cache: dict[str, Any] | None,
+) -> Any:
+    """Pesquisa do Usuário (#120): a mesma da Administração, com as travas de gasto.
+
+    - meta fixa de 50, sem "forçar atualização" (vem da rota);
+    - o X só é chamado para completar o que falta, e cada chamada reserva uma das
+      buscas do dia. Base e cache resolvem o resto sem gastar e sem contar no limite;
+    - acabou o limite ou não há chave: mostra só a base, com aviso, sem quebrar.
+    """
+    assert coleta.termo and coleta.quantidade
+    buscar_x = contexto.buscar_x
+    limite_atingido = False
+    if buscar_x is not None:
+        with contexto.repositorio_analises() as repo:
+            limite_atingido = (
+                repo.contar_buscas_x_publicas() >= contexto.limite_buscas_x_dia
+            )
+    if limite_atingido:
+        buscar_x = None
+    elif buscar_x is not None:
+        original = buscar_x
+
+        def buscar_x(consulta: str, quantidade: int) -> list[dict[str, Any]]:
+            with contexto.repositorio_analises() as repo:
+                limite = contexto.limite_buscas_x_dia
+                if not repo.reservar_busca_x_publica(consulta, limite):
+                    raise LimiteBuscasXAtingido
+            return original(consulta, quantidade)
+
+    argumentos = {
+        "complementar_com_x": True,
+        "cache_pesquisa": cache,
+        "forcar_atualizacao": False,
+    }
+    try:
+        resultado = pesquisar(
+            coleta.termo, coleta.quantidade, base, buscar_x=buscar_x, **argumentos
+        )
+    except LimiteBuscasXAtingido:
+        # Outra busca levou a última vaga do dia entre a conferência e a chamada.
+        limite_atingido = True
+        resultado = pesquisar(
+            coleta.termo, coleta.quantidade, base, buscar_x=None, **argumentos
+        )
+
+    faltam = coleta.quantidade - len(resultado.registros)
+    if limite_atingido and faltam > 0:
+        resultado.aviso = (
+            "O limite de buscas no X de hoje foi atingido; mostrando os textos já guardados."
+        )
+    elif resultado.cache_reutilizado and not resultado.consultou_x and faltam > 0:
+        dia = _formatar_dia((cache or {}).get("atualizado_em"))
+        resultado.aviso = (
+            f"Este assunto já foi buscado no X{f' em {dia}' if dia else ''}; "
+            "mostrando os textos guardados."
+        )
+    elif not resultado.consultou_x and faltam <= 0:
+        resultado.aviso = (
+            f"A base já tem {coleta.quantidade} textos ou mais sobre o assunto; "
+            "não foi preciso buscar no X."
+        )
+    elif resultado.consultou_x and resultado.esgotado_na_origem and faltam > 0:
+        resultado.aviso = (
+            f"O X tinha só {len(resultado.do_x)} texto(s) recente(s) novo(s) sobre o assunto."
+        )
+    return resultado
 
 
 def _resumir_resolvidos(
@@ -815,6 +913,41 @@ def iniciar_coleta(
     )
     tarefas.add_task(executar_coleta, contexto, coleta.id)
     return JSONResponse(coleta.como_resposta(), status_code=202)
+
+
+class CorpoPesquisaPublica(BaseModel):
+    termo: str
+
+
+@roteador.post("/pesquisas", status_code=202)
+def iniciar_pesquisa_publica(
+    corpo: CorpoPesquisaPublica,
+    tarefas: BackgroundTasks,
+    contexto: Contexto,
+) -> Any:
+    """Busca do Usuário sem login (#120): meta fixa de 50 e limite diário no X."""
+    termo = " ".join((corpo.termo or "").split())
+    if not termo or len(termo) > TAMANHO_MAXIMO_TERMO:
+        return _erro(422, "Informe uma palavra ou frase de até 100 caracteres.")
+    coleta = contexto.repositorio.criar_coleta(
+        FONTE_PESQUISA,
+        termo,
+        META_PESQUISA_USUARIO,
+        complementar_com_x=True,
+        forcar_atualizacao=False,
+        publica=True,
+    )
+    tarefas.add_task(executar_coleta, contexto, coleta.id)
+    return JSONResponse(coleta.como_resposta(), status_code=202)
+
+
+@roteador.get("/pesquisas/{id_pesquisa}")
+def consultar_pesquisa_publica(id_pesquisa: str, contexto: Contexto) -> Any:
+    coleta = contexto.repositorio.obter_coleta(id_pesquisa)
+    # Coletas da Administração não aparecem aqui, mesmo com o id certo.
+    if coleta is None or not coleta.publica:
+        return _erro(404, "Pesquisa não encontrada.")
+    return coleta.como_resposta()
 
 
 @roteador.get("/coletas/{id_coleta}")

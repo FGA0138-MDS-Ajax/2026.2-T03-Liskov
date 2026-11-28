@@ -11,7 +11,9 @@ from urllib.parse import quote, unquote
 
 from src.apresentacao.contrato import (
     FONTE_PESQUISA,
+    META_PESQUISA_USUARIO,
     SENTIMENTOS,
+    TAMANHO_MAXIMO_TERMO,
     Coleta,
     ErroAutenticacao,
     ErroFonteDados,
@@ -42,6 +44,7 @@ FONTES_EXEMPLO = [
 TEXTOS_NA_BASE_EXEMPLO = 3
 TWEETS_DO_X_EXEMPLO = 12
 _PREFIXO_PESQUISA = "pesquisa_"
+_PREFIXO_BUSCA_USUARIO = "busca_usuario_"
 
 
 def _resultado_exemplo(quantidade: int, origens: list[str] | None = None) -> dict:
@@ -192,6 +195,39 @@ class AdministracaoMock:
             **_resultado_exemplo(total, ["base"] * da_base + ["x"] * do_x),
         )
 
+    def buscar_como_usuario(self, termo: str) -> Coleta:
+        """Busca do Usuário (#120) de mentira: nada é buscado no X nem gravado."""
+        termo = " ".join(termo.split())
+        if not termo or len(termo) > TAMANHO_MAXIMO_TERMO:
+            raise ErroFonteDados(
+                f"Informe um assunto de até {TAMANHO_MAXIMO_TERMO} caracteres."
+            )
+        return Coleta(
+            id=f"{_PREFIXO_BUSCA_USUARIO}{quote(termo, safe='')}",
+            fonte=FONTE_PESQUISA,
+            situacao="em_andamento",
+            termo=termo,
+        )
+
+    def consultar_busca_usuario(self, id_busca: str) -> Coleta:
+        if not id_busca.startswith(_PREFIXO_BUSCA_USUARIO):
+            raise ErroFonteDados("Pesquisa não encontrada.")
+        termo = unquote(id_busca.removeprefix(_PREFIXO_BUSCA_USUARIO))
+        da_base = min(META_PESQUISA_USUARIO, TEXTOS_NA_BASE_EXEMPLO)
+        do_x = min(META_PESQUISA_USUARIO - da_base, TWEETS_DO_X_EXEMPLO)
+        return Coleta(
+            id=id_busca,
+            fonte=FONTE_PESQUISA,
+            situacao="concluida",
+            textos_coletados=da_base + do_x,
+            textos_analisados=da_base + do_x,
+            mensagem=(
+                "Dados de exemplo: nenhuma busca real no X foi feita e nada foi gravado."
+            ),
+            termo=termo,
+            origem={"base": da_base, "x": do_x, "duplicatas": 0},
+        )
+
     @staticmethod
     def _validar(sessao: SessaoAdministrador) -> None:
         if sessao.token != _TOKEN_EXEMPLO or sessao.expirada():
@@ -230,4 +266,10 @@ class AdministracaoMockComErro:
         raise ErroFonteDados(self.MENSAGEM)
 
     def consultar_coleta(self, sessao: SessaoAdministrador, id_coleta: str) -> Coleta:
+        raise ErroFonteDados(self.MENSAGEM)
+
+    def buscar_como_usuario(self, termo: str) -> Coleta:
+        raise ErroFonteDados(self.MENSAGEM)
+
+    def consultar_busca_usuario(self, id_busca: str) -> Coleta:
         raise ErroFonteDados(self.MENSAGEM)

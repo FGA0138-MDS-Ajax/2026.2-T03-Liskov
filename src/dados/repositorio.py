@@ -4,7 +4,7 @@ import re
 import unicodedata
 from collections.abc import Iterable, Mapping
 from contextlib import suppress
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 from uuid import uuid4
 
@@ -26,6 +26,10 @@ NOME_COLECAO = "analises"
 NOME_COLECAO_REGISTROS = "registros"
 NOME_COLECAO_DATASETS = "datasets"
 NOME_COLECAO_PESQUISAS = "pesquisas"
+# Buscas no X feitas pelo Usuário sem login (#120): uma linha por busca paga.
+NOME_COLECAO_BUSCAS_X_PUBLICAS = "buscas_x_publicas"
+# Decisão da PO (25 e 26/11): o cache de uma pesquisa vale 30 dias.
+VALIDADE_CACHE_PESQUISA = timedelta(days=30)
 SENTIMENTOS_VALIDOS = {"positivo", "negativo", "neutro"}
 CAMPOS_TEXTO_OBRIGATORIOS = ("id_origem", "fonte", "texto_original")
 LIMITE_MAXIMO_PAGINA = 100
@@ -1063,10 +1067,65 @@ def buscar_cache_pesquisa(
     espec = montar_chave_cache_pesquisa(consulta, complementar_com_x=complementar_com_x)
     col_pesquisas = _colecao_auxiliar(colecao, NOME_COLECAO_PESQUISAS)
     try:
-        return col_pesquisas.find_one({"chave_cache": espec["chave_cache"]}, {"_id": 0})
+        cache = col_pesquisas.find_one({"chave_cache": espec["chave_cache"]}, {"_id": 0})
     except PyMongoError:
         raise ErroLeituraAnalises(
             "Falha ao consultar cache de pesquisa no MongoDB; verifique a conexão."
+        ) from None
+    if cache is None:
+        return None
+    # Passados 30 dias, a mesma pesquisa pode voltar ao X (decisão da PO).
+    atualizado_em = cache.get("atualizado_em")
+    if isinstance(atualizado_em, datetime):
+        if atualizado_em.tzinfo is None:
+            atualizado_em = atualizado_em.replace(tzinfo=UTC)
+        if datetime.now(UTC) - atualizado_em > VALIDADE_CACHE_PESQUISA:
+            return None
+    return cache
+
+
+def _dia_utc(agora: datetime | None = None) -> str:
+    return (agora or datetime.now(UTC)).astimezone(UTC).date().isoformat()
+
+
+def contar_buscas_x_publicas(colecao: Collection, agora: datetime | None = None) -> int:
+    """Quantas buscas no X o Usuário já fez hoje (dia em UTC), somando todos."""
+    col = _colecao_auxiliar(colecao, NOME_COLECAO_BUSCAS_X_PUBLICAS)
+    try:
+        return len(list(col.find({"dia": _dia_utc(agora)}, {"_id": 1})))
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao consultar o limite de buscas no X; verifique a conexão."
+        ) from None
+
+
+def reservar_busca_x_publica(
+    colecao: Collection, termo: str, limite: int, agora: datetime | None = None
+) -> bool:
+    """Reserva uma das buscas do dia; devolve False se o limite já foi atingido.
+
+    Grava a reserva e só depois conta as do dia. Se o total passou do limite, esta
+    reserva desiste e se apaga. Duas buscas exatamente ao mesmo tempo podem desistir
+    juntas na última vaga, mas o limite nunca é ultrapassado. O contador fica no
+    MongoDB e sobrevive a reinícios.
+    """
+    agora = (agora or datetime.now(UTC)).astimezone(UTC)
+    dia = _dia_utc(agora)
+    marca = uuid4().hex
+    col = _colecao_auxiliar(colecao, NOME_COLECAO_BUSCAS_X_PUBLICAS)
+    try:
+        col.update_one(
+            {"marca": marca},
+            {"$set": {"dia": dia, "termo": " ".join(termo.split()), "criado_em": agora}},
+            upsert=True,
+        )
+        if len(list(col.find({"dia": dia}, {"_id": 1}))) <= limite:
+            return True
+        col.delete_many({"marca": marca})
+        return False
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao registrar a busca no X; verifique a conexão."
         ) from None
 
 
@@ -1241,6 +1300,14 @@ class RepositorioAnalises:
         self, chaves: Iterable[tuple[str, str]]
     ) -> dict[tuple[str, str], dict[str, Any]]:
         return obter_analises_por_chaves(self.colecao, chaves)
+
+    def contar_buscas_x_publicas(self, agora: datetime | None = None) -> int:
+        return contar_buscas_x_publicas(self.colecao, agora)
+
+    def reservar_busca_x_publica(
+        self, termo: str, limite: int, agora: datetime | None = None
+    ) -> bool:
+        return reservar_busca_x_publica(self.colecao, termo, limite, agora)
 
     def buscar_cache_pesquisa(
         self, consulta: str, *, complementar_com_x: bool = True

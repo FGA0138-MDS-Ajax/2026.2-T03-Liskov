@@ -137,6 +137,20 @@ Para a primeira versão, utilizar 100 tweets como quantidade-alvo por pesquisa e
 
 A pesquisa semântica com Vector Search pode ser implementada como evolução do sistema, após a geração e persistência dos embeddings dos tweets.
 
+## Decisões de 25 e 26/11/2026 (#113 e #120)
+
+- **O Usuário também pesquisa, sem login.** `POST /pesquisas` usa este mesmo fluxo com
+  meta fixa de **50** textos, sem forçar atualização e com **limite diário de 15 buscas no X**,
+  somando todos os usuários (`SENTIA_LIMITE_BUSCAS_X_DIA`). Só conta a busca que chama o X.
+- **A meta do Administrador continua digitável**, de 1 a 100, com padrão 5 no painel. A
+  "recomendação inicial" de 100, acima, fica como histórico.
+- **Cache de 30 dias** para todas as pesquisas.
+- **A regra de busca por palavras** saiu de `src/servico/pesquisa.py` para
+  `src/comum/busca_textual.py`, compartilhada com o filtro por assunto do dashboard (#113).
+- **Limitação conhecida ("assunto congelado"):** quando um assunto chega a 50 textos, a
+  base passa a bastar e o X não é mais chamado para ele. O Administrador pode forçar a
+  atualização. Trabalho futuro: contar só os textos recentes para a meta.
+
 ## Comportamento implementado na camada canônica (`PR #96`)
 
 - **Base acumulada (`registros` + `analises`):** textos de CSVs enviados via `POST /datasets`, do corpus `TweetSentBR` e de aquisições anteriores no XFetch persistem em `registros` e `datasets`, sendo combinados sem duplicatas pela chave `(fonte, id_origem)` (com fallback SHA-256 determinístico `auto_...` quando `id_origem` estiver ausente ou vazio).
