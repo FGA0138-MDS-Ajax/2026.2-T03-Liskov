@@ -16,6 +16,7 @@ from pymongo.errors import BulkWriteError, DuplicateKeyError, PyMongoError
 from pymongo.mongo_client import MongoClient
 
 from src.comum.busca_textual import (
+    contar_termos,
     minimo_de_termos,
     padrao_do_termo,
     termos_da_consulta,
@@ -395,6 +396,116 @@ def resumir_analises(
     return {
         "total": sum(contagens.values()),
         "por_sentimento": contagens,
+        "sem_data_publicacao": sem_data,
+    }
+
+
+# Termos frequentes (#30): lê no máximo este número de textos, dos mais recentes, para a
+# resposta caber no tempo do painel. A resposta diz quantos foram lidos e quantos havia.
+MAXIMO_TEXTOS_TERMOS = 5000
+LIMITE_MAXIMO_TERMOS = 30
+GRANULARIDADES = {"dia": "day", "semana": "week", "mes": "month"}
+
+
+def termos_frequentes(
+    colecao: Collection,
+    *,
+    inicio: date | None = None,
+    fim: date | None = None,
+    sentimento: str | None = None,
+    assunto: str | None = None,
+    limite: int = 10,
+    maximo_textos: int = MAXIMO_TEXTOS_TERMOS,
+) -> dict[str, Any]:
+    """Palavras que mais aparecem nos textos do filtro (#30), sem as do próprio assunto."""
+    if type(limite) is not int or not 1 <= limite <= LIMITE_MAXIMO_TERMOS:
+        raise ErroConsultaInvalida(
+            f"limite deve ser um inteiro entre 1 e {LIMITE_MAXIMO_TERMOS}."
+        )
+    filtro = _filtro_consulta(inicio, fim, sentimento, assunto)
+    try:
+        total = colecao.count_documents(filtro)
+        cursor = (
+            colecao.find(filtro, {"_id": 0, "texto_original": 1})
+            .sort([("data_processamento", -1), ("fonte", 1), ("id_origem", 1)])
+            .limit(maximo_textos)
+        )
+        textos = [d.get("texto_original") or "" for d in cursor]
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao consultar o MongoDB; verifique a conexão."
+        ) from None
+    termos = contar_termos(textos, limite=limite, assunto=_validar_assunto(assunto))
+    return {
+        "termos": [{"termo": termo, "quantidade": n} for termo, n in termos],
+        "textos_lidos": len(textos),
+        "total": total,
+    }
+
+
+def evolucao_analises(
+    colecao: Collection,
+    *,
+    inicio: date | None = None,
+    fim: date | None = None,
+    sentimento: str | None = None,
+    assunto: str | None = None,
+    granularidade: str = "semana",
+) -> dict[str, Any]:
+    """Quantidade de análises por período e sentimento, agrupada no MongoDB (em UTC).
+
+    Só entram textos com `data_publicacao`; a resposta informa quantos ficaram sem data.
+    Semanas começam na segunda-feira.
+    """
+    unidade = GRANULARIDADES.get(granularidade)
+    if unidade is None:
+        raise ErroConsultaInvalida("granularidade deve ser dia, semana ou mes.")
+    filtro = _filtro_consulta(inicio, fim, sentimento, assunto)
+    if "data_publicacao" not in filtro:
+        filtro["data_publicacao"] = {"$type": "date"}
+    truncar: dict[str, Any] = {"date": "$data_publicacao", "unit": unidade, "timezone": "UTC"}
+    if unidade == "week":
+        truncar["startOfWeek"] = "monday"
+    filtro_sem_data = _filtro_consulta(sentimento=sentimento, assunto=assunto)
+    filtro_sem_data["data_publicacao"] = None
+    try:
+        grupos = list(
+            colecao.aggregate(
+                [
+                    {"$match": filtro},
+                    {
+                        "$group": {
+                            "_id": {
+                                "periodo": {"$dateTrunc": truncar},
+                                "sentimento": "$sentimento",
+                            },
+                            "n": {"$sum": 1},
+                        }
+                    },
+                ]
+            )
+        )
+        sem_data = colecao.count_documents(filtro_sem_data)
+    except PyMongoError:
+        raise ErroLeituraAnalises(
+            "Falha ao consultar o MongoDB; verifique a conexão."
+        ) from None
+    pontos: dict[date, dict[str, int]] = {}
+    for grupo in grupos:
+        periodo = grupo["_id"]["periodo"]
+        sentimento_grupo = grupo["_id"].get("sentimento")
+        if not isinstance(periodo, datetime) or sentimento_grupo not in SENTIMENTOS_VALIDOS:
+            continue
+        contagens = pontos.setdefault(
+            periodo.date(), {s: 0 for s in ("positivo", "negativo", "neutro")}
+        )
+        contagens[sentimento_grupo] += grupo["n"]
+    return {
+        "granularidade": granularidade,
+        "pontos": [
+            {"periodo": dia, "por_sentimento": contagens, "total": sum(contagens.values())}
+            for dia, contagens in sorted(pontos.items())
+        ],
         "sem_data_publicacao": sem_data,
     }
 
@@ -1300,6 +1411,12 @@ class RepositorioAnalises:
         self, chaves: Iterable[tuple[str, str]]
     ) -> dict[tuple[str, str], dict[str, Any]]:
         return obter_analises_por_chaves(self.colecao, chaves)
+
+    def termos_frequentes(self, **filtros: Any) -> dict[str, Any]:
+        return termos_frequentes(self.colecao, **filtros)
+
+    def evolucao_analises(self, **filtros: Any) -> dict[str, Any]:
+        return evolucao_analises(self.colecao, **filtros)
 
     def contar_buscas_x_publicas(self, agora: datetime | None = None) -> int:
         return contar_buscas_x_publicas(self.colecao, agora)

@@ -5,18 +5,24 @@ docs/frontend/CONTRATO-API.md. Qualquer resposta fora do contrato vira
 ErroFonteDados, exibido na tela sem derrubá-la.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 import requests
 
 from src.apresentacao.contrato import (
+    LIMITE_TERMOS_PADRAO,
     SENTIMENTOS,
     Analise,
     ErroFonteDados,
+    EvolucaoAnalises,
     FiltrosAnalises,
+    Granularidade,
     PaginaAnalises,
+    PontoEvolucao,
     ResumoAnalises,
+    TermoFrequente,
+    TermosAnalises,
 )
 
 
@@ -172,6 +178,56 @@ class FonteApi:
                 total=total,
                 por_sentimento=por_sentimento,
                 sem_data_publicacao=sem_data,
+            )
+        except (KeyError, TypeError, ValueError) as erro:
+            raise ErroFonteDados("A resposta da API não segue o contrato.") from erro
+
+    def termos(
+        self, filtros: FiltrosAnalises, limite: int = LIMITE_TERMOS_PADRAO
+    ) -> TermosAnalises:
+        dados = self._obter("/analises/termos", {**_para_parametros(filtros), "limite": limite})
+        try:
+            dados = _objeto(dados)
+            termos = [
+                TermoFrequente(
+                    termo=_texto(_objeto(t)["termo"], nao_vazio=True),
+                    quantidade=_inteiro(t["quantidade"], minimo=1),
+                )
+                for t in dados["termos"]
+            ]
+            lidos = _inteiro(dados["textos_lidos"])
+            total = _inteiro(dados["total"])
+            if len(termos) > limite or lidos > total:
+                raise ValueError("Termos fora do contrato.")
+            return TermosAnalises(termos=termos, textos_lidos=lidos, total=total)
+        except (KeyError, TypeError, ValueError) as erro:
+            raise ErroFonteDados("A resposta da API não segue o contrato.") from erro
+
+    def evolucao(
+        self, filtros: FiltrosAnalises, granularidade: Granularidade = "semana"
+    ) -> EvolucaoAnalises:
+        dados = self._obter(
+            "/analises/evolucao", {**_para_parametros(filtros), "granularidade": granularidade}
+        )
+        try:
+            dados = _objeto(dados)
+            if dados["granularidade"] != granularidade:
+                raise ValueError("Granularidade diferente da pedida.")
+            pontos = []
+            for ponto in dados["pontos"]:
+                contagens = _objeto(_objeto(ponto)["por_sentimento"])
+                if set(contagens) != set(SENTIMENTOS):
+                    raise ValueError("Classes incompatíveis com o contrato.")
+                pontos.append(
+                    PontoEvolucao(
+                        periodo=date.fromisoformat(_texto(ponto["periodo"])),
+                        por_sentimento={s: _inteiro(contagens[s]) for s in SENTIMENTOS},
+                    )
+                )
+            return EvolucaoAnalises(
+                granularidade=granularidade,
+                pontos=pontos,
+                sem_data_publicacao=_inteiro(dados["sem_data_publicacao"]),
             )
         except (KeyError, TypeError, ValueError) as erro:
             raise ErroFonteDados("A resposta da API não segue o contrato.") from erro

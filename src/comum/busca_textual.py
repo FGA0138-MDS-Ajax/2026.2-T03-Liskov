@@ -120,3 +120,63 @@ def padrao_do_termo(termo: str) -> str:
     padrao = _INICIO_DE_PALAVRA + "".join(partes)
     # Radical incompleto (termo curto) só vale para a palavra inteira.
     return padrao if len(trecho) == TAMANHO_RADICAL else padrao + _FIM_DE_PALAVRA
+
+
+# --- Termos mais frequentes (#30, em barras na #121) -------------------------------------
+# Tokenização só para a visualização: não muda a entrada do BERTweet, que recebe o texto
+# inteiro (D-12). Regras, documentadas em docs/frontend/CONTRATO-API.md:
+# - minúsculas; links, menções (@perfil) e entidades HTML (&gt;) saem antes de contar;
+# - "#hashtag" conta como a palavra, sem o "#";
+# - só sequências de letras (números e "_" ficam de fora), com pelo menos 3 letras;
+# - palavras vazias (as da busca e mais as comuns em redes sociais) e risadas ficam de fora;
+# - as palavras do próprio assunto filtrado ficam de fora: estariam em todos os textos;
+# - a contagem junta formas com e sem acento; mostra a forma escrita mais comum.
+_PALAVRAS_VAZIAS_TERMOS = PALAVRAS_VAZIAS | frozenset(
+    {
+        "pra", "pro", "pros", "pras", "ta", "to", "vc", "vcs", "voce", "voces", "eh",
+        "vai", "vou", "vamos", "estou", "esta", "estao", "estava", "sao", "era", "foram",
+        "tinha", "ha", "fazer", "faz", "fez", "feito", "so", "tambem", "quando", "onde",
+        "porque", "pq", "mesmo", "mesma", "ainda", "agora", "entao", "bem", "tudo", "nada",
+        "todo", "toda", "todos", "todas", "nem", "sua", "seu", "suas", "seus", "meu",
+        "minha", "meus", "minhas", "nosso", "nossa", "dele", "dela", "deles", "delas",
+        "num", "numa", "pelo", "pela", "pelos", "pelas", "entre", "sobre", "ate", "depois",
+        "antes", "aqui", "ali", "aquilo", "aquele", "aquela", "qual", "quem", "dia",
+        "hoje", "coisa", "gente", "usuario", "ver", "vez", "tipo", "acho", "sei", "pode",
+        "dizer", "diz", "disse", "quer", "queria", "fica", "ficar", "sempre", "nunca",
+        "cada", "outro", "outra", "outros", "outras", "alguem", "algum", "alguma", "mim",
+        "lhes", "assim", "ser", "ter", "tem", "isso", "ela", "ele", "nao", "sim", "ja",
+        "mais", "muito", "como", "que", "com", "uma", "por", "para", "nas", "nos", "das",
+        "dos", "the", "and", "you", "for",
+    }
+)  # fmt: skip
+_LINKS_MENCOES = re.compile(r"https?://\S+|www\.\S+|@\w+|&\w+;")
+_LETRAS = re.compile(r"[^\W\d_]+")
+_RISADA = re.compile(r"(k+|(ha)+h?|(he)+h?|(rs)+|(hu)+e*)")
+
+
+def contar_termos(
+    textos: list[str], *, limite: int = 10, assunto: str | None = None
+) -> list[tuple[str, int]]:
+    """As `limite` palavras que mais aparecem nos textos, com a quantidade de cada uma."""
+    ignorar = {radical(t) for t in termos_da_consulta(assunto)} if assunto else set()
+    contagem: dict[str, int] = {}
+    formas: dict[str, dict[str, int]] = {}
+    for texto in textos:
+        limpo = _LINKS_MENCOES.sub(" ", (texto or "").lower())
+        for palavra in _LETRAS.findall(limpo):
+            chave = normalizar(palavra)
+            if (
+                len(chave) < 3
+                or chave in _PALAVRAS_VAZIAS_TERMOS
+                or _RISADA.fullmatch(chave)
+                or radical(chave) in ignorar
+            ):
+                continue
+            contagem[chave] = contagem.get(chave, 0) + 1
+            variantes = formas.setdefault(chave, {})
+            variantes[palavra] = variantes.get(palavra, 0) + 1
+    mais_frequentes = sorted(contagem.items(), key=lambda item: (-item[1], item[0]))[:limite]
+    return [
+        (max(formas[chave].items(), key=lambda item: (item[1], item[0]))[0], quantidade)
+        for chave, quantidade in mais_frequentes
+    ]

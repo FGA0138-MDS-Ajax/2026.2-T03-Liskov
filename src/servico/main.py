@@ -18,8 +18,17 @@ from src.processamento.pipeline import (
 )
 from src.servico.dependencias import obter_colecao_analises, obter_pipeline
 from src.servico.esquemas import (
-    ConsultaAnalises, Erro, FiltrosConsulta, LoteEntrada, PaginaAnalisesSaida,
-    ResultadoProcessamento, ResumoAnalisesSaida,
+    ConsultaAnalises,
+    ConsultaEvolucao,
+    ConsultaTermos,
+    Erro,
+    EvolucaoSaida,
+    FiltrosConsulta,
+    LoteEntrada,
+    PaginaAnalisesSaida,
+    ResultadoProcessamento,
+    ResumoAnalisesSaida,
+    TermosSaida,
 )
 
 from .administracao import (
@@ -104,3 +113,32 @@ def consultar_resumo(
         raise HTTPException(
             503, "Banco de dados indisponível."
         ) from erro
+
+
+@app.get("/analises/termos", response_model=TermosSaida, responses={503: {"model": Erro}})
+def consultar_termos(
+    consulta: Annotated[ConsultaTermos, Query()],
+    colecao: Annotated[Collection, Depends(obter_colecao_analises, scope="function")],
+):
+    """Termos mais frequentes nos textos do filtro (#30), para o gráfico de barras."""
+    try:
+        return RepositorioAnalises(colecao).termos_frequentes(**consulta.model_dump())
+    except ErroConsultaInvalida as erro:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(erro)) from erro
+    except (PyMongoError, ErroLeituraAnalises) as erro:
+        raise HTTPException(503, "Banco de dados indisponível.") from erro
+
+
+@app.get("/analises/evolucao", response_model=EvolucaoSaida, responses={503: {"model": Erro}})
+def consultar_evolucao(
+    consulta: Annotated[ConsultaEvolucao, Query()],
+    colecao: Annotated[Collection, Depends(obter_colecao_analises, scope="function")],
+):
+    """Análises por dia, semana ou mês e por sentimento (#121), só com textos datados."""
+    try:
+        return RepositorioAnalises(colecao).evolucao_analises(**consulta.model_dump())
+    except ErroConsultaInvalida as erro:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(erro)) from erro
+    except (PyMongoError, ErroLeituraAnalises) as erro:
+        raise HTTPException(503, "Banco de dados indisponível.") from erro
+
