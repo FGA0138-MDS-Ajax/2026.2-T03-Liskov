@@ -499,11 +499,13 @@ def test_pesquisa_mostra_origem_dos_textos_ate_concluir(ambiente):
     assert app.success[0].value == (
         "Coleta de textos sobre “vacinação” concluída: 10 texto(s) analisado(s)."
     )
-    origem = " ".join(m.value for m in app.markdown)
-    assert "**3** da base do SentIA" in origem
-    assert "**7** novo(s) do X" in origem
-    assert "1 repetido(s) descartado(s)" in origem
-    assert "Origem" in app.table[0].value.columns
+    # Quatro contadores de origem (protótipo #121).
+    origem = {m.label: m.value for m in app.metric}
+    assert origem["Analisados"] == "10"
+    assert origem["Da base do SentIA"] == "3"
+    assert origem["Novos do X"] == "7"
+    assert origem["Repetidos descartados"] == "1"
+    assert any("Origem" in t.value.columns for t in app.table)
 
 
 def test_pesquisa_sem_o_x_avisa_que_a_base_nao_bastou(ambiente):

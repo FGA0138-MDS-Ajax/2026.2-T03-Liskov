@@ -12,7 +12,8 @@ import streamlit as st
 
 from src.apresentacao.componentes import aviso_dados_de_exemplo, estado_erro
 from src.apresentacao.config import carregar_configuracao
-from src.apresentacao.paginas import administracao, dashboard
+from src.apresentacao.navegacao import pagina_dashboard
+from src.apresentacao.paginas import administracao
 
 st.set_page_config(page_title="SentIA", page_icon=":material/sentiment_satisfied:", layout="wide")
 st.title("SentIA")
@@ -28,13 +29,7 @@ if config.fonte_dados == "mock":
 
 pagina = st.navigation(
     [
-        st.Page(
-            dashboard.renderizar,
-            title="Dashboard",
-            icon=":material/dashboard:",
-            url_path="dashboard",
-            default=True,
-        ),
+        pagina_dashboard(),
         # Sem login, o Usuário vê só a entrada; o endereço é o mesmo nos dois casos.
         st.Page(
             administracao.renderizar,
