@@ -25,7 +25,8 @@ from src.apresentacao.transformacoes import formatar_inteiro
 ROTULOS = {s: ESTILOS_SENTIMENTO[s].rotulo for s in SENTIMENTOS}
 ORDEM = [ROTULOS[s] for s in SENTIMENTOS]
 CHAVE_GRANULARIDADE = "evolucao_granularidade"
-FORMATO = {"dia": "%d/%m", "semana": "%d/%m", "mes": "%m/%Y"}
+# Com o ano: os textos datados podem cobrir vários anos (na base real, de 2017 a 2026).
+FORMATO = {"dia": "%d/%m/%y", "semana": "%d/%m/%y", "mes": "%m/%Y"}
 
 
 def _linhas(evolucao: EvolucaoAnalises) -> list[dict[str, object]]:
@@ -58,6 +59,8 @@ def construir_grafico(
                     grid=False,
                     labelAngle=0,
                     labelColor=cores.texto_secundario,
+                    tickCount=5,
+                    labelOverlap="greedy",
                 ),
             ),
             y=alt.Y(

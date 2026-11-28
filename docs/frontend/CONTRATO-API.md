@@ -19,6 +19,8 @@ respostas simuladas **não comprovam integração**.
 | `POST /analises` | **Implementada** | Issue #21: classificação e persistência de lotes |
 | `GET /analises` | **Implementada** | Issues #23, #24 e #25: consulta MongoDB com paginação e filtros |
 | `GET /analises/resumo` | **Implementada** | Agregação MongoDB do mesmo conjunto filtrado, sem paginação |
+| `GET /analises/termos` | **Implementada** | Termos mais frequentes do filtro (#30, em barras na #121) |
+| `GET /analises/evolucao` | **Implementada** | Análises por dia, semana ou mês e por sentimento (#121) |
 | `POST /auth/login` | **Implementada** | Administração (PR #75) |
 | `POST /auth/logout` | **Implementada** | Administração (PR #75) |
 | `POST /datasets` | **Implementada** | Administração (PR #75) |
@@ -68,6 +70,44 @@ pelo cliente, sem conversão. Na query HTTP, paginação é enviada como inteiro
 `itens` é uma lista com no máximo `tamanho` registros, respeitando o total restante
 a partir de `(pagina - 1) * tamanho`. Uma página além do fim pode retornar lista vazia.
 O limite técnico implementado no backend é 100; o cliente não altera esse limite.
+
+## Termos frequentes e evolução no período (#30 e #121)
+
+As duas rotas aceitam os mesmos filtros (`inicio`, `fim`, `sentimento` e `assunto`).
+
+**`GET /analises/termos?limite=10`** (`limite` de 1 a 30; fora disso, 422):
+
+```json
+{ "termos": [{ "termo": "aluguel", "quantidade": 4 }], "textos_lidos": 6, "total": 6 }
+```
+
+Tokenização, só para esta visualização (o BERTweet continua recebendo o texto inteiro, D-12),
+em `src/comum/busca_textual.py` (`contar_termos`):
+- minúsculas; links, menções (`@perfil`) e entidades HTML (`&gt;`) saem antes de contar;
+- `#hashtag` conta como a palavra, sem o `#`;
+- só sequências de letras com pelo menos 3 letras (números e `_` ficam de fora);
+- palavras vazias (as da busca e mais as comuns em redes sociais) e risadas ficam de fora;
+- as palavras do próprio assunto filtrado ficam de fora, porque estariam em todos os textos;
+- formas com e sem acento são somadas, e aparece a forma escrita mais comum;
+- empates ficam em ordem alfabética;
+- são lidos no máximo os 5.000 textos mais recentes do filtro: `textos_lidos` menor que `total`
+  avisa isso, e o painel mostra.
+
+**`GET /analises/evolucao?granularidade=semana`** (`dia`, `semana` ou `mes`; fora disso, 422):
+
+```json
+{
+  "granularidade": "semana",
+  "pontos": [
+    { "periodo": "2026-11-23", "por_sentimento": { "positivo": 1, "negativo": 2, "neutro": 0 }, "total": 3 }
+  ],
+  "sem_data_publicacao": 7
+}
+```
+
+Agrupa no MongoDB com `$dateTrunc`, em UTC (decisão D12); a semana começa na segunda-feira e
+`periodo` é o primeiro dia do período. Só entram textos com `data_publicacao`;
+`sem_data_publicacao` informa quantos textos dos mesmos filtros (sem o período) ficaram de fora.
 
 ## Respostas implementadas de leitura
 
