@@ -217,7 +217,8 @@ def grafico(app):
 def test_grafico_aparece_com_os_mesmos_numeros_dos_indicadores(monkeypatch):
     app = executar_app(monkeypatch)
     assert not app.exception
-    assert len(grafico(app)) == 2  # rosca da distribuição e barra do resumo (#121)
+    # Rosca, evolução no período, barra do resumo e termos frequentes (#121).
+    assert len(grafico(app)) == 4
     tabela = app.table[0].value
     assert list(tabela["Sentimento"]) == ["Positivo", "Neutro", "Negativo"]
     esperado = [sum(a.sentimento == s for a in ANALISES_DE_EXEMPLO)

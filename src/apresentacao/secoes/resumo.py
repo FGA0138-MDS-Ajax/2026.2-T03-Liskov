@@ -50,5 +50,16 @@ def renderizar(resumo: ResumoAnalises, filtros: FiltrosAnalises) -> None:
     with st.container(border=True):
         st.markdown("##### Resumo")
         st.markdown(montar_resumo_textual(resumo, filtros, ROTULOS))
-        if resumo.total:
-            st.altair_chart(construir_barra(resumo), width="stretch")
+        if not resumo.total:
+            return
+        maior = max(resumo.por_sentimento.get(s, 0) for s in SENTIMENTOS)
+        lideres = [s for s in SENTIMENTOS if resumo.por_sentimento.get(s, 0) == maior]
+        if len(lideres) == 1:
+            # Selo com ícone, nome e cor do sentimento predominante (protótipo #121).
+            estilo = ESTILOS_SENTIMENTO[lideres[0]]
+            st.badge(
+                f"Predominante: {estilo.rotulo}",
+                icon=estilo.icone,
+                color=estilo.cor_markdown,
+            )
+        st.altair_chart(construir_barra(resumo), width="stretch")

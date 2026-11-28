@@ -42,6 +42,7 @@ ESTILOS_SENTIMENTO: dict[Sentimento, EstiloSentimento] = {
 
 @dataclass(frozen=True)
 class Paleta:
+    primaria: str
     texto: str
     texto_secundario: str
     borda: str
@@ -52,6 +53,7 @@ class Paleta:
 
 PALETAS: dict[Tema, Paleta] = {
     "light": Paleta(
+        primaria="#3B5BA5",
         texto="#1F2933",
         texto_secundario="#52606D",
         borda="#E4E7EB",
@@ -63,6 +65,8 @@ PALETAS: dict[Tema, Paleta] = {
         },
     ),
     "dark": Paleta(
+        # Azul mais claro que o do claro: #3B5BA5 fica com 2,9:1 sobre o fundo escuro.
+        primaria="#5273C2",
         texto="#FAFAFA",
         texto_secundario="#A3ACB9",
         borda="#3A3D4A",

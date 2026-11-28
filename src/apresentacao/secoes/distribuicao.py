@@ -61,6 +61,26 @@ def construir_grafico(
     )
 
 
+def _legenda(linhas: list[dict[str, str | int]]) -> None:
+    """Legenda do protótipo: quadradinho na cor, nome, quantidade e percentual alinhados.
+
+    HTML pelo mesmo motivo das barras dos cartões (cor por sentimento); o nome e os números
+    estão escritos, então a legenda não depende da cor.
+    """
+    cores = paleta()
+    for sentimento, linha in zip(SENTIMENTOS, linhas):
+        st.markdown(
+            '<div style="display:flex;gap:10px;align-items:center;margin:6px 0">'
+            f'<span style="width:12px;height:12px;border-radius:3px;'
+            f'background:{cores.grafico[sentimento]}"></span>'
+            f'<span style="flex:1">{ROTULOS[sentimento]}</span>'
+            f"<b>{formatar_inteiro(int(linha['Quantidade']))}</b>"
+            f'<span style="width:44px;text-align:right;color:{cores.texto_secundario}">'
+            f"{linha['Percentual']}%</span></div>",
+            unsafe_allow_html=True,
+        )
+
+
 def renderizar(resumo: ResumoAnalises) -> None:
     linhas = montar_distribuicao(resumo, ROTULOS)
     with st.container(border=True):
@@ -68,12 +88,7 @@ def renderizar(resumo: ResumoAnalises) -> None:
         st.caption("Quantidade de análises por sentimento")
         with st.container(horizontal_alignment="center"):
             st.altair_chart(construir_grafico(linhas), width="content")
-        for sentimento, linha in zip(SENTIMENTOS, linhas):
-            estilo = ESTILOS_SENTIMENTO[sentimento]
-            st.markdown(
-                f":{estilo.cor_markdown}[:material/circle:] {estilo.rotulo}: "
-                f"**{formatar_inteiro(int(linha['Quantidade']))}** ({linha['Percentual']}%)"
-            )
+        _legenda(linhas)
         with st.expander("Ver os dados do gráfico em tabela"):
             st.table(
                 pd.DataFrame(linhas, columns=["Sentimento", "Quantidade", "Percentual"]).assign(
