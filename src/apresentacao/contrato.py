@@ -61,6 +61,45 @@ class ResumoAnalises:
     sem_data_publicacao: int = 0
 
 
+Granularidade = Literal["dia", "semana", "mes"]
+GRANULARIDADES: dict[Granularidade, str] = {"dia": "Dia", "semana": "Semana", "mes": "Mês"}
+LIMITE_TERMOS_PADRAO = 10
+
+
+@dataclass(frozen=True)
+class TermoFrequente:
+    termo: str
+    quantidade: int
+
+
+@dataclass(frozen=True)
+class TermosAnalises:
+    """Termos mais frequentes nos textos do filtro (#30), do mais para o menos citado."""
+
+    termos: list[TermoFrequente]
+    textos_lidos: int  # a API lê no máximo alguns milhares de textos, dos mais recentes
+    total: int
+
+    @property
+    def limitado(self) -> bool:
+        return self.textos_lidos < self.total
+
+
+@dataclass(frozen=True)
+class PontoEvolucao:
+    periodo: date  # início do dia, da semana (segunda-feira) ou do mês, em UTC
+    por_sentimento: dict[Sentimento, int]
+
+
+@dataclass(frozen=True)
+class EvolucaoAnalises:
+    """Análises por período e sentimento (#121). Só textos com data de publicação."""
+
+    granularidade: Granularidade
+    pontos: list[PontoEvolucao]
+    sem_data_publicacao: int = 0
+
+
 class FonteAnalises(Protocol):
     """Fronteira de integração implementada por `FonteMock` e `FonteApi`."""
 
@@ -69,6 +108,14 @@ class FonteAnalises(Protocol):
     ) -> PaginaAnalises: ...
 
     def resumir(self, filtros: FiltrosAnalises) -> ResumoAnalises: ...
+
+    def termos(
+        self, filtros: FiltrosAnalises, limite: int = LIMITE_TERMOS_PADRAO
+    ) -> TermosAnalises: ...
+
+    def evolucao(
+        self, filtros: FiltrosAnalises, granularidade: Granularidade = "semana"
+    ) -> EvolucaoAnalises: ...
 
 
 # --- Administração (RF01, RF02, UC01 a UC03, T01 a T03) -------------------------

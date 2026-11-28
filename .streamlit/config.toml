@@ -1,16 +1,28 @@
-# Tema provisório: os wireframes do SentIA ainda são de baixa fidelidade.
-[theme]
-base = "light"
+# Tema claro e escuro (#121). Com [theme.light] e [theme.dark], o Streamlit mostra a troca
+# no menu ⋮ do canto superior direito (Sistema / Claro / Escuro); em "Sistema", segue o
+# computador. Não defina `base`: ele fixaria um tema só. O que o Streamlit não pinta
+# sozinho (gráficos Altair) usa as paletas de src/apresentacao/tema.py.
+
+[theme.light]
 primaryColor = "#3B5BA5"
 backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F2F2F2"
+secondaryBackgroundColor = "#F0F2F6"
 textColor = "#1F2933"
+
+[theme.dark]
+# Azul mais claro que o do tema claro: #3B5BA5 fica com só 2,9:1 sobre o fundo escuro.
+primaryColor = "#5273C2"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#262730"
+textColor = "#FAFAFA"
 
 [browser]
 gatherUsageStats = false
 
 [client]
-toolbarMode = "minimal"
+# "viewer" mantém o menu ⋮, onde fica a troca de tema, e esconde as opções de
+# desenvolvedor. Com "minimal", o menu some e não dá para trocar o tema.
+toolbarMode = "viewer"
 
 # Evita a pergunta de e-mail da primeira execução. O navegador não abre sozinho.
 [server]

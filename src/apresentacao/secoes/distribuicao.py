@@ -1,9 +1,9 @@
-"""Gráfico de distribuição dos sentimentos (RF14, US15).
+"""Gráfico de distribuição dos sentimentos (RF14, US15), em rosca (#121).
 
-Barras horizontais com a quantidade de análises de cada sentimento no filtro aplicado.
-O gráfico usa o mesmo resumo dos indicadores, então os números nunca divergem deles.
-Acessibilidade: o sentimento é identificado pelo nome e pelo valor escrito em cada barra,
-nunca só pela cor, e uma tabela com os mesmos dados fica disponível logo abaixo.
+Usa o mesmo resumo dos indicadores, então os números nunca divergem deles. O centro da
+rosca mostra o total; a legenda escreve nome, quantidade e percentual de cada sentimento,
+e uma tabela com os mesmos dados fica logo abaixo. O sentimento nunca depende só da cor.
+As cores vêm da paleta do tema ativo (claro ou escuro).
 """
 
 import altair as alt
@@ -11,50 +11,87 @@ import pandas as pd
 import streamlit as st
 
 from src.apresentacao.contrato import SENTIMENTOS, ResumoAnalises
-from src.apresentacao.tema import ESTILOS_SENTIMENTO
-from src.apresentacao.transformacoes import montar_distribuicao
+from src.apresentacao.tema import ESTILOS_SENTIMENTO, Paleta, paleta
+from src.apresentacao.transformacoes import formatar_inteiro, montar_distribuicao
 
 ROTULOS = {s: ESTILOS_SENTIMENTO[s].rotulo for s in SENTIMENTOS}
 ORDEM = [ROTULOS[s] for s in SENTIMENTOS]
-CORES = [ESTILOS_SENTIMENTO[s].cor_grafico for s in SENTIMENTOS]
+FONTE = "Source Sans Pro, Source Sans 3, sans-serif"  # a fonte padrão do Streamlit
 
 
-def construir_grafico(linhas: list[dict[str, str | int]]) -> alt.LayerChart:
-    """Monta o gráfico; separado da renderização para poder ser testado."""
-    dados = pd.DataFrame(linhas)
-    maior = int(dados["Quantidade"].max())
-    base = alt.Chart(dados).encode(
-        y=alt.Y(
-            "Sentimento:N", sort=ORDEM, title=None, axis=alt.Axis(labelFontSize=14, labelLimit=140)
-        ),
-        x=alt.X(
-            "Quantidade:Q",
-            axis=None,
-            # Folga à direita para o valor escrito não ser cortado na barra maior.
-            scale=alt.Scale(domain=[0, max(maior, 1) * 1.3]),
-        ),
-        color=alt.Color(
-            "Sentimento:N", scale=alt.Scale(domain=ORDEM, range=CORES), legend=None
-        ),
-        tooltip=["Sentimento:N", "Quantidade:Q", "Percentual:Q"],
+def cores(cores_tema: Paleta) -> list[str]:
+    return [cores_tema.grafico[s] for s in SENTIMENTOS]
+
+
+def construir_grafico(
+    linhas: list[dict[str, str | int]], cores_tema: Paleta | None = None
+) -> alt.LayerChart:
+    """Monta a rosca; separado da renderização para poder ser testado."""
+    cores_tema = cores_tema or paleta()
+    dados = pd.DataFrame(linhas).assign(Ordem=range(len(linhas)))
+    total = int(dados["Quantidade"].sum())
+    arco = (
+        alt.Chart(dados)
+        .mark_arc(innerRadius=62, outerRadius=92, padAngle=0.012)
+        .encode(
+            theta=alt.Theta("Quantidade:Q", stack=True),
+            color=alt.Color(
+                "Sentimento:N",
+                scale=alt.Scale(domain=ORDEM, range=cores(cores_tema)),
+                legend=None,
+            ),
+            order="Ordem:O",
+            tooltip=["Sentimento:N", "Quantidade:Q", "Percentual:Q"],
+        )
     )
-    barras = base.mark_bar()
-    # A cor fixa vai no encode: a cor por sentimento do `base` sobrescreveria a do mark.
-    valores = base.mark_text(align="left", dx=6, fontSize=14).encode(
-        text="Rótulo:N", color=alt.value("#1F2937")
+    centro = (
+        alt.Chart(pd.DataFrame({"t": [formatar_inteiro(total)]}))
+        .mark_text(fontSize=26, fontWeight=600, color=cores_tema.texto, dy=-6, font=FONTE)
+        .encode(text="t:N")
     )
-    return (barras + valores).properties(
-        height=160, title="Quantidade de análises por sentimento"
+    legenda = (
+        alt.Chart(pd.DataFrame({"t": ["análises"]}))
+        .mark_text(fontSize=12, color=cores_tema.texto_secundario, dy=16, font=FONTE)
+        .encode(text="t:N")
     )
+    return (
+        alt.layer(arco, centro, legenda)
+        .properties(width=200, height=200, background="transparent")
+        .configure_view(stroke=None)
+    )
+
+
+def _legenda(linhas: list[dict[str, str | int]]) -> None:
+    """Legenda do protótipo: quadradinho na cor, nome, quantidade e percentual alinhados.
+
+    HTML pelo mesmo motivo das barras dos cartões (cor por sentimento); o nome e os números
+    estão escritos, então a legenda não depende da cor.
+    """
+    cores = paleta()
+    for sentimento, linha in zip(SENTIMENTOS, linhas):
+        st.markdown(
+            '<div style="display:flex;gap:10px;align-items:center;margin:6px 0">'
+            f'<span style="width:12px;height:12px;border-radius:3px;'
+            f'background:{cores.grafico[sentimento]}"></span>'
+            f'<span style="flex:1">{ROTULOS[sentimento]}</span>'
+            f"<b>{formatar_inteiro(int(linha['Quantidade']))}</b>"
+            f'<span style="width:44px;text-align:right;color:{cores.texto_secundario}">'
+            f"{linha['Percentual']}%</span></div>",
+            unsafe_allow_html=True,
+        )
 
 
 def renderizar(resumo: ResumoAnalises) -> None:
-    st.subheader("Distribuição dos sentimentos")
     linhas = montar_distribuicao(resumo, ROTULOS)
-    st.altair_chart(construir_grafico(linhas), width="stretch")
-    with st.expander("Ver os dados do gráfico em tabela"):
-        st.table(
-            pd.DataFrame(linhas, columns=["Sentimento", "Quantidade", "Percentual"]).assign(
-                Percentual=lambda d: d["Percentual"].astype(str) + "%"
+    with st.container(border=True):
+        st.markdown("##### Distribuição dos sentimentos")
+        st.caption("Quantidade de análises por sentimento")
+        with st.container(horizontal_alignment="center"):
+            st.altair_chart(construir_grafico(linhas), width="content")
+        _legenda(linhas)
+        with st.expander("Ver os dados do gráfico em tabela"):
+            st.table(
+                pd.DataFrame(linhas, columns=["Sentimento", "Quantidade", "Percentual"]).assign(
+                    Percentual=lambda d: d["Percentual"].astype(str) + "%"
+                )
             )
-        )

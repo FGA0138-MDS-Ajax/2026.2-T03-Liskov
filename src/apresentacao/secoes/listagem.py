@@ -15,7 +15,7 @@ from src.apresentacao.contrato import (
     FiltrosAnalises,
     FonteAnalises,
 )
-from src.apresentacao.tema import ESTILOS_SENTIMENTO
+from src.apresentacao.tema import ESTILOS_SENTIMENTO, paleta
 from src.apresentacao.transformacoes import (
     COLUNAS_LISTAGEM,
     descrever_intervalo,
@@ -30,6 +30,24 @@ TAMANHO_PAGINA = 20
 CHAVE_PAGINA = "listagem_pagina"
 CHAVE_ESCOPO = "listagem_filtros"
 ROTULOS = {s: ESTILOS_SENTIMENTO[s].rotulo for s in SENTIMENTOS}
+_POR_ROTULO = {rotulo: s for s, rotulo in ROTULOS.items()}
+
+
+def estilizar_tabela(tabela: pd.DataFrame):
+    """Sentimento como etiqueta (#121): fundo tingido e texto contrastante, do tema ativo.
+
+    O nome do sentimento continua escrito na célula: a cor só reforça.
+    """
+    etiquetas = paleta().etiqueta
+
+    def etiqueta(valor: str) -> str:
+        sentimento = _POR_ROTULO.get(valor)
+        if sentimento is None:
+            return ""
+        fundo, texto = etiquetas[sentimento]
+        return f"background-color:{fundo};color:{texto};font-weight:600"
+
+    return tabela.style.map(etiqueta, subset=["Sentimento"])
 
 
 def _ir_para(pagina: int) -> None:
@@ -66,7 +84,7 @@ def renderizar(fonte: FonteAnalises, filtros: FiltrosAnalises, total: int) -> No
     paginas = total_de_paginas(resultado.total, resultado.tamanho)
     linhas = montar_linhas_listagem(resultado.itens, ROTULOS)
     st.dataframe(
-        pd.DataFrame(linhas, columns=list(COLUNAS_LISTAGEM)),
+        estilizar_tabela(pd.DataFrame(linhas, columns=list(COLUNAS_LISTAGEM))),
         hide_index=True,
         width="stretch",
         # Larguras em pixels: o texto leva o que sobra e as demais colunas cabem no

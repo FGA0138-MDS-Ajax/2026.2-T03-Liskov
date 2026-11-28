@@ -7,6 +7,7 @@ O token da sessão fica só em `st.session_state` e some ao fechar a aba; a senh
 não é guardada.
 """
 
+import pandas as pd
 import streamlit as st
 
 from src.apresentacao.componentes import estado_erro, estado_vazio
@@ -27,7 +28,9 @@ from src.apresentacao.contrato import (
 )
 from src.apresentacao.fontes import criar_administracao
 from src.apresentacao.fontes.administracao_mock import SENHA_EXEMPLO, USUARIO_EXEMPLO
-from src.apresentacao.secoes import indicadores
+from src.apresentacao.navegacao import pagina_dashboard
+from src.apresentacao.secoes.listagem import estilizar_tabela
+from src.apresentacao.secoes.resumo import construir_barra
 from src.apresentacao.tema import ESTILOS_SENTIMENTO
 from src.apresentacao.transformacoes import (
     formatar_inteiro,
@@ -65,6 +68,13 @@ def encerrar_sessao(aviso: str | None = None) -> None:
 
 
 def renderizar_login() -> None:
+    # Cartão centralizado do protótipo (#121); em telas estreitas, as colunas empilham.
+    _, centro, _ = st.columns([1, 1.2, 1])
+    with centro:
+        _formulario_login()
+
+
+def _formulario_login() -> None:
     st.subheader("Entrar como administrador")
     st.caption(
         "A administração permite importar datasets, pesquisar assuntos "
@@ -87,7 +97,8 @@ def renderizar_login() -> None:
         senha = st.text_input(
             "Senha", type="password", autocomplete="current-password", key="login_senha"
         )
-        entrar = st.form_submit_button("Entrar", type="primary", key="entrar")
+        entrar = st.form_submit_button("Entrar", type="primary", key="entrar", width="stretch")
+    st.page_link(pagina_dashboard(), label="Voltar ao dashboard", icon=":material/arrow_back:")
 
     if not entrar:
         return
@@ -167,12 +178,25 @@ def importar_e_analisar(
     return resultado, coleta, "A análise começou: acompanhe em **Coleta e análise**."
 
 
+def _formato_esperado() -> None:
+    with st.container(border=True):
+        st.markdown("##### Formato esperado")
+        st.table(
+            {
+                "Coluna": ["texto ou texto_original", "fonte", "id", "sentimento", "data"],
+                "Uso": ["obrigatória", "obrigatória", "opcional", "opcional", "opcional"],
+            }
+        )
+        st.caption("CSV em UTF-8. Linhas sem texto ou repetidas são descartadas e contadas.")
+
+
 def _secao_importacao(admin: FonteAdministracao, sessao: SessaoAdministrador) -> None:
-    st.caption(
-        "Arquivo CSV em UTF-8 com as colunas `texto` (ou `texto_original`) e `fonte`. "
-        "Opcionais: `id`, `sentimento` e `data`."
-    )
-    with st.form("importacao", clear_on_submit=True):
+    # Envio à esquerda e formato esperado à direita (protótipo #121).
+    esquerda, direita = st.columns([7, 5])
+    with direita:
+        _formato_esperado()
+    with esquerda, st.form("importacao", clear_on_submit=True):
+        st.markdown("##### Importar dataset")
         arquivo = st.file_uploader("Arquivo CSV", type=["csv"], key="arquivo_csv")
         analisar = st.checkbox(
             "Analisar o sentimento logo após importar",
@@ -206,18 +230,25 @@ def _secao_importacao(admin: FonteAdministracao, sessao: SessaoAdministrador) ->
         + proximo_passo,
         icon=":material/task_alt:",
     )
+    lidos, importados, descartados = st.columns(3)
+    lidos.metric("Lidos", formatar_inteiro(resultado.registros_lidos), border=True)
+    importados.metric("Importados", formatar_inteiro(resultado.registros_importados), border=True)
+    descartados.metric(
+        "Descartados", formatar_inteiro(resultado.registros_descartados), border=True
+    )
     if resultado.registros_descartados:
         st.warning(
             f"{formatar_inteiro(resultado.registros_descartados)} registro(s) "
             "descartado(s).",
             icon=":material/warning:",
         )
-        st.table(
-            {
-                "Motivo": list(resultado.descartes_por_motivo),
-                "Registros": list(resultado.descartes_por_motivo.values()),
-            }
-        )
+        with st.expander("Motivos dos descartes", expanded=True):
+            st.table(
+                {
+                    "Motivo": list(resultado.descartes_por_motivo),
+                    "Registros": list(resultado.descartes_por_motivo.values()),
+                }
+            )
 
 
 def _secao_pesquisa(admin: FonteAdministracao, sessao: SessaoAdministrador) -> None:
@@ -228,13 +259,15 @@ def _secao_pesquisa(admin: FonteAdministracao, sessao: SessaoAdministrador) -> N
         "o sentimento de cada texto."
     )
     with st.form("pesquisa"):
-        termo = st.text_input(
+        # Grade do protótipo (#121): assunto largo, meta e botão na mesma linha.
+        col_termo, col_meta, col_botao = st.columns([2, 1, 1], vertical_alignment="bottom")
+        termo = col_termo.text_input(
             "Assunto, palavra ou frase",
             max_chars=TAMANHO_MAXIMO_TERMO,
             placeholder="Ex.: custo de vida",
             key="busca_termo",
         )
-        quantidade = st.number_input(
+        quantidade = col_meta.number_input(
             "Meta de textos",
             min_value=1,
             max_value=QUANTIDADE_BUSCA_MAXIMA,
@@ -243,12 +276,14 @@ def _secao_pesquisa(admin: FonteAdministracao, sessao: SessaoAdministrador) -> N
             help="É um máximo: a base e o X podem ter menos textos sobre o assunto.",
             key="busca_quantidade",
         )
+        pesquisar = col_botao.form_submit_button(
+            "Pesquisar e analisar", type="primary", key="buscar", width="stretch"
+        )
         completar = st.checkbox(
             "Completar com tweets novos do X quando a base não tiver o suficiente",
             help="O X é consultado pelo XFetch, um serviço pago, e só para o que faltar.",
             key="busca_completar_x",
         )
-        pesquisar = st.form_submit_button("Pesquisar e analisar", type="primary", key="buscar")
     if not pesquisar:
         return
     try:
@@ -285,9 +320,16 @@ def _secao_coleta(admin: FonteAdministracao, sessao: SessaoAdministrador) -> Non
 
     nomes = {f.id: f.nome for f in fontes}
     with st.form("coleta"):
-        fonte = st.selectbox("Fonte", list(nomes), format_func=nomes.get, key="fonte_coleta")
-        iniciar = st.form_submit_button(
-            "Iniciar coleta e análise", type="primary", key="iniciar_coleta"
+        col_fonte, col_botao = st.columns([3, 1], vertical_alignment="bottom")
+        fonte = col_fonte.selectbox(
+            "Fonte", list(nomes), format_func=nomes.get, key="fonte_coleta"
+        )
+        iniciar = col_botao.form_submit_button(
+            "Iniciar coleta e análise",
+            type="primary",
+            icon=":material/play_arrow:",
+            key="iniciar_coleta",
+            width="stretch",
         )
     if iniciar:
         try:
@@ -330,7 +372,7 @@ def _mostrar_coleta(coleta: Coleta, nomes: dict[str, str]) -> None:
             icon=":material/task_alt:",
         )
         if coleta.origem is not None:
-            st.markdown(_descrever_origem(coleta.origem))
+            _mostrar_origem(coleta)
         if coleta.mensagem:
             st.info(coleta.mensagem, icon=":material/info:")
         _mostrar_resultado(coleta)
@@ -345,22 +387,29 @@ def _mostrar_coleta(coleta: Coleta, nomes: dict[str, str]) -> None:
         )
 
 
-def _descrever_origem(origem: dict[str, int]) -> str:
-    partes = [
-        f"**{formatar_inteiro(origem['base'])}** da base do SentIA",
-        f"**{formatar_inteiro(origem['x'])}** novo(s) do X",
+def _mostrar_origem(coleta: Coleta) -> None:
+    """Quatro contadores de origem da pesquisa (protótipo #121)."""
+    origem = coleta.origem or {}
+    contadores = [
+        ("Analisados", coleta.textos_analisados),
+        ("Da base do SentIA", origem.get("base", 0)),
+        ("Novos do X", origem.get("x", 0)),
+        ("Repetidos descartados", origem.get("duplicatas", 0)),
     ]
-    texto = " · ".join(partes)
-    if origem["duplicatas"]:
-        texto += f" · {formatar_inteiro(origem['duplicatas'])} repetido(s) descartado(s)"
-    return f":material/merge_type: {texto}"
+    for coluna, (rotulo, valor) in zip(st.columns(4), contadores):
+        coluna.metric(rotulo, formatar_inteiro(valor), border=True)
 
 
 def _mostrar_resultado(coleta: Coleta) -> None:
     """Resultado da coleta: indicadores e alguns textos com o sentimento previsto."""
     total = sum(coleta.por_sentimento.values())
     if total:
-        indicadores.renderizar(ResumoAnalises(total=total, por_sentimento=coleta.por_sentimento))
+        # Barra 100% com a proporção de cada sentimento nesta coleta (protótipo #121).
+        st.caption(f"Resultado desta coleta · {formatar_inteiro(total)} texto(s)")
+        st.altair_chart(
+            construir_barra(ResumoAnalises(total=total, por_sentimento=coleta.por_sentimento)),
+            width="stretch",
+        )
     if coleta.exemplos:
         st.caption(
             f"Primeiros {len(coleta.exemplos)} texto(s). O sentimento é uma previsão do "
@@ -368,10 +417,9 @@ def _mostrar_resultado(coleta: Coleta) -> None:
         )
         tabela = {
             "Texto": [mascarar_mencoes(e.texto) for e in coleta.exemplos],
-            "Sentimento previsto": [
-                ESTILOS_SENTIMENTO[e.sentimento].rotulo for e in coleta.exemplos
-            ],
+            "Sentimento": [ESTILOS_SENTIMENTO[e.sentimento].rotulo for e in coleta.exemplos],
         }
         if any(e.origem for e in coleta.exemplos):
             tabela["Origem"] = [ROTULOS_ORIGEM.get(e.origem, "—") for e in coleta.exemplos]
-        st.table(tabela)
+        # Sentimento como etiqueta, como na listagem do dashboard.
+        st.table(estilizar_tabela(pd.DataFrame(tabela)))

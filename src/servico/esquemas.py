@@ -82,6 +82,41 @@ class ConsultaAnalises(FiltrosConsulta):
         return valor
 
 
+class ConsultaTermos(FiltrosConsulta):
+    """Termos frequentes (#30): mesmos filtros da consulta e quantos termos devolver."""
+
+    limite: int = Field(default=10, ge=1, le=30)
+
+
+class ConsultaEvolucao(FiltrosConsulta):
+    """Evolução no período (#121): mesmos filtros e o tamanho do período."""
+
+    granularidade: Literal["dia", "semana", "mes"] = "semana"
+
+
+class TermoSaida(BaseModel):
+    termo: str
+    quantidade: int
+
+
+class TermosSaida(BaseModel):
+    termos: list[TermoSaida]
+    textos_lidos: int
+    total: int
+
+
+class PontoEvolucaoSaida(BaseModel):
+    periodo: date
+    por_sentimento: dict[Literal["positivo", "negativo", "neutro"], int]
+    total: int
+
+
+class EvolucaoSaida(BaseModel):
+    granularidade: Literal["dia", "semana", "mes"]
+    pontos: list[PontoEvolucaoSaida]
+    sem_data_publicacao: int
+
+
 class AnaliseSaida(BaseModel):
     id_origem: str
     fonte: str

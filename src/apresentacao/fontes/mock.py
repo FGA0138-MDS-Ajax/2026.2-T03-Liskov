@@ -5,18 +5,34 @@ menções a usuários. Os registros sem data imitam o TweetSentBR, que não poss
 data de publicação.
 """
 
-from datetime import UTC, datetime
+from dataclasses import replace
+from datetime import UTC, date, datetime, timedelta
 
 from src.apresentacao.contrato import (
+    LIMITE_TERMOS_PADRAO,
     SENTIMENTOS,
     Analise,
     ErroFonteDados,
+    EvolucaoAnalises,
     FiltrosAnalises,
+    Granularidade,
     PaginaAnalises,
+    PontoEvolucao,
     ResumoAnalises,
     Sentimento,
+    TermoFrequente,
+    TermosAnalises,
 )
-from src.comum.busca_textual import corresponde
+from src.comum.busca_textual import contar_termos, corresponde
+
+
+def inicio_do_periodo(dia: date, granularidade: Granularidade) -> date:
+    """Mesmo agrupamento da API: semanas começam na segunda-feira."""
+    if granularidade == "semana":
+        return dia - timedelta(days=dia.weekday())
+    if granularidade == "mes":
+        return dia.replace(day=1)
+    return dia
 
 MODELO_FICTICIO = "modelo-de-exemplo"
 _PROCESSADO_EM = datetime(2026, 11, 1, 12, 0, tzinfo=UTC)
@@ -107,6 +123,38 @@ class FonteMock:
         )
 
 
+    def termos(
+        self, filtros: FiltrosAnalises, limite: int = LIMITE_TERMOS_PADRAO
+    ) -> TermosAnalises:
+        selecionadas, _ = self._filtrar(filtros)
+        contagem = contar_termos(
+            [a.texto_original for a in selecionadas], limite=limite, assunto=filtros.assunto
+        )
+        return TermosAnalises(
+            termos=[TermoFrequente(t, n) for t, n in contagem],
+            textos_lidos=len(selecionadas),
+            total=len(selecionadas),
+        )
+
+    def evolucao(
+        self, filtros: FiltrosAnalises, granularidade: Granularidade = "semana"
+    ) -> EvolucaoAnalises:
+        selecionadas, _ = self._filtrar(filtros)
+        sem_periodo, _ = self._filtrar(replace(filtros, inicio=None, fim=None))
+        pontos: dict[date, dict[Sentimento, int]] = {}
+        for analise in selecionadas:
+            if analise.data_publicacao is None:
+                continue
+            periodo = inicio_do_periodo(analise.data_publicacao.date(), granularidade)
+            contagens = pontos.setdefault(periodo, dict.fromkeys(SENTIMENTOS, 0))
+            contagens[analise.sentimento] += 1
+        return EvolucaoAnalises(
+            granularidade=granularidade,
+            pontos=[PontoEvolucao(p, c) for p, c in sorted(pontos.items())],
+            sem_data_publicacao=sum(a.data_publicacao is None for a in sem_periodo),
+        )
+
+
 class FonteMockComErro:
     """Simula indisponibilidade, para validar o estado de erro das telas."""
 
@@ -118,6 +166,16 @@ class FonteMockComErro:
         raise ErroFonteDados(self.MENSAGEM)
 
     def resumir(self, filtros: FiltrosAnalises) -> ResumoAnalises:
+        raise ErroFonteDados(self.MENSAGEM)
+
+    def termos(
+        self, filtros: FiltrosAnalises, limite: int = LIMITE_TERMOS_PADRAO
+    ) -> TermosAnalises:
+        raise ErroFonteDados(self.MENSAGEM)
+
+    def evolucao(
+        self, filtros: FiltrosAnalises, granularidade: Granularidade = "semana"
+    ) -> EvolucaoAnalises:
         raise ErroFonteDados(self.MENSAGEM)
 
 

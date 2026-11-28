@@ -81,6 +81,24 @@ def colecao(monkeypatch, documentos):
         return cursor
 
     def agregar(etapas):
+        grupo = etapas[1]["$group"]["_id"]
+        if isinstance(grupo, dict) and "periodo" in grupo:
+            # Evolução no período (#121): imita o $dateTrunc em UTC do MongoDB.
+            truncar = grupo["periodo"]["$dateTrunc"]
+            contagens = Counter()
+            for d in selecionar(etapas[0]["$match"]):
+                dia = d["data_publicacao"].astimezone(UTC).replace(
+                    hour=0, minute=0, second=0, microsecond=0, tzinfo=None
+                )
+                if truncar["unit"] == "week":
+                    dia -= timedelta(days=dia.weekday())
+                elif truncar["unit"] == "month":
+                    dia = dia.replace(day=1)
+                contagens[(dia, d["sentimento"])] += 1
+            return [
+                {"_id": {"periodo": dia, "sentimento": s}, "n": n}
+                for (dia, s), n in contagens.items()
+            ]
         contagens = Counter(d["sentimento"] for d in selecionar(etapas[0]["$match"]))
         return [{"_id": classe, "total": n} for classe, n in contagens.items()]
 
@@ -272,7 +290,7 @@ def test_painel_completo_consome_a_api_real_sem_mock(cliente, monkeypatch):
     assert not app.exception and not app.error
     assert MENSAGEM_DADOS_DE_EXEMPLO not in avisos(app)
     assert app.metric[0].value == "6"
-    assert len(app.get("vega_lite_chart")) == 1
+    assert len(app.get("vega_lite_chart")) == 4  # rosca, evolução, resumo e termos (#121)
     assert [int(q) for q in app.table[0].value["Quantidade"]] == [3, 1, 2]
     resumo_textual = [m.value for m in app.markdown if m.value.startswith("Total de")]
     assert len(resumo_textual) == 1

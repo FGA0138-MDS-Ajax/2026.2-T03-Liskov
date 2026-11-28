@@ -217,7 +217,8 @@ def grafico(app):
 def test_grafico_aparece_com_os_mesmos_numeros_dos_indicadores(monkeypatch):
     app = executar_app(monkeypatch)
     assert not app.exception
-    assert len(grafico(app)) == 1
+    # Rosca, evolução no período, barra do resumo e termos frequentes (#121).
+    assert len(grafico(app)) == 4
     tabela = app.table[0].value
     assert list(tabela["Sentimento"]) == ["Positivo", "Neutro", "Negativo"]
     esperado = [sum(a.sentimento == s for a in ANALISES_DE_EXEMPLO)
@@ -243,22 +244,55 @@ def test_sem_dados_ou_com_erro_nao_mostra_grafico(monkeypatch):
         assert not grafico(app)
 
 
-def test_especificacao_do_grafico_usa_as_cores_do_tema_e_ordem_fixa():
-    from src.apresentacao.secoes.distribuicao import CORES, ORDEM, construir_grafico
+LINHAS_GRAFICO = [
+    {"Sentimento": "Positivo", "Quantidade": 8, "Percentual": 47, "Rótulo": "8 (47%)"},
+    {"Sentimento": "Neutro", "Quantidade": 4, "Percentual": 24, "Rótulo": "4 (24%)"},
+    {"Sentimento": "Negativo", "Quantidade": 5, "Percentual": 29, "Rótulo": "5 (29%)"},
+]
 
-    linhas = [
-        {"Sentimento": "Positivo", "Quantidade": 8, "Percentual": 47, "Rótulo": "8 (47%)"},
-        {"Sentimento": "Neutro", "Quantidade": 4, "Percentual": 24, "Rótulo": "4 (24%)"},
-        {"Sentimento": "Negativo", "Quantidade": 5, "Percentual": 29, "Rótulo": "5 (29%)"},
-    ]
-    especificacao = construir_grafico(linhas).to_dict()
-    barras, valores = especificacao["layer"]
-    assert barras["mark"]["type"] == "bar" and valores["mark"]["type"] == "text"
-    assert barras["encoding"]["color"]["scale"] == {"domain": ORDEM, "range": CORES}
-    assert barras["encoding"]["y"]["sort"] == ORDEM
-    # Sem legenda de cor: o nome do sentimento já está no eixo e no valor.
-    assert barras["encoding"]["color"]["legend"] is None
-    assert [d["Quantidade"] for d in next(iter(especificacao["datasets"].values()))] == [8, 4, 5]
+
+@pytest.mark.parametrize("tema", ["light", "dark"])
+def test_rosca_usa_as_cores_do_tema_ordem_fixa_e_total_no_centro(tema):
+    from src.apresentacao.secoes.distribuicao import ORDEM, construir_grafico
+    from src.apresentacao.tema import PALETAS
+
+    cores = PALETAS[tema]
+    especificacao = construir_grafico(LINHAS_GRAFICO, cores).to_dict()
+    arco, centro, _legenda = especificacao["layer"]
+    assert arco["mark"]["type"] == "arc"
+    assert arco["encoding"]["color"]["scale"] == {
+        "domain": ORDEM,
+        "range": [cores.grafico[s] for s in ("positivo", "neutro", "negativo")],
+    }
+    # Sem legenda de cor: nome, quantidade e percentual ficam escritos abaixo da rosca.
+    assert arco["encoding"]["color"]["legend"] is None
+    assert centro["mark"]["color"] == cores.texto
+    conjuntos = list(especificacao["datasets"].values())
+    quantidades = next(d for d in conjuntos if d and "Quantidade" in d[0])
+    assert [d["Quantidade"] for d in quantidades] == [8, 4, 5]
+    assert any(d and d[0].get("t") == "17" for d in conjuntos), "o centro mostra o total"
+
+
+def test_cores_do_escuro_sao_mais_claras_que_as_do_claro():
+    from src.apresentacao.tema import PALETAS
+
+    def luminancia(hexa: str) -> float:
+        canais = [int(hexa[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+        lin = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in canais]
+        return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
+
+    def contraste(a: str, b: str) -> float:
+        claro, escuro = sorted((luminancia(a), luminancia(b)), reverse=True)
+        return (claro + 0.05) / (escuro + 0.05)
+
+    for sentimento in ("positivo", "neutro", "negativo"):
+        # Marcas de gráfico: pelo menos 3:1 sobre o fundo de cada tema.
+        assert contraste(PALETAS["light"].grafico[sentimento], "#FFFFFF") >= 3
+        assert contraste(PALETAS["dark"].grafico[sentimento], "#0E1117") >= 3
+        # Etiquetas da tabela: texto com pelo menos 4,5:1 sobre o próprio fundo.
+        for tema in ("light", "dark"):
+            fundo, texto = PALETAS[tema].etiqueta[sentimento]
+            assert contraste(texto, fundo) >= 4.5, (tema, sentimento)
 
 
 # --- Resumo textual (#29) ----------------------------------------------------------
