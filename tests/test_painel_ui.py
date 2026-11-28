@@ -119,10 +119,10 @@ def test_listagem_mostra_todas_as_analises_de_exemplo_com_as_colunas_previstas(m
     tabela = app.dataframe[0].value
     assert len(tabela) == len(ANALISES_DE_EXEMPLO)
     assert list(tabela.columns) == [
-        "Texto", "Sentimento", "Fonte", "Publicado em", "Processado em (UTC)", "Modelo",
+        "Texto", "Sentimento", "Fonte", "Publicado em (UTC)", "Processado em (UTC)", "Modelo",
     ]
     assert set(tabela["Sentimento"]) == {"Positivo", "Neutro", "Negativo"}
-    assert "Sem data" in set(tabela["Publicado em"])
+    assert "Sem data" in set(tabela["Publicado em (UTC)"])
     # Ainda é mock: a tela precisa continuar dizendo isso.
     assert MENSAGEM_DADOS_DE_EXEMPLO in avisos(app)
 

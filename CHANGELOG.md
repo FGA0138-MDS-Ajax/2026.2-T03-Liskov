@@ -21,6 +21,14 @@ versões publicadas; outras frentes também podem registrar suas entregas aqui.
 
 ### Adicionado
 
+- Filtro por assunto no dashboard e na API (#113): campo "Assunto" ao lado de período e
+  sentimento, e `?assunto=` em `GET /analises` e `GET /analises/resumo`. Usa a mesma regra
+  da pesquisa do Administrador (maiúsculas e acentos não importam; palavras vazias
+  ignoradas; comparação pelo radical), agora em `src/comum/busca_textual.py`, compartilhado
+  pela API, pelo repositório e pelo modo de demonstração. O texto digitado nunca vira
+  expressão regular. Sem textos sobre o assunto, o painel avisa em vez de quebrar. A coluna
+  de publicação passa a "Publicado em (UTC)" (decisão da PO de 26/11: datas em UTC).
+
 - Resumo textual no dashboard: síntese da seleção atual com o total de análises, a distribuição
   por sentimento e o sentimento predominante, montada por regras a partir do mesmo resumo dos
   indicadores e do gráfico (sem modelo de linguagem). Informa empates, avisa quando a base é

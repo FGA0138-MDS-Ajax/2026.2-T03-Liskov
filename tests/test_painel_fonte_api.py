@@ -327,3 +327,14 @@ def test_banco_indisponivel_na_api_vira_mensagem_clara():
     fonte = FonteApi("http://api", sessao=sessao)
     with pytest.raises(ErroFonteDados, match="banco de dados está indisponível"):
         fonte.resumir(FiltrosAnalises())
+
+
+def test_listar_e_resumir_enviam_o_assunto_so_quando_ha_assunto():
+    corpo = {"itens": [], "pagina": 1, "tamanho": 20, "total": 0}
+    fonte, sessao = criar_fonte(resposta=RespostaFalsa(corpo=corpo))
+
+    fonte.listar(FiltrosAnalises(assunto="custo de vida"))
+    fonte.listar(FiltrosAnalises())
+
+    assert sessao.chamadas[0]["params"]["assunto"] == "custo de vida"
+    assert "assunto" not in sessao.chamadas[1]["params"]

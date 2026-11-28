@@ -4,6 +4,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from src.dados.repositorio import TAMANHO_MAXIMO_ASSUNTO
+
 
 class RegistroEntrada(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -35,6 +37,22 @@ class FiltrosConsulta(BaseModel):
     inicio: date | None = None
     fim: date | None = None
     sentimento: Literal["positivo", "negativo", "neutro"] | None = None
+    # Filtro por assunto (#113): palavras procuradas no texto, com a regra da pesquisa.
+    assunto: str | None = None
+
+    @field_validator("assunto", mode="before")
+    @classmethod
+    def validar_assunto(cls, valor):
+        if valor is None:
+            return None
+        if not isinstance(valor, str):
+            raise TypeError("Informe o assunto como texto.")
+        valor = " ".join(valor.split())
+        if len(valor) > TAMANHO_MAXIMO_ASSUNTO:
+            raise ValueError(
+                f"O assunto deve ter no máximo {TAMANHO_MAXIMO_ASSUNTO} caracteres."
+            )
+        return valor or None
 
     @field_validator("inicio", "fim", mode="before")
     @classmethod

@@ -46,21 +46,30 @@ def formatar_data(valor: date) -> str:
 
 
 def montar_filtros(
-    inicio: date | None, fim: date | None, sentimento: Sentimento | None
+    inicio: date | None,
+    fim: date | None,
+    sentimento: Sentimento | None,
+    assunto: str | None = None,
 ) -> FiltrosAnalises:
     """Valida a entrada do usuário antes de consultar a fonte de dados.
 
-    Levanta ValueError com uma mensagem para o usuário se o período for inválido.
+    Levanta ValueError com uma mensagem para o usuário se o período ou o assunto
+    forem inválidos. Espaços repetidos no assunto viram um só; vazio é "sem filtro".
     """
     if inicio is not None and fim is not None and inicio > fim:
         raise ValueError("A data inicial deve ser anterior ou igual à data final.")
     if sentimento is not None and sentimento not in SENTIMENTOS:
         raise ValueError("Sentimento inválido.")
-    return FiltrosAnalises(inicio=inicio, fim=fim, sentimento=sentimento)
+    assunto = " ".join((assunto or "").split()) or None
+    if assunto is not None and len(assunto) > TAMANHO_MAXIMO_TERMO:
+        raise ValueError(f"Use no máximo {TAMANHO_MAXIMO_TERMO} caracteres no assunto.")
+    return FiltrosAnalises(inicio=inicio, fim=fim, sentimento=sentimento, assunto=assunto)
 
 
 def _partes_dos_filtros(filtros: FiltrosAnalises, rotulos: dict[Sentimento, str]) -> list[str]:
     partes = []
+    if filtros.assunto:
+        partes.append(f"sobre “{filtros.assunto}”")
     if filtros.inicio and filtros.fim:
         partes.append(
             f"publicadas de {formatar_data(filtros.inicio)} a {formatar_data(filtros.fim)}"
@@ -120,7 +129,7 @@ COLUNAS_LISTAGEM = (
     "Texto",
     "Sentimento",
     "Fonte",
-    "Publicado em",
+    "Publicado em (UTC)",
     "Processado em (UTC)",
     "Modelo",
 )
@@ -165,7 +174,7 @@ def montar_linhas_listagem(
             # O sentimento é texto, não só cor: leitores de tela e daltonismo.
             "Sentimento": rotulos[analise.sentimento],
             "Fonte": analise.fonte,
-            "Publicado em": (
+            "Publicado em (UTC)": (
                 formatar_data(analise.data_publicacao.date())
                 if analise.data_publicacao is not None
                 else SEM_DATA

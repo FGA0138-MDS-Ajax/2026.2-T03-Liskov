@@ -136,3 +136,68 @@ def test_limpar_restaura_campos_e_permite_nova_aplicacao(app):
     aplicar(app, sentimento="Negativo")
     assert total(app) == "5"
     assert not app.error
+
+
+# --- Filtro por assunto (#113) ------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("digitado", "esperado"),
+    [("  custo   de vida ", "custo de vida"), ("", None), ("   ", None), (None, None)],
+)
+def test_assunto_tem_espacos_normalizados_e_vazio_vale_como_sem_filtro(digitado, esperado):
+    assert montar_filtros(None, None, None, digitado).assunto == esperado
+
+
+def test_assunto_com_mais_de_100_caracteres_e_recusado():
+    with pytest.raises(ValueError, match="100 caracteres"):
+        montar_filtros(None, None, None, "a" * 101)
+
+
+def test_descricao_inclui_o_assunto_antes_dos_outros_filtros():
+    filtros = FiltrosAnalises(inicio=AGOSTO[0], sentimento="negativo", assunto="aplicativo")
+    assert descrever_filtros(filtros, ROTULOS) == (
+        "Exibindo análises sobre “aplicativo”, publicadas a partir de 01/08/2026, "
+        "com sentimento negativo."
+    )
+
+
+def aplicar_assunto(app: AppTest, assunto: str, sentimento="Todos") -> AppTest:
+    app.text_input(key="filtro_assunto").set_value(assunto)
+    return aplicar(app, sentimento=sentimento)
+
+
+def test_assunto_restringe_indicadores_e_listagem(app):
+    aplicar_assunto(app, "Aplicativo")
+
+    assert total(app) == "3"  # "aplicativo" aparece em 3 textos de exemplo
+    textos = list(app.dataframe[0].value["Texto"])
+    assert len(textos) == 3 and all("aplicativo" in t.lower() for t in textos)
+    assert any("sobre “Aplicativo”" in c.value for c in app.caption)
+
+
+def test_assunto_combinado_com_sentimento(app):
+    aplicar_assunto(app, "aplicativo", sentimento="Negativo")
+
+    assert total(app) == "1"
+
+
+def test_assunto_sem_textos_mostra_mensagem_e_nao_quebra(app):
+    aplicar_assunto(app, "eleição municipal")
+
+    assert not app.exception
+    assert any("Nenhum texto sobre “eleição municipal” na base." in i.value for i in app.info)
+
+
+def test_assunto_sem_textos_com_outros_filtros_explica_a_combinacao(app):
+    aplicar_assunto(app, "eleição", sentimento="Negativo")
+
+    assert any("com os outros filtros aplicados" in i.value for i in app.info)
+
+
+def test_limpar_apaga_o_assunto(app):
+    aplicar_assunto(app, "aplicativo")
+    app.button(key="limpar_filtros").click().run()
+
+    assert app.text_input(key="filtro_assunto").value == ""
+    assert total(app) == str(len(ANALISES_DE_EXEMPLO))

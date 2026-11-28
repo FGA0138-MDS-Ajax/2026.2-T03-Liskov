@@ -9,62 +9,15 @@ A coordenação fica aqui, na camada de serviço; o módulo xfetch.py só adquir
 
 from __future__ import annotations
 
-import re
-import unicodedata
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from src.comum.busca_textual import pontuar, relevancia_minima, termos_da_consulta
 from src.dados.repositorio import garantir_id_origem, normalizar_fonte
 
-# Palavras muito comuns que não ajudam a encontrar o assunto.
-_PALAVRAS_VAZIAS = frozenset(
-    {
-        "a", "o", "as", "os", "um", "uma", "uns", "umas", "de", "da", "do", "das", "dos",
-        "em", "na", "no", "nas", "nos", "por", "para", "pra", "com", "sem", "que", "e",
-        "ou", "mas", "se", "ao", "aos", "sao", "foi", "ser", "ter", "tem", "como",
-        "mais", "menos", "muito", "muita", "isso", "isto", "esse", "essa", "este", "esta",
-        "eu", "tu", "ele", "ela", "vos", "eles", "elas", "me", "te", "lhe", "ja",
-        "nao", "sim",
-    }
-)  # Já sem acentos, como as palavras comparadas.
-_TAMANHO_RADICAL = 5
-
-
-def relevancia_minima(termos: list[str]) -> float:
-    """Critério de similaridade: consultas curtas exigem todos os termos no texto."""
-    return 1.0 if len(termos) <= 3 else 2 / 3
-
-
-def normalizar(texto: str) -> str:
-    """Minúsculas e sem acentos: "Vacinação" vira "vacinacao"."""
-    decomposto = unicodedata.normalize("NFKD", texto.lower())
-    return "".join(c for c in decomposto if not unicodedata.combining(c))
-
-
-def _palavras(texto: str) -> list[str]:
-    return re.findall(r"\w+", normalizar(texto))
-
-
-def termos_da_consulta(consulta: str) -> list[str]:
-    """Palavras que importam na consulta, sem repetição e na ordem digitada."""
-    palavras = _palavras(consulta)
-    termos = [p for p in palavras if p not in _PALAVRAS_VAZIAS and (len(p) > 2 or p.isdigit())]
-    return list(dict.fromkeys(termos or palavras))
-
-
-def _radical(palavra: str) -> str:
-    # Busca "flexível": "vacina" encontra "vacinação" e "vacinas".
-    return palavra[:_TAMANHO_RADICAL]
-
-
-def pontuar(termos: list[str], texto: str) -> float:
-    """Fração dos termos da consulta que aparecem no texto (0 a 1)."""
-    if not termos:
-        return 0.0
-    radicais_do_texto = {_radical(p) for p in _palavras(texto)}
-    encontrados = sum(_radical(t) in radicais_do_texto for t in termos)
-    return encontrados / len(termos)
+# A regra de busca por palavras fica em src/comum/busca_textual.py, compartilhada com
+# o filtro por assunto da consulta (#113) e com o modo de demonstração do painel.
 
 
 def chave(registro: dict[str, Any]) -> tuple[str, str]:

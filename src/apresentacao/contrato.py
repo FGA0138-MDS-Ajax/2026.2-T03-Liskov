@@ -25,6 +25,7 @@ class FiltrosAnalises:
     inicio: date | None = None
     fim: date | None = None  # inclusivo
     sentimento: Sentimento | None = None
+    assunto: str | None = None  # palavras procuradas no texto (#113)
 
 
 @dataclass(frozen=True)

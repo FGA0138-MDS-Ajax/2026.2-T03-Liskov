@@ -28,6 +28,8 @@ def _para_parametros(filtros: FiltrosAnalises) -> dict[str, str]:
         parametros["fim"] = filtros.fim.isoformat()
     if filtros.sentimento is not None:
         parametros["sentimento"] = filtros.sentimento
+    if filtros.assunto:
+        parametros["assunto"] = filtros.assunto
     return parametros
 
 
